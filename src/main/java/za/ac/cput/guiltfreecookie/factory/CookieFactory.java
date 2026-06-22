@@ -19,7 +19,7 @@ public class CookieFactory {
                 || Helper.isNullOrEmpty(description)
                 || Helper.isNullOrEmpty(ingredients)
                 || Helper.isNullOrEmpty(allergies)
-                || price == null) {
+                || price <= 0 ) {
             return null;
         }
 
