@@ -12,4 +12,5 @@ public interface IService<T, ID> {
 
     boolean delete(ID id);
 
+    List<T> getAll();
 }
