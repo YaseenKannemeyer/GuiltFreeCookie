@@ -1,25 +1,24 @@
 <template>
-  <div id="app">
-    <HeaderNav />
-    <main>
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+  <div class="min-h-screen flex flex-col bg-background">
+    <TheNavbar />
+
+    <main class="flex-1">
+      <RouterView v-slot="{ Component, route }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" :key="route.fullPath" />
+        </Transition>
+      </RouterView>
     </main>
-    <footer class="footer">
-      <span class="logo">Guilt<span>Free</span>Cookie</span>
-      <p>&copy; 2024 Guilt Free Cookie. All rights reserved.</p>
-      <p style="margin-top: 5px; font-size: 0.85rem">
-        Healthy cookies for a healthier you
-      </p>
-    </footer>
+
+    <TheFooter />
   </div>
 </template>
 
 <script setup>
-import HeaderNav from "./components/HeaderNav.vue";
+import { onMounted } from "vue";
+import { RouterView } from "vue-router";
+import TheNavbar from "./layout/TheNavbar.vue";
+import TheFooter from "./layout/TheFooter.vue";
 </script>
 
 <style>
