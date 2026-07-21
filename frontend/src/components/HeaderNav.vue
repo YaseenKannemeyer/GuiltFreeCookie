@@ -113,7 +113,6 @@ const goToCart = () => {
           type="button"
           class="relative h-11 w-11 flex items-center justify-center rounded-full bg-chocolate text-cream hover:bg-chocolate-600 hover:shadow-soft transition-all hover:-translate-y-0.5"
           aria-label="Open cart"
-          @click="goToCart"
         >
           <ShoppingBagIcon class="h-5 w-5" />
         </button>
