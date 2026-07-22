@@ -6,17 +6,23 @@
  * - Desktop: logo + nav links + cart icon + count badge.
  * - Mobile: hamburger that toggles a slide-in sidebar.
  */
-import { ref, onMounted, onUnmounted } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { RouterLink, useRouter, useRoute } from "vue-router";
 import {
   Bars3Icon,
   XMarkIcon,
   ShoppingBagIcon,
   UserIcon,
   MagnifyingGlassIcon,
+  HomeIcon,
+  CubeIcon,
+  InformationCircleIcon,
+  PhoneIcon,
 } from "@heroicons/vue/24/outline";
 
 const sidebarOpen = ref(false);
+
+const isHomePage = computed(() => route.name === "Home");
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
@@ -26,7 +32,7 @@ const closeSidebar = () => {
   sidebarOpen.value = false;
 };
 const router = useRouter();
-
+const route = useRoute();
 const scrolled = ref(false);
 
 const onScroll = () => {
@@ -40,18 +46,22 @@ const navLinks = [
   {
     label: "Home",
     to: { name: "Home" },
+    icon: HomeIcon,
   },
   {
     label: "Products",
     to: { name: "Products" },
+    icon: CubeIcon,
   },
   {
     label: "About",
     to: { name: "About" },
+    icon: InformationCircleIcon,
   },
   {
     label: "Contact",
     to: { name: "Contact" },
+    icon: PhoneIcon,
   },
 ];
 
@@ -64,9 +74,9 @@ const onCartClick = () => {
   <header
     :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-cookie',
-      scrolled
-        ? 'bg-background/85 backdrop-blur-md shadow-soft py-3'
-        : 'bg-transparent py-5',
+      isHomePage && !scrolled
+        ? 'bg-transparent py-5'
+        : 'bg-background/85 backdrop-blur-md shadow-soft py-3',
     ]"
   >
     <div class="container-magic flex items-center justify-between">
@@ -80,10 +90,16 @@ const onCartClick = () => {
         <span
           :class="[
             'font-bold text-2xl tracking-tight transition-colors',
-            scrolled ? 'text-chocolate' : 'text-chocolate',
+            isHomePage && !scrolled ? 'text-chocolate' : 'text-chocolate',
           ]"
         >
-          Crumble<span class="text-primary">Magic</span>
+          GuiltFree<span
+            :class="[
+              'transition-colors duration-300',
+              isHomePage && !scrolled ? 'text-white' : 'text-primary',
+            ]"
+            >Cookie
+          </span>
         </span>
       </RouterLink>
 
@@ -104,7 +120,12 @@ const onCartClick = () => {
       <div class="flex items-center gap-3">
         <button
           type="button"
-          class="hidden sm:flex h-11 w-11 items-center justify-center rounded-full text-chocolate/70 hover:bg-cream-100 hover:text-chocolate transition-all"
+          :class="[
+            'hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all',
+            isHomePage && !scrolled
+              ? 'text-white hover:bg-white/10'
+              : 'text-chocolate hover:bg-cream-100',
+          ]"
           aria-label="Search"
           @click="router.push({ name: 'Products' })"
         >
@@ -112,7 +133,12 @@ const onCartClick = () => {
         </button>
         <button
           type="button"
-          class="hidden sm:flex h-11 w-11 items-center justify-center rounded-full text-chocolate/70 hover:bg-cream-100 hover:text-chocolate transition-all"
+          :class="[
+            'hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all',
+            isHomePage && !scrolled
+              ? 'text-white hover:bg-white/10'
+              : 'text-chocolate hover:bg-cream-100',
+          ]"
           aria-label="Account"
         >
           <UserIcon class="h-5 w-5" />
@@ -130,7 +156,10 @@ const onCartClick = () => {
         <!-- Hamburger (mobile) -->
         <button
           type="button"
-          class="lg:hidden h-11 w-11 flex items-center justify-center rounded-full text-chocolate hover:bg-cream-100 transition-all"
+          :class="[
+            'lg:hidden h-11 w-11 flex items-center justify-center rounded-full transition-all',
+            isHomePage && !scrolled ? 'text-chocolate' : 'text-chocolate',
+          ]"
           aria-label="Open menu"
           @click="toggleSidebar"
         >
@@ -152,13 +181,13 @@ const onCartClick = () => {
       <Transition name="drawer">
         <aside
           v-if="sidebarOpen"
-          class="fixed top-0 left-0 z-[71] h-full w-80 max-w-[85vw] bg-background shadow-soft-xl flex flex-col lg:hidden"
+          class="fixed top-0 right-0 z-[71] h-full w-80 max-w-[85vw] bg-background shadow-soft-xl flex flex-col lg:hidden"
         >
           <div
             class="flex items-center justify-between px-6 py-5 border-b border-cream-300"
           >
             <span class="font-bold text-2xl text-chocolate">
-              Crumble<span class="text-primary">Magic</span>
+              GuiltFree<span class="text-primary">Cookie</span>
             </span>
             <button
               type="button"
@@ -169,24 +198,43 @@ const onCartClick = () => {
               <XMarkIcon class="h-6 w-6" />
             </button>
           </div>
-          <nav class="flex-1 px-6 py-8 flex flex-col gap-1">
+          <nav class="flex-1 px-6 py-8 flex flex-col gap-2">
             <RouterLink
               v-for="link in navLinks"
               :key="link.label"
               :to="link.to"
-              class="px-4 py-4 rounded-2xl text-lg font-medium text-chocolate hover:bg-cream-100 transition-colors"
+              class="flex items-center gap-4 px-4 py-4 rounded-2xl text-lg font-medium text-chocolate hover:bg-cream-100 transition-all"
               active-class="bg-primary/15 text-chocolate"
               @click="closeSidebar"
             >
-              {{ link.label }}
+              <component :is="link.icon" class="h-6 w-6 text-primary" />
+
+              <span>
+                {{ link.label }}
+              </span>
             </RouterLink>
           </nav>
           <div class="px-6 py-6 border-t border-cream-300 space-y-3">
+            <button
+              class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
+            >
+              <MagnifyingGlassIcon class="h-5 w-5 text-primary" />
+              <span>Search</span>
+            </button>
+
+            <button
+              class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
+            >
+              <UserIcon class="h-5 w-5 text-primary" />
+              <span>My Account</span>
+            </button>
+
             <RouterLink
               :to="{ name: 'Products' }"
-              class="btn-primary btn-block"
+              class="btn-primary btn-block flex items-center justify-center gap-2"
               @click="closeSidebar"
             >
+              <ShoppingBagIcon class="h-5 w-5" />
               Order Now
             </RouterLink>
           </div>
