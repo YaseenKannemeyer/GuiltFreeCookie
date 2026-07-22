@@ -6,9 +6,9 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { TrashIcon } from "@heroicons/vue/24/outline";
-import RatingStars from "@/components/ui/RatingStars.vue";
-import QuantitySelector from "@/components/ui/QuantitySelector.vue";
-import { useFormat } from "@/composables/useFormat";
+import RatingStars from "../../components/ui/RatingStars.vue";
+import QuantitySelector from "../../components/ui/QuantitySelector.vue";
+import { useFormat } from "../../composables/useFormat";
 
 const props = defineProps({
   item: { type: Object, required: true },

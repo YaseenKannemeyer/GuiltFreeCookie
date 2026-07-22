@@ -45,6 +45,14 @@ const navLinks = [
     label: "Products",
     to: { name: "Products" },
   },
+  {
+    label: "About",
+    to: { name: "About" },
+  },
+  {
+    label: "Contact",
+    to: { name: "Contact" },
+  },
 ];
 
 const onCartClick = () => {
@@ -175,7 +183,7 @@ const onCartClick = () => {
           </nav>
           <div class="px-6 py-6 border-t border-cream-300 space-y-3">
             <RouterLink
-              :to="{ name: 'menu' }"
+              :to="{ name: 'Products' }"
               class="btn-primary btn-block"
               @click="closeSidebar"
             >

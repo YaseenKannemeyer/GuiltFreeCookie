@@ -94,7 +94,7 @@ const ingredients = [
             </li>
           </ul>
 
-          <BaseButton :to="{ name: 'about' }" variant="outline" size="lg">
+          <BaseButton :to="{ name: 'About' }" variant="outline" size="lg">
             Read our story
             <ArrowRightIcon class="h-5 w-5" />
           </BaseButton>

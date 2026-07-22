@@ -10,10 +10,9 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { ShoppingBagIcon, EyeIcon } from "@heroicons/vue/24/outline";
-import RatingStars from "@/components/ui/RatingStars.vue";
-import BaseBadge from "@/components/ui/BaseBadge.vue";
-import { useCartStore } from "@/stores/cartStore";
-import { useFormat } from "@/composables/useFormat";
+import RatingStars from "../../components/ui/RatingStars.vue";
+import BaseBadge from "../../components/ui/BaseBadge.vue";
+import { useFormat } from "../../composables/useFormat";
 
 const props = defineProps({
   cookie: { type: Object, required: true },
@@ -21,18 +20,13 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const cart = useCartStore();
+
 const { currency, truncate } = useFormat();
 
 const isDark = computed(() => props.variant === "dark");
 
 const goToDetails = () =>
   router.push({ name: "Products", params: { id: props.cookie.id } });
-
-const addToCart = (e) => {
-  e?.stopPropagation();
-  cart.add(props.cookie, 1);
-};
 </script>
 
 <template>
