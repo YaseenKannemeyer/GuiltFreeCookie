@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/cookie")
-@CrossOrigin(origins = "*")
 public class CookieController {
 
     private final CookieService cookieService;
