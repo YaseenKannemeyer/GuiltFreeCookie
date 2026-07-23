@@ -1,18 +1,23 @@
 package za.ac.cput.guiltfreecookie.domain;
 
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import jakarta.persistence.criteria.Order;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
+@Table(name = "customers")
 public class Customer {
 
     @Id
+    @Column(name = "customer_email")
     private String customerEmail;
 
     @Embedded
     private Name name;
 
+    @Column(name = "mobile_number")
     private String mobileNumber;
 
     protected Customer() {}

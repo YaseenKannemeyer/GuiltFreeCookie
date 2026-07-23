@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class CustomerServiceTest {
@@ -45,7 +46,7 @@ public class CustomerServiceTest {
                 .setMobileNumber("+27869503400")
                 .build();
 
-        Mockito.when(repository.findById(testEmail)).thenReturn(Optional.of(customer));
+        when(repository.findById(testEmail)).thenReturn(Optional.of(customer));
 
         Customer result = service.read(testEmail);
 

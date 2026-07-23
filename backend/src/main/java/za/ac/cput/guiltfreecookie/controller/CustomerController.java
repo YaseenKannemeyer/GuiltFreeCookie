@@ -1,5 +1,7 @@
 package za.ac.cput.guiltfreecookie.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.ac.cput.guiltfreecookie.domain.Customer;
 import za.ac.cput.guiltfreecookie.service.CustomerService;
@@ -7,37 +9,42 @@ import za.ac.cput.guiltfreecookie.service.CustomerService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/customer")
+@RequestMapping("/api/v1/customers")
 public class CustomerController {
 
-    private final CustomerService service;
+    private final CustomerService customerService;
 
-    public CustomerController(CustomerService service) {
-        this.service = service;
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
     }
 
     @PostMapping
-    public Customer createCustomer(@RequestBody Customer customer){
-        return service.create(customer);
+    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer){
+        Customer createdCustomer = customerService.create(customer);
+        return new ResponseEntity<>(createdCustomer, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{customerId}")
-    public Customer read(@PathVariable String customerId){
-        return service.read(customerId);
+    @GetMapping("/{email}")
+    public ResponseEntity<Customer> read(@PathVariable String email){
+        Customer customer = customerService.read(email);
+        return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 
     @GetMapping
-    public List<Customer> getAll(){
-        return service.getAll();
+    public ResponseEntity<List<Customer>> getAll(){
+        List<Customer> customers = customerService.getAll();
+        return new ResponseEntity<>(customers, HttpStatus.OK);
     }
 
     @PutMapping
-    public Customer update(@RequestBody Customer customer){
-        return service.update(customer);
+    public ResponseEntity<Customer> updateCustomer(@RequestBody Customer customer){
+        Customer updatedCustomer = customerService.update(customer);
+        return new ResponseEntity<>(updatedCustomer, HttpStatus.OK);
     }
 
-    @DeleteMapping("/{customerId}")
-    public void delete(@PathVariable String customerId){
-        service.delete(customerId);
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> deleteCustomer(@PathVariable String email){
+        customerService.delete(email);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
