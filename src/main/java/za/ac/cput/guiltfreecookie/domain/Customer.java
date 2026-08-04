@@ -1,10 +1,6 @@
 package za.ac.cput.guiltfreecookie.domain;
 
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.Order;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "customers")
