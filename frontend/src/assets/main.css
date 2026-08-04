@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,16 +28,21 @@
     font-size: 1.25rem; /* body 20px */
     line-height: 1.7;
     margin: 0;
+    padding: 0;
   }
 
   h1 {
     @apply text-h1 text-chocolate;
-    font-weight: 500;
+    font-family: "Luckiest Guy", cursive;
+    font-weight: 400;
+    line-height: 1.1;
   }
 
   h2 {
     @apply text-h2 text-chocolate;
+    font-family: "Luckiest Guy", cursive;
     font-weight: 400;
+    line-height: 1.15;
   }
 
   h3 {
@@ -285,4 +292,10 @@
 .accordion-leave-from {
   max-height: 500px;
   opacity: 1;
+}
+
+.luckiest-guy {
+  font-family: "Luckiest Guy", cursive;
+  font-weight: 400;
+  font-style: normal;
 }

@@ -1,7 +1,6 @@
 package za.ac.cput.guiltfreecookie.util;
 
 import org.apache.commons.validator.routines.EmailValidator;
-
 import java.util.regex.Pattern;
 
 public class Helper {
@@ -28,3 +27,4 @@ public class Helper {
         return SA_MOBILE_PATTERN.matcher(validNumber).matches();
     }
 }
+

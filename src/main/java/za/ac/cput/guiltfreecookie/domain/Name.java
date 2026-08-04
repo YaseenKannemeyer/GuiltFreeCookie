@@ -2,13 +2,17 @@ package za.ac.cput.guiltfreecookie.domain;
 
 import jakarta.persistence.Embeddable;
 
+import java.util.Objects;
+
 @Embeddable
 public class Name {
+
     private String firstName;
     private String middleName;
     private String lastName;
 
-    protected Name() {}
+    protected Name() {
+    }
 
     public Name(Builder builder) {
         this.firstName = builder.firstName;
@@ -26,6 +30,18 @@ public class Name {
 
     public String getLastName() {
         return lastName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Name name = (Name) o;
+        return Objects.equals(firstName, name.firstName) && Objects.equals(middleName, name.middleName) && Objects.equals(lastName, name.lastName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(firstName, middleName, lastName);
     }
 
     public static class Builder {
@@ -55,6 +71,8 @@ public class Name {
             return this;
         }
 
-        public Name build() {return new Name(this);}
+        public Name build() {
+            return new Name(this);
+        }
     }
 }
