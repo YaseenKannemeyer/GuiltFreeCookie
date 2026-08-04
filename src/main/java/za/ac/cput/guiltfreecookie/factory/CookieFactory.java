@@ -15,8 +15,8 @@ public class CookieFactory {
             String allergies,
             Double price) {
 
-        if (Helper.isNullOrEmpty(cookieId)
-                || Helper.isNullOrEmpty(description)
+        if (
+                Helper.isNullOrEmpty(description)
                 || Helper.isNullOrEmpty(ingredients)
                 || Helper.isNullOrEmpty(allergies)
                 || price <= 0 ) {

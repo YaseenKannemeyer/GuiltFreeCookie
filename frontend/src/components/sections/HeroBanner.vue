@@ -24,17 +24,16 @@ import BaseButton from "../../components/ui/BaseButton.vue";
         <div class="max-w-xl text-center lg:text-left py-20 lg:py-0">
           <!-- Main Heading -->
           <h1
-            class="font-bold leading-tight text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl"
+            class="font-bold leading-tight text-white text-4xl sm:text-4xl md:text-8xl lg:text-7xl"
           >
-            Craving
-            <span class="text-chocolate">Cookies?</span>
+            Why Feel <span class="text-chocolate">Guilty!?</span>
           </h1>
 
           <!-- Sub Heading -->
           <h2
-            class="mt-3 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
+            class="mt-3 text-2xl sm:text-3xl md:text-4xl lg:text-3xl font-light text-chocolate"
           >
-            We've Got the Crumble!
+            Our Cookies Love You Back
           </h2>
 
           <!-- Mobile Cookie -->
@@ -48,21 +47,29 @@ import BaseButton from "../../components/ui/BaseButton.vue";
 
           <!-- Description -->
           <p
-            class="mt-6 lg:mt-8 text-base sm:text-lg leading-7 lg:leading-8 text-white/90 max-w-lg mx-auto lg:mx-0"
+            class="mt-0 lg:mt-5 text-base sm:text-lg leading-7 lg:leading-8 text-white/90 max-w-lg mx-auto lg:mx-0"
           >
-            From warm ovens to happy moments! Our cookies are made to crumble
-            just right. Sweet, soft, and baked with love in every batch.
+            From low-sugar to high-protein, our cookies are baked with quality
+            ingredients so you can enjoy every bite with confidence.
           </p>
 
           <!-- Buttons -->
           <div
             class="mt-12 flex flex-col md:flex-row gap-4 justify-center lg:justify-start"
           >
-            <BaseButton :to="{ name: 'Products' }" variant="primary" size="lg"
+            <BaseButton
+              class="luckiest-guy"
+              :to="{ name: 'Products' }"
+              variant="primary"
+              size="lg"
               >Buy Now</BaseButton
             >
 
-            <BaseButton :to="{ name: 'Products' }" variant="outline" size="lg"
+            <BaseButton
+              class="hidden md:inline-flex luckiest-guy"
+              :to="{ name: 'Products' }"
+              variant="outline"
+              size="lg"
               >See Menu</BaseButton
             >
           </div>
@@ -72,13 +79,13 @@ import BaseButton from "../../components/ui/BaseButton.vue";
         <div class="relative hidden md:block h-[650px]">
           <!-- Vertical Text -->
           <div
-            class="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 rotate-180"
+            class="hidden lg:block absolute top-1/2 right-[-380px] -translate-y-1/2 rotate-180"
             style="writing-mode: vertical-rl"
           >
             <h2
-              class="ml-[-150px] text-[250px] font-bold text-[#D7B07D] opacity-90"
+              class="text-[210px] font-bold text-[#D7B07D] opacity-90 leading-none text-center select-none pointer-events-none"
             >
-              Cookies
+              GuiltFree
             </h2>
           </div>
 

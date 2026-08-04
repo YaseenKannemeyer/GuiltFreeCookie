@@ -6,6 +6,14 @@
  * Variants:
  *   light  — on cream/background surface (homepage featured grid)
  *   dark   — on chocolate background (related cookies on product page)
+ *
+ * NOTE: your backend Cookie entity currently only returns:
+ *   cookieId, category, description, ingredients, allergies, price
+ * It does NOT return: name, image, rating, badges.
+ * This component now falls back gracefully when those are missing,
+ * using `description` as the title and `category` as a badge.
+ * Once you add real `name`/`imageUrl`/`rating` columns, this will
+ * automatically prefer those instead.
  */
 import { computed } from "vue";
 import { useRouter } from "vue-router";
@@ -25,8 +33,52 @@ const { currency, truncate } = useFormat();
 
 const isDark = computed(() => props.variant === "dark");
 
+// Your entity's primary key is `cookieId`, not `id`.
+const cookieId = computed(() => props.cookie.cookieId ?? props.cookie.id);
+
+// Title: prefer a real `name` field if you add one later, else fall back
+// to description (truncated), else a generic label so it never renders blank.
+const displayName = computed(
+  () =>
+    props.cookie.name ||
+    (props.cookie.description
+      ? truncate(props.cookie.description, 40)
+      : "Cookie"),
+);
+
+// Description: avoid showing the same text twice when there's no separate
+// name field — if description is being used as the title, show category
+// or ingredients as the subtext instead.
+const displayDescription = computed(() => {
+  if (props.cookie.name) return props.cookie.description || "";
+  return props.cookie.ingredients || "";
+});
+
+// Image: fall back to a placeholder so <img> never gets `undefined`.
+const displayImage = computed(
+  () =>
+    props.cookie.image ||
+    props.cookie.imageUrl ||
+    "/images/cookie-placeholder.png",
+);
+
+// Badges: fall back to category as a single badge if no badges array exists.
+const displayBadges = computed(() => {
+  if (Array.isArray(props.cookie.badges) && props.cookie.badges.length) {
+    return props.cookie.badges;
+  }
+  return props.cookie.category
+    ? [props.cookie.category.replace(/_/g, " ")]
+    : [];
+});
+
+// Rating: only render RatingStars if a real rating exists.
+const hasRating = computed(
+  () => props.cookie.rating !== undefined && props.cookie.rating !== null,
+);
+
 const goToDetails = () =>
-  router.push({ name: "Products", params: { id: props.cookie.id } });
+  router.push({ name: "ProductDetail", params: { id: cookieId.value } });
 </script>
 
 <template>
@@ -40,9 +92,12 @@ const goToDetails = () =>
     @click="goToDetails"
   >
     <!-- Badges -->
-    <div class="absolute top-5 left-5 z-10 flex flex-col gap-1.5 items-start">
+    <div
+      v-if="displayBadges.length"
+      class="absolute top-5 left-5 z-10 flex flex-col gap-1.5 items-start"
+    >
       <BaseBadge
-        v-for="(b, i) in cookie.badges"
+        v-for="(b, i) in displayBadges"
         :key="i"
         :variant="isDark ? 'primary' : 'chocolate'"
         size="sm"
@@ -61,6 +116,7 @@ const goToDetails = () =>
           : 'bg-cream-100 text-chocolate/60 hover:bg-primary hover:text-chocolate',
       ]"
       aria-label="Quick add to cart"
+      @click.stop
     >
       <ShoppingBagIcon class="h-5 w-5" />
     </button>
@@ -79,8 +135,8 @@ const goToDetails = () =>
         ]"
       >
         <img
-          :src="cookie.image"
-          :alt="cookie.name"
+          :src="displayImage"
+          :alt="displayName"
           loading="lazy"
           class="w-full h-full object-cover"
         />
@@ -96,19 +152,25 @@ const goToDetails = () =>
             isDark ? 'text-cream' : 'text-chocolate',
           ]"
         >
-          {{ cookie.name }}
+          {{ displayName }}
         </h3>
       </div>
 
-      <RatingStars :rating="cookie.rating" :show-value="true" size="sm" />
+      <RatingStars
+        v-if="hasRating"
+        :rating="cookie.rating"
+        :show-value="true"
+        size="sm"
+      />
 
       <p
+        v-if="displayDescription"
         :class="[
           'text-card leading-relaxed min-h-[3.5rem]',
           isDark ? 'text-cream/70' : 'text-chocolate/60',
         ]"
       >
-        {{ truncate(cookie.description, 90) }}
+        {{ truncate(displayDescription, 90) }}
       </p>
 
       <div class="flex items-center justify-between pt-3">
@@ -118,7 +180,7 @@ const goToDetails = () =>
             isDark ? 'text-primary-200' : 'text-chocolate',
           ]"
         >
-          {{ currency(cookie.price) }}
+          R{{ cookie.price }}
         </span>
         <div class="flex items-center gap-2">
           <button

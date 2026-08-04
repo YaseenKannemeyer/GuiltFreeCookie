@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import ProductListView from "../views/ProductListView.vue";
 import ProductDetailView from "../views/ProductDetailView.vue";
+import AdminDashboardView from "../views/AdminDashboardView.vue";
 
 const routes = [
   {
@@ -30,6 +31,16 @@ const routes = [
     name: "About",
     component: () => import("../views/AboutView.vue"),
     meta: { title: "About · CrumbleMagic" },
+  },
+
+  // =========================
+  // Admin Routes
+  // =========================
+  {
+    path: "/admin",
+    name: "AdminDashboard",
+    component: AdminDashboardView,
+    meta: { title: "Admin Dashboard" },
   },
 ];
 

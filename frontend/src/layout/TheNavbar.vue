@@ -76,7 +76,7 @@ const onCartClick = () => {
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-cookie',
       isHomePage && !scrolled
         ? 'bg-transparent py-5'
-        : 'bg-background/85 backdrop-blur-md shadow-soft py-3',
+        : 'bg-[#e3d9c8] backdrop-blur-3xl shadow-soft py-3',
     ]"
   >
     <div class="container-magic flex items-center justify-between">
@@ -86,10 +86,9 @@ const onCartClick = () => {
         class="flex items-center gap-2 group"
         @click="closeSidebar"
       >
-        <span class="text-2xl">🍪</span>
         <span
           :class="[
-            'font-bold text-2xl tracking-tight transition-colors',
+            'font-bold text-2xl lg:text-4xl tracking-tight transition-colors luckiest-guy',
             isHomePage && !scrolled ? 'text-chocolate' : 'text-chocolate',
           ]"
         >
