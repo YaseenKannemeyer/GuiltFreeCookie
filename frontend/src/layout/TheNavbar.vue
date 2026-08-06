@@ -6,8 +6,9 @@
  * - Desktop: logo + nav links + cart icon + count badge.
  * - Mobile: hamburger that toggles a slide-in sidebar.
  */
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { RouterLink, useRouter, useRoute } from "vue-router";
+import {ref, computed, onMounted, onUnmounted} from "vue";
+import {RouterLink, useRouter, useRoute} from "vue-router";
+import {useAuthStore} from "../stores/authStore";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -18,11 +19,18 @@ import {
   CubeIcon,
   InformationCircleIcon,
   PhoneIcon,
+  ArrowRightOnRectangleIcon
 } from "@heroicons/vue/24/outline";
 
+const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
+
 const sidebarOpen = ref(false);
+const scrolled = ref(false);
 
 const isHomePage = computed(() => route.name === "Home");
+const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
@@ -31,48 +39,59 @@ const toggleSidebar = () => {
 const closeSidebar = () => {
   sidebarOpen.value = false;
 };
-const router = useRouter();
-const route = useRoute();
-const scrolled = ref(false);
 
 const onScroll = () => {
   scrolled.value = window.scrollY > 30;
 };
 
-onMounted(() => window.addEventListener("scroll", onScroll, { passive: true }));
+const onAccountClick = () => {
+  if (isAuthenticated.value) {
+    router.push({name: "CustomerDashboard"});
+  } else {
+    router.push({name: "Login"});
+  }
+}
+
+const onLogoutClick = () => {
+  authStore.logout();
+  router.push({name: "Home"});
+  closeSidebar();
+}
+
+onMounted(() => window.addEventListener("scroll", onScroll, {passive: true}));
 onUnmounted(() => window.removeEventListener("scroll", onScroll));
 
 const navLinks = [
   {
     label: "Home",
-    to: { name: "Home" },
+    to: {name: "Home"},
     icon: HomeIcon,
   },
   {
     label: "Products",
-    to: { name: "Products" },
+    to: {name: "Products"},
     icon: CubeIcon,
   },
   {
     label: "About",
-    to: { name: "About" },
+    to: {name: "About"},
     icon: InformationCircleIcon,
   },
   {
     label: "Contact",
-    to: { name: "Contact" },
+    to: {name: "Contact"},
     icon: PhoneIcon,
   },
 ];
 
 const onCartClick = () => {
-  router.push({ name: "Products" });
+  router.push({name: "Products"});
 };
 </script>
 
 <template>
   <header
-    :class="[
+      :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-cookie',
       isHomePage && !scrolled
         ? 'bg-transparent py-5'
@@ -82,12 +101,12 @@ const onCartClick = () => {
     <div class="container-magic flex items-center justify-between">
       <!-- Logo -->
       <RouterLink
-        :to="{ name: 'Home' }"
-        class="flex items-center gap-2 group"
-        @click="closeSidebar"
+          :to="{ name: 'Home' }"
+          class="flex items-center gap-2 group"
+          @click="closeSidebar"
       >
         <span
-          :class="[
+            :class="[
             'font-bold text-2xl lg:text-4xl tracking-tight transition-colors luckiest-guy',
             isHomePage && !scrolled ? 'text-chocolate' : 'text-chocolate',
           ]"
@@ -97,7 +116,7 @@ const onCartClick = () => {
               'transition-colors duration-300',
               isHomePage && !scrolled ? 'text-white' : 'text-primary',
             ]"
-            >Cookie
+        >Cookie
           </span>
         </span>
       </RouterLink>
@@ -105,11 +124,11 @@ const onCartClick = () => {
       <!-- Desktop nav -->
       <nav class="hidden lg:flex items-center gap-10">
         <RouterLink
-          v-for="link in navLinks"
-          :key="link.label"
-          :to="link.to"
-          class="nav-link text-card font-medium"
-          active-class="router-link-active"
+            v-for="link in navLinks"
+            :key="link.label"
+            :to="link.to"
+            class="nav-link text-card font-medium"
+            active-class="router-link-active"
         >
           {{ link.label }}
         </RouterLink>
@@ -118,52 +137,64 @@ const onCartClick = () => {
       <!-- Right actions -->
       <div class="flex items-center gap-3">
         <button
-          type="button"
-          :class="[
+            type="button"
+            :class="[
             'hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all',
             isHomePage && !scrolled
               ? 'text-white hover:bg-white/10'
               : 'text-chocolate hover:bg-cream-100',
           ]"
-          aria-label="Search"
-          @click="router.push({ name: 'Products' })"
+            aria-label="Search"
+            @click="router.push({ name: 'Products' })"
         >
-          <MagnifyingGlassIcon class="h-5 w-5" />
+          <MagnifyingGlassIcon class="h-5 w-5"/>
         </button>
+
         <button
-          type="button"
-          :class="[
+            type="button"
+            :class="[
             'hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all',
             isHomePage && !scrolled
               ? 'text-white hover:bg-white/10'
               : 'text-chocolate hover:bg-cream-100',
+              isAuthenticated ? 'border-2 border-primary/30' : ''
           ]"
-          aria-label="Account"
+            aria-label="Account"
+            @click="onAccountClick"
         >
-          <UserIcon class="h-5 w-5" />
+          <UserIcon class="h-5 w-5"/>
         </button>
+
+        <!---Logout Button (Desktop Only, visible when logged in) -->
+        <button v-if="isAuthenticated"
+                type="button"
+                class="hidden sm:flex h-11 w-11 items-center justify-center rounded-full text-red-600 hover:bg-red-50
+                transition-all"
+                aria-label="Logout"
+                @click="onLogoutClick"
+        ></button>
 
         <!-- Cart with badge -->
         <button
-          type="button"
-          class="relative h-11 w-11 flex items-center justify-center rounded-full bg-chocolate text-cream hover:bg-chocolate-600 hover:shadow-soft transition-all hover:-translate-y-0.5"
-          aria-label="Open cart"
+            type="button"
+            class="relative h-11 w-11 flex items-center justify-center rounded-full bg-chocolate text-cream hover:bg-chocolate-600 hover:shadow-soft transition-all hover:-translate-y-0.5"
+            aria-label="Open cart"
         >
-          <ShoppingBagIcon class="h-5 w-5" />
+          <ShoppingBagIcon class="h-5 w-5"/>
         </button>
 
         <!-- Hamburger (mobile) -->
         <button
-          type="button"
-          :class="[
+            type="button"
+            :class="[
             'lg:hidden h-11 w-11 flex items-center justify-center rounded-full transition-all',
             isHomePage && !scrolled ? 'text-chocolate' : 'text-chocolate',
           ]"
-          aria-label="Open menu"
-          @click="toggleSidebar"
+            aria-label="Open menu"
+            @click="toggleSidebar"
         >
-          <Bars3Icon v-if="!sidebarOpen" class="h-6 w-6" />
-          <XMarkIcon v-else class="h-6 w-6" />
+          <Bars3Icon v-if="!sidebarOpen" class="h-6 w-6"/>
+          <XMarkIcon v-else class="h-6 w-6"/>
         </button>
       </div>
     </div>
@@ -172,41 +203,41 @@ const onCartClick = () => {
     <Teleport to="body">
       <Transition name="overlay">
         <div
-          v-if="sidebarOpen"
-          class="fixed inset-0 z-[70] bg-chocolate/50 backdrop-blur-sm lg:hidden"
-          @click="closeSidebar"
+            v-if="sidebarOpen"
+            class="fixed inset-0 z-[70] bg-chocolate/50 backdrop-blur-sm lg:hidden"
+            @click="closeSidebar"
         />
       </Transition>
       <Transition name="drawer">
         <aside
-          v-if="sidebarOpen"
-          class="fixed top-0 right-0 z-[71] h-full w-80 max-w-[85vw] bg-background shadow-soft-xl flex flex-col lg:hidden"
+            v-if="sidebarOpen"
+            class="fixed top-0 right-0 z-[71] h-full w-80 max-w-[85vw] bg-background shadow-soft-xl flex flex-col lg:hidden"
         >
           <div
-            class="flex items-center justify-between px-6 py-5 border-b border-cream-300"
+              class="flex items-center justify-between px-6 py-5 border-b border-cream-300"
           >
             <span class="font-bold text-2xl text-chocolate">
               GuiltFree<span class="text-primary">Cookie</span>
             </span>
             <button
-              type="button"
-              class="p-2 rounded-full text-chocolate/60 hover:text-chocolate hover:bg-cream-100 transition-colors"
-              aria-label="Close menu"
-              @click="closeSidebar"
+                type="button"
+                class="p-2 rounded-full text-chocolate/60 hover:text-chocolate hover:bg-cream-100 transition-colors"
+                aria-label="Close menu"
+                @click="closeSidebar"
             >
-              <XMarkIcon class="h-6 w-6" />
+              <XMarkIcon class="h-6 w-6"/>
             </button>
           </div>
           <nav class="flex-1 px-6 py-8 flex flex-col gap-2">
             <RouterLink
-              v-for="link in navLinks"
-              :key="link.label"
-              :to="link.to"
-              class="flex items-center gap-4 px-4 py-4 rounded-2xl text-lg font-medium text-chocolate hover:bg-cream-100 transition-all"
-              active-class="bg-primary/15 text-chocolate"
-              @click="closeSidebar"
+                v-for="link in navLinks"
+                :key="link.label"
+                :to="link.to"
+                class="flex items-center gap-4 px-4 py-4 rounded-2xl text-lg font-medium text-chocolate hover:bg-cream-100 transition-all"
+                active-class="bg-primary/15 text-chocolate"
+                @click="closeSidebar"
             >
-              <component :is="link.icon" class="h-6 w-6 text-primary" />
+              <component :is="link.icon" class="h-6 w-6 text-primary"/>
 
               <span>
                 {{ link.label }}
@@ -215,25 +246,25 @@ const onCartClick = () => {
           </nav>
           <div class="px-6 py-6 border-t border-cream-300 space-y-3">
             <button
-              class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
+                class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
             >
-              <MagnifyingGlassIcon class="h-5 w-5 text-primary" />
+              <MagnifyingGlassIcon class="h-5 w-5 text-primary"/>
               <span>Search</span>
             </button>
 
             <button
-              class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
+                class="w-full flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-cream-100 transition"
             >
-              <UserIcon class="h-5 w-5 text-primary" />
+              <UserIcon class="h-5 w-5 text-primary"/>
               <span>My Account</span>
             </button>
 
             <RouterLink
-              :to="{ name: 'Products' }"
-              class="btn-primary btn-block flex items-center justify-center gap-2"
-              @click="closeSidebar"
+                :to="{ name: 'Products' }"
+                class="btn-primary btn-block flex items-center justify-center gap-2"
+                @click="closeSidebar"
             >
-              <ShoppingBagIcon class="h-5 w-5" />
+              <ShoppingBagIcon class="h-5 w-5"/>
               Order Now
             </RouterLink>
           </div>

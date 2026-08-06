@@ -1,5 +1,5 @@
 /**
- * Mock cookie catalog — CrumbleMagic
+ * Mock cookie catalog — GuiltFreeCookie
  * 18 cookies across 5 categories: Chocolate, Stuffed, Classic, Seasonal, Vegan
  *
  * Each cookie matches the canonical schema:
@@ -520,7 +520,7 @@ export const testimonials = [
     avatar:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop',
     rating: 5,
-    text: 'CrumbleMagic turned our anniversary into a moment. The caramel melt cookies arrived warm-packaged and absolutely divine. This is what premium tastes like.',
+    text: 'GuiltFreeCookie turned our anniversary into a moment. The caramel melt cookies arrived warm-packaged and absolutely divine. This is what premium tastes like.',
   },
   {
     id: 2,
@@ -529,7 +529,7 @@ export const testimonials = [
     avatar:
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80&auto=format&fit=crop',
     rating: 5,
-    text: 'We stock CrumbleMagic at our cafe and customers drive across town for them. Consistent quality, beautiful packaging, and that signature soft-baked texture.',
+    text: 'We stock GuiltFreeCookie at our cafe and customers drive across town for them. Consistent quality, beautiful packaging, and that signature soft-baked texture.',
   },
   {
     id: 3,
@@ -538,7 +538,7 @@ export const testimonials = [
     avatar:
       'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80&auto=format&fit=crop',
     rating: 5,
-    text: 'I have reviewed dozens of cookie brands. None come close to the texture and flavour balance at CrumbleMagic. The stuffed series is genuinely art.',
+    text: 'I have reviewed dozens of cookie brands. None come close to the texture and flavour balance at GuiltFreeCookie. The stuffed series is genuinely art.',
   },
   {
     id: 4,
@@ -556,7 +556,7 @@ export const testimonials = [
     avatar:
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80&auto=format&fit=crop',
     rating: 5,
-    text: 'As a vegan I usually feel like an afterthought at bakeries. CrumbleMagic’s vegan range is genuinely the best — I had to check the box twice to confirm it was dairy-free.',
+    text: 'As a vegan I usually feel like an afterthought at bakeries. GuiltFreeCookie’s vegan range is genuinely the best — I had to check the box twice to confirm it was dairy-free.',
   },
 ]
 
@@ -571,13 +571,13 @@ export const faqs = [
     id: 2,
     question: 'Do you use any artificial flavours or preservatives?',
     answer:
-      'Never. Every CrumbleMagic cookie is made with 100% natural ingredients — real Belgian chocolate, French butter, Madagascan vanilla, and stone-ground spices. No preservatives, no artificial flavourings, no shortcuts.',
+      'Never. Every GuiltFreeCookie cookie is made with 100% natural ingredients — real Belgian chocolate, French butter, Madagascan vanilla, and stone-ground spices. No preservatives, no artificial flavourings, no shortcuts.',
   },
   {
     id: 3,
     question: 'How are the cookies packaged to stay fresh during delivery?',
     answer:
-      'Each cookie is individually sealed in food-grade kraft pouches to lock in freshness, then packed in a protective CrumbleMagic gift box with thermal padding for temperature-sensitive items. We use carbon-neutral couriers for all deliveries.',
+      'Each cookie is individually sealed in food-grade kraft pouches to lock in freshness, then packed in a protective GuiltFreeCookie gift box with thermal padding for temperature-sensitive items. We use carbon-neutral couriers for all deliveries.',
   },
   {
     id: 4,

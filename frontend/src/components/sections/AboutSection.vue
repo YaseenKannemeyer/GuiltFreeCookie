@@ -32,7 +32,7 @@ const ingredients = [
           <div class="relative rounded-[2.5rem] overflow-hidden shadow-soft-lg">
             <img
               :src="aboutImage"
-              alt="A stack of freshly baked CrumbleMagic cookies"
+              alt="A stack of freshly baked GuiltFree cookies"
               class="w-full h-[28rem] lg:h-[36rem] object-cover"
             />
             <!-- Floating ingredient pill -->

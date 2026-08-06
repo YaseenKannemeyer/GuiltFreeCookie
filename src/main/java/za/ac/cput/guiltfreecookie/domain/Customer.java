@@ -10,7 +10,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "customers")
-public class Customer  {
+public class Customer implements UserDetails {
 
     @Id
     @Column(name = "customer_email")
@@ -45,8 +45,12 @@ public class Customer  {
         return mobileNumber;
     }
 
-    public String getPassword() {
-        return password;
+    public String getUsername() {
+        return this.customerEmail;
+    }
+
+    public String getPassword(){
+        return this.password;
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

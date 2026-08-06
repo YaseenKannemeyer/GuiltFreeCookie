@@ -123,7 +123,7 @@ const socials = [
         <RouterLink to="/" class="flex items-center gap-2 mb-5">
           <span class="text-2xl">🍪</span>
           <span class="font-bold text-2xl"
-            >Crumble<span class="text-primary">Magic</span></span
+            >GuiltFree<span class="text-primary">Cookie</span></span
           >
         </RouterLink>
         <p class="text-cream/70 text-card max-w-sm mb-6">
@@ -145,7 +145,7 @@ const socials = [
             >
               <EnvelopeIcon class="h-4 w-4" />
             </span>
-            crumblemagic@gmail.com
+            guiltfreecookie@gmail.com
           </li>
           <li class="flex items-center gap-3">
             <span
@@ -187,7 +187,7 @@ const socials = [
         class="container-magic py-6 flex flex-col md:flex-row items-center justify-between gap-4"
       >
         <p class="text-cream/60 text-sm">
-          © {{ new Date().getFullYear() }} CrumbleMagic. Baked with 🤎 in
+          © {{ new Date().getFullYear() }} GuiltFreeCookie. Baked with 🤎 in
           Colombo.
         </p>
         <div class="flex items-center gap-3">
