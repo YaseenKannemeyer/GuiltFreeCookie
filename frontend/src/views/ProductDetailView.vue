@@ -69,7 +69,7 @@
           <div class="space-y-6">
             <div>
               <p class="text-sm font-medium text-cream-100/50 mb-2">
-                CrumbleMagic Cookies
+                GuiltFree Cookies
               </p>
               <h1 class="text-5xl font-bold leading-tight text-cream-50 mb-3">
                 {{ cookie.description }}
@@ -250,7 +250,7 @@
                 <p class="text-cream-100/70 text-sm mb-3 line-clamp-2">
                   {{
                     related.longDescription ||
-                    "A CrumbleMagic favorite, freshly baked."
+                    "A GuiltFreeCookie favorite, freshly baked."
                   }}
                 </p>
                 <div class="flex items-center justify-between">

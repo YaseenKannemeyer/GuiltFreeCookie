@@ -56,7 +56,7 @@ const features = [
         <span
           class="inline-block text-sm font-medium uppercase tracking-[0.2em] text-primary mb-4"
         >
-          Why CrumbleMagic
+          Why GuiltFreeCookie?
         </span>
         <h2 class="text-cream font-medium mb-4 leading-tight">
           Not All Cookies Are <span class="text-primary">Created Equal</span>
