@@ -8,9 +8,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import za.ac.cput.guiltfreecookie.domain.Admin;
+import za.ac.cput.guiltfreecookie.security.JwtService;
 import za.ac.cput.guiltfreecookie.service.AdminService;
+import za.ac.cput.guiltfreecookie.service.PasswordResetResult;
 
 import java.util.List;
 
@@ -27,6 +30,12 @@ class AdminControllerTest {
     @Mock
     private AdminService adminService;
 
+    @Mock
+    private JwtService jwtService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private AdminController adminController;
 
@@ -39,7 +48,7 @@ class AdminControllerTest {
                 .setFirstName("Jane")
                 .setLastName("Doe")
                 .setEmail("jane.doe@guiltfreecookie.com")
-                .setPassword("SecurePass123")
+                .setPassword("$2a$10$hashedSecurePass123")
                 .setActive(true)
                 .build();
     }
@@ -149,17 +158,20 @@ class AdminControllerTest {
     }
 
     @Test
-    void testLoginSuccess() {
+    void testLoginSuccessReturnsAdminAndToken() {
         Admin credentials = new Admin.Builder()
                 .setEmail("jane.doe@guiltfreecookie.com")
                 .setPassword("SecurePass123")
                 .build();
         when(adminService.login("jane.doe@guiltfreecookie.com", "SecurePass123")).thenReturn(existingAdmin);
+        when(jwtService.generateToken("AD001", "jane.doe@guiltfreecookie.com")).thenReturn("fake.jwt.token");
 
         ResponseEntity<?> result = adminController.login(credentials);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals(existingAdmin, result.getBody());
+        LoginResponse body = (LoginResponse) result.getBody();
+        assertEquals(existingAdmin, body.getAdmin());
+        assertEquals("fake.jwt.token", body.getToken());
     }
 
     @Test
@@ -197,21 +209,23 @@ class AdminControllerTest {
     }
 
     @Test
-    void testResetPasswordFound() {
-        Admin reset = new Admin.Builder().copy(existingAdmin).setPassword("TempPass1234").build();
-        when(adminService.resetPassword("AD001")).thenReturn(reset);
+    void testResetPasswordFoundReturnsAdminAndTemporaryPassword() {
+        Admin reset = new Admin.Builder().copy(existingAdmin).setPassword("hashed-temp").build();
+        PasswordResetResult resetResult = new PasswordResetResult(reset, "TempPass1234");
+        when(adminService.resetPassword("AD001")).thenReturn(resetResult);
 
-        ResponseEntity<Admin> result = adminController.resetPassword("AD001");
+        ResponseEntity<PasswordResetResult> result = adminController.resetPassword("AD001");
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        assertEquals("TempPass1234", result.getBody().getPassword());
+        assertEquals("TempPass1234", result.getBody().getTemporaryPassword());
+        assertEquals("hashed-temp", result.getBody().getAdmin().getPassword());
     }
 
     @Test
     void testResetPasswordNotFound() {
         when(adminService.resetPassword("missing")).thenReturn(null);
 
-        ResponseEntity<Admin> result = adminController.resetPassword("missing");
+        ResponseEntity<PasswordResetResult> result = adminController.resetPassword("missing");
 
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
     }
@@ -230,6 +244,7 @@ class AdminControllerTest {
     @Test
     void testChangePasswordWithWrongCurrentPasswordReturnsUnauthorized() {
         when(adminService.read("AD001")).thenReturn(existingAdmin);
+        when(passwordEncoder.matches("WrongCurrent", existingAdmin.getPassword())).thenReturn(false);
 
         ResponseEntity<?> result = adminController.changePassword(
                 "AD001", changePasswordRequest("WrongCurrent", "NewPassword456"));
@@ -242,6 +257,7 @@ class AdminControllerTest {
     @Test
     void testChangePasswordWithEmptyNewPasswordReturnsBadRequest() {
         when(adminService.read("AD001")).thenReturn(existingAdmin);
+        when(passwordEncoder.matches("SecurePass123", existingAdmin.getPassword())).thenReturn(true);
 
         ResponseEntity<?> result = adminController.changePassword(
                 "AD001", changePasswordRequest("SecurePass123", ""));
@@ -252,8 +268,9 @@ class AdminControllerTest {
 
     @Test
     void testChangePasswordWithCorrectCurrentPasswordSucceeds() {
-        Admin changed = new Admin.Builder().copy(existingAdmin).setPassword("NewPassword456").build();
+        Admin changed = new Admin.Builder().copy(existingAdmin).setPassword("hashed-new-password").build();
         when(adminService.read("AD001")).thenReturn(existingAdmin);
+        when(passwordEncoder.matches("SecurePass123", existingAdmin.getPassword())).thenReturn(true);
         when(adminService.changePassword("AD001", "NewPassword456")).thenReturn(changed);
 
         ResponseEntity<?> result = adminController.changePassword(

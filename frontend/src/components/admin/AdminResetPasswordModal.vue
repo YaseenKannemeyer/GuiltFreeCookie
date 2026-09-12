@@ -36,9 +36,9 @@ watch(
 const confirmReset = async () => {
   loading.value = true;
   try {
-    const updated = await adminApi.resetPassword(props.admin.adminId);
-    tempPassword.value = updated.password;
-    emit("reset", updated);
+    const result = await adminApi.resetPassword(props.admin.adminId);
+    tempPassword.value = result.temporaryPassword;
+    emit("reset", result.admin);
   } catch (error) {
     console.error("Failed to reset password:", error);
     showToast("Failed to reset password.", "error");

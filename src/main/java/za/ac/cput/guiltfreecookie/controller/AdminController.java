@@ -3,25 +3,31 @@ package za.ac.cput.guiltfreecookie.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import za.ac.cput.guiltfreecookie.domain.Admin;
 
+import za.ac.cput.guiltfreecookie.security.JwtService;
 import za.ac.cput.guiltfreecookie.service.AdminService;
+import za.ac.cput.guiltfreecookie.service.PasswordResetResult;
 import za.ac.cput.guiltfreecookie.util.Helper;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin
 public class AdminController {
 
     private final AdminService adminService;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, JwtService jwtService, PasswordEncoder passwordEncoder) {
         this.adminService = adminService;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/create")
@@ -83,7 +89,8 @@ public class AdminController {
                     .body("Invalid email or password");
         }
 
-        return ResponseEntity.ok(foundAdmin);
+        String token = jwtService.generateToken(foundAdmin.getAdminId(), foundAdmin.getEmail());
+        return ResponseEntity.ok(new LoginResponse(foundAdmin, token));
     }
 
     @PutMapping("/active/{id}")
@@ -98,14 +105,14 @@ public class AdminController {
     }
 
     @PostMapping("/resetPassword/{id}")
-    public ResponseEntity<Admin> resetPassword(@PathVariable String id) {
-        Admin updated = adminService.resetPassword(id);
+    public ResponseEntity<PasswordResetResult> resetPassword(@PathVariable String id) {
+        PasswordResetResult result = adminService.resetPassword(id);
 
-        if (updated == null) {
+        if (result == null) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping("/changePassword/{id}")
@@ -118,7 +125,7 @@ public class AdminController {
             return ResponseEntity.notFound().build();
         }
 
-        if (!admin.getPassword().equals(request.getCurrentPassword())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), admin.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Current password is incorrect");
         }
