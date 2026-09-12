@@ -21,8 +21,8 @@ const submit = async () => {
   error.value = "";
   loading.value = true;
   try {
-    const admin = await adminApi.login(email.value, password.value);
-    login(admin, remember.value);
+    const { admin, token } = await adminApi.login(email.value, password.value);
+    login(admin, token, remember.value);
     router.push(route.query.redirect || { name: "AdminDashboard" });
   } catch (err) {
     error.value =

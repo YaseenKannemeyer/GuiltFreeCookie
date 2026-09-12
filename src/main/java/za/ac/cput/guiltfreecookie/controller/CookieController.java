@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/cookie")
-@CrossOrigin(origins = "http://localhost:5173")
 public class CookieController {
 
     private final CookieService cookieService;
@@ -35,13 +34,11 @@ public class CookieController {
     }
 
 
-    @CrossOrigin
     @GetMapping("/getAll")
     public ResponseEntity<List<Cookie>> getAll() {
         return ResponseEntity.ok(cookieService.getAllActive());
     }
 
-    @CrossOrigin
     @GetMapping("/getAllForAdmin")
     public ResponseEntity<List<Cookie>> getAllForAdmin() {
         return ResponseEntity.ok(cookieService.getAll());

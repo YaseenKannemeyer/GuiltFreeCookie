@@ -1,20 +1,23 @@
 /**
- * useAdminAuth — client-side-only admin session gate.
+ * useAdminAuth — admin session backed by a real JWT from the backend.
  *
- * There is no Spring Security / token verification behind this yet — it
- * just remembers the Admin record returned by POST /admin/login, so the
- * /admindashboard routes can be blocked until someone has been through
- * the /admin login screen.
+ * POST /admin/login now returns { admin, token }. The token is what
+ * actually gates every /admin/** and admin-only /cookie/** request on the
+ * server (see SecurityConfig + JwtAuthenticationFilter) — it is a real,
+ * expiring credential, not just a client-side flag.
  *
- * "Remember me" decides where that record is kept: localStorage survives
- * browser restarts, sessionStorage clears when the tab closes. Only one
- * of the two is ever written at a time so there's a single source of truth.
+ * "Remember me" decides where that session is kept: localStorage survives
+ * browser restarts, sessionStorage clears when the tab closes. Only one of
+ * the two is ever written at a time so there's a single source of truth.
+ * Either way the token still expires server-side after app.jwt.expiration-
+ * minutes — "remember me" means "stay logged in without re-entering your
+ * password for that long," not "forever."
  */
 import { ref, computed } from "vue";
 
 const STORAGE_KEY = "gfc_admin_session";
 
-function readStoredAdmin() {
+function readStoredSession() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
     return JSON.parse(raw || "null");
@@ -23,11 +26,12 @@ function readStoredAdmin() {
   }
 }
 
-const admin = ref(readStoredAdmin());
+const initialSession = readStoredSession();
+const admin = ref(initialSession?.admin ?? null);
+let token = initialSession?.token ?? null;
 
-function login(adminRecord, remember = false) {
-  admin.value = adminRecord;
-  const json = JSON.stringify(adminRecord);
+function persist(remember) {
+  const json = JSON.stringify({ admin: admin.value, token });
 
   if (remember) {
     localStorage.setItem(STORAGE_KEY, json);
@@ -38,8 +42,15 @@ function login(adminRecord, remember = false) {
   }
 }
 
+function login(adminRecord, authToken, remember = false) {
+  admin.value = adminRecord;
+  token = authToken;
+  persist(remember);
+}
+
 function logout() {
   admin.value = null;
+  token = null;
   localStorage.removeItem(STORAGE_KEY);
   sessionStorage.removeItem(STORAGE_KEY);
 }
@@ -48,19 +59,17 @@ function logout() {
 // profile or password, writing back to whichever storage already holds it.
 function updateAdmin(adminRecord) {
   admin.value = adminRecord;
-  const json = JSON.stringify(adminRecord);
-
-  if (localStorage.getItem(STORAGE_KEY) !== null) {
-    localStorage.setItem(STORAGE_KEY, json);
-  } else {
-    sessionStorage.setItem(STORAGE_KEY, json);
-  }
+  persist(localStorage.getItem(STORAGE_KEY) !== null);
 }
 
-// Plain function (not a computed) so the router guard can call it outside
-// component context without importing the whole composable API.
+// Plain functions (not computed/refs) so the router guard and the axios
+// interceptors can read them outside component context.
 export function isAdminLoggedIn() {
-  return !!admin.value;
+  return !!admin.value && !!token;
+}
+
+export function getAdminToken() {
+  return token;
 }
 
 export function useAdminAuth() {

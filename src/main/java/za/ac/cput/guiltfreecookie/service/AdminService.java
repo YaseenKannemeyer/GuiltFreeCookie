@@ -1,6 +1,9 @@
 package za.ac.cput.guiltfreecookie.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import za.ac.cput.guiltfreecookie.domain.Admin;
 import za.ac.cput.guiltfreecookie.repository.AdminRepository;
@@ -8,6 +11,7 @@ import za.ac.cput.guiltfreecookie.repository.AdminRepository;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 public class AdminService implements IService<Admin, String> {
@@ -16,18 +20,25 @@ public class AdminService implements IService<Admin, String> {
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     private static final int TEMP_PASSWORD_LENGTH = 10;
     private static final long TEMP_PASSWORD_VALID_HOURS = 24;
+    private static final Pattern BCRYPT_HASH_PATTERN = Pattern.compile("^\\$2[aby]\\$");
 
     private final AdminRepository adminRepository;
+    private final PasswordEncoder passwordEncoder;
     private final SecureRandom random = new SecureRandom();
 
     @Autowired
-    public AdminService(AdminRepository adminRepository) {
+    public AdminService(AdminRepository adminRepository, PasswordEncoder passwordEncoder) {
         this.adminRepository = adminRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public Admin create(Admin admin) {
-        return adminRepository.save(admin);
+        Admin toSave = new Admin.Builder()
+                .copy(admin)
+                .setPassword(passwordEncoder.encode(admin.getPassword()))
+                .build();
+        return adminRepository.save(toSave);
     }
 
     @Override
@@ -79,7 +90,7 @@ public class AdminService implements IService<Admin, String> {
             return null;
         }
 
-        return admin.getPassword().equals(password) ? admin : null;
+        return passwordEncoder.matches(password, admin.getPassword()) ? admin : null;
     }
 
     public Admin setActive(String id, boolean active) {
@@ -97,20 +108,22 @@ public class AdminService implements IService<Admin, String> {
         return adminRepository.save(updated);
     }
 
-    public Admin resetPassword(String id) {
+    public PasswordResetResult resetPassword(String id) {
         Admin existing = adminRepository.findById(id).orElse(null);
 
         if (existing == null) {
             return null;
         }
 
+        String temporaryPassword = generateTempPassword();
         Admin updated = new Admin.Builder()
                 .copy(existing)
-                .setPassword(generateTempPassword())
+                .setPassword(passwordEncoder.encode(temporaryPassword))
                 .setPasswordExpiresAt(LocalDateTime.now().plusHours(TEMP_PASSWORD_VALID_HOURS))
                 .build();
 
-        return adminRepository.save(updated);
+        Admin saved = adminRepository.save(updated);
+        return new PasswordResetResult(saved, temporaryPassword);
     }
 
     public Admin changePassword(String id, String newPassword) {
@@ -122,11 +135,27 @@ public class AdminService implements IService<Admin, String> {
 
         Admin updated = new Admin.Builder()
                 .copy(existing)
-                .setPassword(newPassword)
+                .setPassword(passwordEncoder.encode(newPassword))
                 .setPasswordExpiresAt(null)
                 .build();
 
         return adminRepository.save(updated);
+    }
+
+    // Runs once at startup so admins created before password hashing was added
+    // (plain text in the database) can still log in — their existing password
+    // keeps working, only its stored form changes from plain text to a hash.
+    @EventListener(ApplicationReadyEvent.class)
+    public void migratePlaintextPasswords() {
+        for (Admin admin : adminRepository.findAll()) {
+            if (!BCRYPT_HASH_PATTERN.matcher(admin.getPassword()).lookingAt()) {
+                Admin rehashed = new Admin.Builder()
+                        .copy(admin)
+                        .setPassword(passwordEncoder.encode(admin.getPassword()))
+                        .build();
+                adminRepository.save(rehashed);
+            }
+        }
     }
 
     private String generateTempPassword() {
