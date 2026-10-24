@@ -12,6 +12,8 @@ import za.ac.cput.guiltfreecookie.dto.catalog.CookieSummary;
 import za.ac.cput.guiltfreecookie.dto.catalog.PageResponse;
 import za.ac.cput.guiltfreecookie.service.catalog.CatalogService;
 import za.ac.cput.guiltfreecookie.service.catalog.StockRules;
+import za.ac.cput.guiltfreecookie.service.engagement.NoPurchaseVerifier;
+import za.ac.cput.guiltfreecookie.service.engagement.ReviewService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Runs the real queries (atomic stock update, search specification) against H2.
 @DataJpaTest
-@Import({CatalogService.class, StockRules.class, za.ac.cput.guiltfreecookie.service.engagement.ReviewService.class, za.ac.cput.guiltfreecookie.service.engagement.NoPurchaseVerifier.class})
+@Import({CatalogService.class, StockRules.class, ReviewService.class, NoPurchaseVerifier.class})
 class CookieRepositoryTest {
 
     @Autowired

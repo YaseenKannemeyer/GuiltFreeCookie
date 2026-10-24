@@ -18,6 +18,7 @@ import za.ac.cput.guiltfreecookie.exception.NotFoundException;
 import za.ac.cput.guiltfreecookie.repository.CookieImageRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieVariantRepository;
+import za.ac.cput.guiltfreecookie.service.engagement.ReviewService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,6 +41,8 @@ class CatalogServiceTest {
     private CookieVariantRepository variantRepository;
     @Mock
     private CookieImageRepository imageRepository;
+    @Mock
+    private ReviewService reviewService;
     private CatalogService service;
 
     private final Cookie chunk = new Cookie.Builder()
@@ -54,7 +57,7 @@ class CatalogServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CatalogService(cookieRepository, variantRepository, imageRepository, new StockRules(12), org.mockito.Mockito.mock(za.ac.cput.guiltfreecookie.service.engagement.ReviewService.class));
+        service = new CatalogService(cookieRepository, variantRepository, imageRepository, new StockRules(12), reviewService);
     }
 
     @Test

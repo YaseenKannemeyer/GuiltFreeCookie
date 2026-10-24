@@ -1,8 +1,10 @@
 package za.ac.cput.guiltfreecookie.domain;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
+// A message from the contact form, kept for the admin inbox.
 @Entity
 @Table(name = "contact_messages")
 public class ContactMessage {
@@ -26,30 +28,34 @@ public class ContactMessage {
     @Column(nullable = false, length = 5000)
     private String message;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ContactStatus status;
 
+    @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    // Admin id.
+    @Column(name = "resolved_by")
     private String resolvedBy;
 
-    protected ContactMessage() {}
+    protected ContactMessage() {
+    }
 
-    private ContactMessage(Builder b) {
-        this.id = b.id;
-        this.name = b.name;
-        this.email = b.email;
-        this.phone = b.phone;
-        this.subject = b.subject;
-        this.message = b.message;
-        this.createdAt = b.createdAt;
-        this.status = b.status;
-        this.resolvedAt = b.resolvedAt;
-        this.resolvedBy = b.resolvedBy;
+    private ContactMessage(Builder builder) {
+        this.id = builder.id;
+        this.name = builder.name;
+        this.email = builder.email;
+        this.phone = builder.phone;
+        this.subject = builder.subject;
+        this.message = builder.message;
+        this.createdAt = builder.createdAt;
+        this.status = builder.status;
+        this.resolvedAt = builder.resolvedAt;
+        this.resolvedBy = builder.resolvedBy;
     }
 
     public String getId() {
@@ -93,7 +99,6 @@ public class ContactMessage {
     }
 
     public static class Builder {
-
         private String id;
         private String name;
         private String email;
@@ -105,67 +110,67 @@ public class ContactMessage {
         private LocalDateTime resolvedAt;
         private String resolvedBy;
 
-        public Builder setId(String value) {
-            this.id = value;
+        public Builder setId(String id) {
+            this.id = id;
             return this;
         }
 
-        public Builder setName(String value) {
-            this.name = value;
+        public Builder setName(String name) {
+            this.name = name;
             return this;
         }
 
-        public Builder setEmail(String value) {
-            this.email = value;
+        public Builder setEmail(String email) {
+            this.email = email;
             return this;
         }
 
-        public Builder setPhone(String value) {
-            this.phone = value;
+        public Builder setPhone(String phone) {
+            this.phone = phone;
             return this;
         }
 
-        public Builder setSubject(String value) {
-            this.subject = value;
+        public Builder setSubject(String subject) {
+            this.subject = subject;
             return this;
         }
 
-        public Builder setMessage(String value) {
-            this.message = value;
+        public Builder setMessage(String message) {
+            this.message = message;
             return this;
         }
 
-        public Builder setCreatedAt(LocalDateTime value) {
-            this.createdAt = value;
+        public Builder setCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
             return this;
         }
 
-        public Builder setStatus(ContactStatus value) {
-            this.status = value;
+        public Builder setStatus(ContactStatus status) {
+            this.status = status;
             return this;
         }
 
-        public Builder setResolvedAt(LocalDateTime value) {
-            this.resolvedAt = value;
+        public Builder setResolvedAt(LocalDateTime resolvedAt) {
+            this.resolvedAt = resolvedAt;
             return this;
         }
 
-        public Builder setResolvedBy(String value) {
-            this.resolvedBy = value;
+        public Builder setResolvedBy(String resolvedBy) {
+            this.resolvedBy = resolvedBy;
             return this;
         }
 
-        public Builder copy(ContactMessage source) {
-            this.id = source.id;
-            this.name = source.name;
-            this.email = source.email;
-            this.phone = source.phone;
-            this.subject = source.subject;
-            this.message = source.message;
-            this.createdAt = source.createdAt;
-            this.status = source.status;
-            this.resolvedAt = source.resolvedAt;
-            this.resolvedBy = source.resolvedBy;
+        public Builder copy(ContactMessage contactMessage) {
+            this.id = contactMessage.id;
+            this.name = contactMessage.name;
+            this.email = contactMessage.email;
+            this.phone = contactMessage.phone;
+            this.subject = contactMessage.subject;
+            this.message = contactMessage.message;
+            this.createdAt = contactMessage.createdAt;
+            this.status = contactMessage.status;
+            this.resolvedAt = contactMessage.resolvedAt;
+            this.resolvedBy = contactMessage.resolvedBy;
             return this;
         }
 

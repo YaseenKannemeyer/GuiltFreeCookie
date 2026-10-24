@@ -1,12 +1,16 @@
 package za.ac.cput.guiltfreecookie.repository;
 
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
-import za.ac.cput.guiltfreecookie.domain.*;
+import org.springframework.stereotype.Repository;
+import za.ac.cput.guiltfreecookie.domain.ContactMessage;
+import za.ac.cput.guiltfreecookie.domain.ContactStatus;
 
-public interface ContactMessageRepository
-    extends JpaRepository<ContactMessage, String>
-{
+import java.util.List;
+
+@Repository
+public interface ContactMessageRepository extends JpaRepository<ContactMessage, String> {
+
     List<ContactMessage> findAllByOrderByCreatedAtDesc();
+
     List<ContactMessage> findByStatusOrderByCreatedAtDesc(ContactStatus status);
 }

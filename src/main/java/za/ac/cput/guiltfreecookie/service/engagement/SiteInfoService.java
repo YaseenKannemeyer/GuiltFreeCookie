@@ -1,50 +1,36 @@
 package za.ac.cput.guiltfreecookie.service.engagement;
 
-import java.util.*;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import za.ac.cput.guiltfreecookie.dto.engagement.RatingSummary;
+import za.ac.cput.guiltfreecookie.dto.engagement.SiteInfo;
 
+// Shop identity from app.site.* plus live review stats. Email templates call setting() directly.
 @Service
 public class SiteInfoService {
 
-    private final Environment env;
-    private final ReviewService reviews;
+    private final Environment environment;
+    private final ReviewService reviewService;
 
-    public SiteInfoService(Environment env, ReviewService reviews) {
-        this.env = env;
-        this.reviews = reviews;
+    public SiteInfoService(Environment environment, ReviewService reviewService) {
+        this.environment = environment;
+        this.reviewService = reviewService;
     }
 
     public String setting(String name) {
-        return env.getProperty("app.site." + name, "");
+        return environment.getProperty("app.site." + name, "");
     }
 
-    public Map<String, Object> info() {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("supportEmail", setting("support-email"));
-        result.put("phone", setting("phone"));
-        result.put("whatsapp", setting("whatsapp"));
-        result.put("hours", setting("hours"));
-        result.put("responseTime", setting("response-time"));
-        result.put("address", setting("address"));
-        result.put(
-            "social",
-            Map.of(
-                "instagram",
-                setting("instagram"),
-                "facebook",
-                setting("facebook"),
-                "tiktok",
-                setting("tiktok")
-            )
-        );
-        var rating = reviews.overall();
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("averageRating", rating.averageRating());
-        stats.put("reviewCount", rating.reviewCount());
-        stats.put("customersServed", null);
-        stats.put("cookiesSold", null);
-        result.put("stats", stats);
-        return result;
+    public SiteInfo info() {
+        RatingSummary rating = reviewService.overall();
+        return new SiteInfo(
+                setting("support-email"),
+                setting("phone"),
+                setting("whatsapp"),
+                setting("hours"),
+                setting("response-time"),
+                setting("address"),
+                new SiteInfo.Social(setting("instagram"), setting("facebook"), setting("tiktok")),
+                new SiteInfo.Stats(rating.averageRating(), rating.reviewCount(), null, null));
     }
 }

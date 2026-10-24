@@ -24,6 +24,7 @@ import za.ac.cput.guiltfreecookie.security.JwtService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailService;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -148,7 +150,7 @@ class CustomerAuthServiceTest {
         service.forgotPassword("nobody@example.co.za");
 
         verify(resetTokenRepository, never()).save(any());
-        org.mockito.Mockito.verifyNoInteractions(emailService);
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -158,7 +160,8 @@ class CustomerAuthServiceTest {
         service.forgotPassword(EMAIL);
 
         ArgumentCaptor<PasswordResetToken> saved = ArgumentCaptor.forClass(PasswordResetToken.class);
-        ArgumentCaptor<java.util.Map<String,Object>> body = ArgumentCaptor.forClass(java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
         verify(resetTokenRepository).deleteByCustomerEmail(EMAIL);
         verify(resetTokenRepository).save(saved.capture());
         verify(emailService).sendTemplate(eq(EMAIL), anyString(), eq("password-reset"), body.capture(), eq(false));
