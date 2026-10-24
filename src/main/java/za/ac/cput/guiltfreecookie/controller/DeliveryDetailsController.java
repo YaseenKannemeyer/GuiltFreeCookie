@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.ac.cput.guiltfreecookie.domain.DeliveryDetails;
@@ -21,6 +22,9 @@ public class DeliveryDetailsController {
     public ResponseEntity<DeliveryDetails> createDeliveryDetails(
             @RequestBody DeliveryDetails deliveryDetails) {
 
+        if (deliveryDetails.getDeliveryID() != null && service.read(deliveryDetails.getDeliveryID()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         DeliveryDetails created = service.create(deliveryDetails);
 
         return ResponseEntity.ok(created);
@@ -39,6 +43,9 @@ public class DeliveryDetailsController {
             @PathVariable String id) {
 
         DeliveryDetails deliveryDetails = service.read(id);
+        if (deliveryDetails == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         return ResponseEntity.ok(deliveryDetails);
     }
@@ -48,6 +55,9 @@ public class DeliveryDetailsController {
             @RequestBody DeliveryDetails deliveryDetails) {
 
         DeliveryDetails updated = service.update(deliveryDetails);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         return ResponseEntity.ok(updated);
     }

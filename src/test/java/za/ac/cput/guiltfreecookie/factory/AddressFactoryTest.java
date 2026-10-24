@@ -34,7 +34,7 @@ class AddressFactoryTest {
     void testCreateAddressWithEmptyStreetName() {
         Address address = AddressFactory.createAddress(
                 "15",
-                "Main Road",
+                "",
                 "Cape Town",
                 8001L
         );

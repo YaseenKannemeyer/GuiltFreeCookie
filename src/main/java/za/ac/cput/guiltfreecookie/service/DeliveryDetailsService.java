@@ -29,6 +29,9 @@ public class DeliveryDetailsService implements IService<DeliveryDetails, String>
 
     @Override
     public DeliveryDetails update(DeliveryDetails deliveryDetails) {
+        if (deliveryDetails.getDeliveryID() == null || !repository.existsById(deliveryDetails.getDeliveryID())) {
+            return null;
+        }
         return repository.save(deliveryDetails);
     }
 
