@@ -12,7 +12,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import za.ac.cput.guiltfreecookie.config.SecurityConfig;
 import za.ac.cput.guiltfreecookie.controller.AccountController;
+import za.ac.cput.guiltfreecookie.controller.AdminCatalogController;
 import za.ac.cput.guiltfreecookie.controller.AdminController;
+import za.ac.cput.guiltfreecookie.controller.CatalogController;
 import za.ac.cput.guiltfreecookie.controller.AuthController;
 import za.ac.cput.guiltfreecookie.controller.CookieController;
 import za.ac.cput.guiltfreecookie.controller.CustomerController;
@@ -28,6 +30,11 @@ import za.ac.cput.guiltfreecookie.service.CustomerAuthService;
 import za.ac.cput.guiltfreecookie.service.CustomerService;
 import za.ac.cput.guiltfreecookie.service.ImageStorageService;
 import za.ac.cput.guiltfreecookie.service.NewsletterService;
+import za.ac.cput.guiltfreecookie.service.catalog.CatalogAdminService;
+import za.ac.cput.guiltfreecookie.service.catalog.CatalogService;
+import za.ac.cput.guiltfreecookie.service.catalog.CookieImageService;
+import za.ac.cput.guiltfreecookie.service.catalog.CookieVariantService;
+import za.ac.cput.guiltfreecookie.service.catalog.InventoryService;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +46,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** The real filter chain: who may call what, and which headers come back. */
 @WebMvcTest(controllers = {
         AdminController.class, CookieController.class, CustomerController.class, NewsletterController.class,
-        AuthController.class, AccountController.class})
+        AuthController.class, AccountController.class, CatalogController.class, AdminCatalogController.class})
 @Import({SecurityConfig.class, JwtService.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC10aGF0LWlzLTMyLWJ5dGVzISE=",
@@ -78,6 +86,16 @@ class SecurityConfigTest {
     private CustomerRepository customerRepository;
     @MockitoBean
     private CustomerAuthService customerAuthService;
+    @MockitoBean
+    private CatalogService catalogService;
+    @MockitoBean
+    private CatalogAdminService catalogAdminService;
+    @MockitoBean
+    private CookieVariantService cookieVariantService;
+    @MockitoBean
+    private CookieImageService cookieImageService;
+    @MockitoBean
+    private InventoryService inventoryService;
 
     private final Customer thandi = new Customer.Builder()
             .setCustomerEmail("thandi@example.co.za")
@@ -281,5 +299,33 @@ class SecurityConfigTest {
         mvc.perform(post("/api/v1/auth/register").with(from("203.0.113.77"))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void theNewCatalogIsPublicForReading() throws Exception {
+        mvc.perform(get("/api/v1/cookies")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/cookies/categories")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/cookies/double-chocolate-chunk")).andExpect(status().isOk());
+    }
+
+    @Test
+    void catalogManagementNeedsAnAdmin() throws Exception {
+        when(customerRepository.findById("thandi@example.co.za")).thenReturn(Optional.of(thandi));
+        String customerToken = "Bearer " + jwtService.generateToken(thandi);
+        String stock = "{\"adjustBy\":10}";
+
+        mvc.perform(post("/api/v1/cookies").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/cookies")).andExpect(status().isUnauthorized());
+        mvc.perform(put("/api/v1/admin/cookies/CK1/stock").contentType(MediaType.APPLICATION_JSON).content(stock))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(put("/api/v1/admin/cookies/CK1/stock").header(HttpHeaders.AUTHORIZATION, customerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(stock))
+                .andExpect(status().isForbidden());
+
+        when(adminRepository.findById("AD001")).thenReturn(Optional.of(jane));
+        mvc.perform(put("/api/v1/admin/cookies/CK1/stock").header(HttpHeaders.AUTHORIZATION, bearer(jane))
+                        .contentType(MediaType.APPLICATION_JSON).content(stock))
+                .andExpect(status().isOk());
     }
 }

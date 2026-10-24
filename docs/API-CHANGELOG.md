@@ -4,6 +4,84 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-24 — Phase 2: Catalog
+
+Use these endpoints for the storefront from now on. `/cookie/getAll` and `/cookie/read/{id}` still work but return the raw entity.
+
+Image paths (`image`) are relative, exactly as before: build URLs with `cookieApi.getImageUrl(image)`. A cookie's **name is `name`** in these responses (it's `description` in the legacy entity).
+
+### Public
+
+**`GET /api/v1/cookies`**: search, filter and sort; paged.
+
+| Query param | Notes |
+|---|---|
+| `q` | Matches name, long description and ingredients (case-insensitive, max 100 chars) |
+| `category` | `LOW_SUGAR`, `DIABETIC_FRIENDLY`, `HIGH_PROTEIN`, `GLUTEN_FREE`, `VEGAN`, `CLASSIC` |
+| `minPrice`, `maxPrice` | Unit price in rand |
+| `inStock=true` | Hide sold-out cookies |
+| `featured=true` | Homepage "featured" row |
+| `sort` | `featured` (default: featured first, then A–Z), `price_asc`, `price_desc`, `newest`, `name` |
+| `page`, `size` | `page` starts at 0; `size` defaults to 12, max 48 |
+
+Response: `{items: CookieSummary[], page, size, totalItems, totalPages}`
+
+`CookieSummary` = `{cookieId, slug, name, category, image, fromPrice, featured, stockStatus, averageRating, reviewCount}`
+- `stockStatus`: `IN_STOCK` | `LOW_STOCK` | `OUT_OF_STOCK`
+- `averageRating` is `null` and `reviewCount` is `0` until reviews ship. Hide the stars when the count is 0.
+
+**`GET /api/v1/cookies/{idOrSlug}`**: product detail. Use the slug in URLs (`/product/double-chocolate-chunk`).
+
+```json
+{
+  "cookieId": "…", "slug": "double-chocolate-chunk", "name": "Double Chocolate Chunk",
+  "category": "LOW_SUGAR", "longDescription": "…", "ingredients": "…", "allergies": "…",
+  "image": "cookies/….webp",
+  "images": [ { "imageId": "…", "image": "cookies/….jpg", "altText": "…", "sortOrder": 0 } ],
+  "variants": [
+    { "variantId": "…", "label": "Single",    "unitsPerPack": 1,  "price": 34.00,  "pricePerCookie": 34.00, "available": true },
+    { "variantId": "…", "label": "Box of 12", "unitsPerPack": 12, "price": 330.00, "pricePerCookie": 27.50, "available": false }
+  ],
+  "fromPrice": 34.00, "featured": true,
+  "stockStatus": "LOW_STOCK", "lowStockRemaining": 8,
+  "nutrition": { "weightGrams": 40, "calories": 160, "sugarGrams": 2.5, "proteinGrams": 6.0, "carbsGrams": null, "fatGrams": null },
+  "averageRating": null, "reviewCount": 0,
+  "related": [ CookieSummary, … up to 4 ]
+}
+```
+- Gallery = `image` (primary) followed by `images[]`.
+- Pack picker: show the `variants` and disable the ones with `available: false`. The cart (Phase 3) takes a `variantId`.
+- `lowStockRemaining` is only set when the status is `LOW_STOCK` ("Only 8 left").
+- Nutrition values are per cookie, and any of them can be `null`: hide what's missing.
+- `404` for unknown or archived cookies. Show the 404 page.
+
+**`GET /api/v1/cookies/categories`** returns `[{category, label, count}]` for every category. Labels match `CATEGORY_META.short`.
+
+### Admin (admin token)
+
+The existing admin form keeps using `/cookie/create|update|archive|delete`. The new fields can't be set through `/cookie/*`; use these:
+
+| Method | Path | Body / notes |
+|---|---|---|
+| GET | `/api/v1/admin/cookies` | All cookies (archived too): `[{cookie, stockStatus, variants, images}]` |
+| GET | `/api/v1/admin/cookies/{id}` | One of the above |
+| PUT | `/api/v1/admin/cookies/{id}/details` | `{slug?, featured, lowStockThreshold?, weightGrams?, calories?, sugarGrams?, proteinGrams?, carbsGrams?, fatGrams?}`. Replaces all of these; `slug` is kept if omitted |
+| PUT | `/api/v1/admin/cookies/{id}/stock` | `{adjustBy: 24}` or `{setTo: 30}`, optional `reason` (`RESTOCK`, `ADJUSTMENT`, `STOCKTAKE`, `DAMAGED`) and `note`. `409` if stock would go below 0 |
+| GET | `/api/v1/admin/cookies/{id}/inventory?limit=50` | Stock history: `[{quantityChange, stockAfter, reason, note, actor, createdAt}]` |
+| GET | `/api/v1/admin/inventory/low-stock` | Low and sold-out cookies, most urgent first (dashboard widget) |
+| GET/POST | `/api/v1/admin/cookies/{id}/variants` | POST `{label, unitsPerPack, price?, active?, sortOrder?}`. Leave `price` empty to charge unit price × pack size |
+| PUT | `/api/v1/admin/cookies/{id}/variants/{variantId}` | Same body |
+| DELETE | `/api/v1/admin/cookies/{id}/variants/{variantId}` | Hides the pack (`active: false`); it isn't deleted |
+| POST | `/api/v1/admin/cookies/{id}/images` | multipart: `image` file and optional `altText`. Max 10 per cookie |
+| PUT | `/api/v1/admin/cookies/{id}/images/order` | `{imageIds: [...]}`: every id, in display order |
+| DELETE | `/api/v1/admin/cookies/{id}/images/{imageId}` | |
+
+### Behaviour changes
+- **Every cookie starts with 0 stock** (shown as `OUT_OF_STOCK`) until stock is set through `/stock`. Existing cookies included.
+- Every cookie gets a slug and a "Single" pack automatically (new cookies on create, existing ones on startup).
+- A cookie is "low stock" at 12 or fewer, unless it has its own `lowStockThreshold`.
+- Hard-deleting a cookie (`/cookie/delete`) also removes its packs and gallery photos.
+
 ## 2026-10-24 — Phase 1: Customer accounts
 
 Accounts are optional; guest checkout (Phase 4) never requires one. Customer tokens work exactly like admin tokens: send `Authorization: Bearer <token>`. Store the token the same way the admin session is stored.

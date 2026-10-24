@@ -10,12 +10,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import za.ac.cput.guiltfreecookie.domain.Cookie;
 import za.ac.cput.guiltfreecookie.domain.CookieCategory;
 import za.ac.cput.guiltfreecookie.repository.CookieRepository;
+import za.ac.cput.guiltfreecookie.service.catalog.CookieImageService;
+import za.ac.cput.guiltfreecookie.service.catalog.CookieVariantService;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +33,12 @@ class CookieServiceTest {
 
     @Mock
     private CookieRepository cookieRepository;
+
+    @Mock
+    private CookieVariantService variantService;
+
+    @Mock
+    private CookieImageService imageService;
 
     @InjectMocks
     private CookieService cookieService;
@@ -52,12 +61,27 @@ class CookieServiceTest {
 
     @Test
     void testCreate() {
-        when(cookieRepository.save(existingCookie)).thenReturn(existingCookie);
+        when(cookieRepository.findBySlug(anyString())).thenReturn(Optional.empty());
+        when(cookieRepository.save(any(Cookie.class))).thenAnswer(call -> call.getArgument(0));
 
         Cookie result = cookieService.create(existingCookie);
 
         assertEquals("CK001", result.getCookieId());
-        verify(cookieRepository).save(existingCookie);
+        assertEquals("protein-chocolate-cookie", result.getSlug());
+        assertNotNull(result.getCreatedAt());
+        verify(variantService).ensureDefault(result);
+    }
+
+    @Test
+    void testCreateGivesADuplicateNameTheNextFreeSlug() {
+        Cookie other = new Cookie.Builder().setCookieId("CK777").setSlug("protein-chocolate-cookie").build();
+        when(cookieRepository.findBySlug("protein-chocolate-cookie")).thenReturn(Optional.of(other));
+        when(cookieRepository.findBySlug("protein-chocolate-cookie-2")).thenReturn(Optional.empty());
+        when(cookieRepository.save(any(Cookie.class))).thenAnswer(call -> call.getArgument(0));
+
+        Cookie result = cookieService.create(existingCookie);
+
+        assertEquals("protein-chocolate-cookie-2", result.getSlug());
     }
 
     @Test
@@ -109,6 +133,27 @@ class CookieServiceTest {
     }
 
     @Test
+    void testLegacyUpdateKeepsCatalogFieldsTheOldFormDoesNotSend() {
+        Cookie existing = new Cookie.Builder().copy(existingCookie)
+                .setSlug("protein-chocolate-cookie")
+                .setStockQuantity(40)
+                .setFeatured(true)
+                .setCalories(180)
+                .build();
+        Cookie fromOldForm = new Cookie.Builder().copy(existingCookie).setPrice(39.00).build();
+        when(cookieRepository.findById("CK001")).thenReturn(Optional.of(existing));
+        when(cookieRepository.save(any(Cookie.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Cookie result = cookieService.update(fromOldForm);
+
+        assertEquals(39.00, result.getPrice());
+        assertEquals("protein-chocolate-cookie", result.getSlug());
+        assertEquals(40, result.getStockQuantity());
+        assertTrue(result.isFeatured());
+        assertEquals(180, result.getCalories());
+    }
+
+    @Test
     void testUpdateWhenNotFoundReturnsNull() {
         when(cookieRepository.findById("missing")).thenReturn(Optional.empty());
 
@@ -127,6 +172,8 @@ class CookieServiceTest {
 
         assertTrue(result);
         verify(cookieRepository).deleteById("CK001");
+        verify(variantService).deleteAllFor("CK001");
+        verify(imageService).deleteAllFor("CK001");
     }
 
     @Test

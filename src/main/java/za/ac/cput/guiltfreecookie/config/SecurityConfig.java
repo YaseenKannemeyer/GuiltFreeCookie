@@ -100,6 +100,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/cookie/getAll", "/cookie/read/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/cookies", "/api/v1/cookies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/newsletter/subscribe").permitAll()
