@@ -54,7 +54,7 @@ class CatalogServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CatalogService(cookieRepository, variantRepository, imageRepository, new StockRules(12));
+        service = new CatalogService(cookieRepository, variantRepository, imageRepository, new StockRules(12), org.mockito.Mockito.mock(za.ac.cput.guiltfreecookie.service.engagement.ReviewService.class));
     }
 
     @Test

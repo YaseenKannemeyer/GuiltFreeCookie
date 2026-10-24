@@ -148,7 +148,7 @@ class CustomerAuthServiceTest {
         service.forgotPassword("nobody@example.co.za");
 
         verify(resetTokenRepository, never()).save(any());
-        verify(emailService, never()).send(anyString(), anyString(), anyString());
+        org.mockito.Mockito.verifyNoInteractions(emailService);
     }
 
     @Test
@@ -158,13 +158,13 @@ class CustomerAuthServiceTest {
         service.forgotPassword(EMAIL);
 
         ArgumentCaptor<PasswordResetToken> saved = ArgumentCaptor.forClass(PasswordResetToken.class);
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<java.util.Map<String,Object>> body = ArgumentCaptor.forClass(java.util.Map.class);
         verify(resetTokenRepository).deleteByCustomerEmail(EMAIL);
         verify(resetTokenRepository).save(saved.capture());
-        verify(emailService).send(eq(EMAIL), anyString(), body.capture());
+        verify(emailService).sendTemplate(eq(EMAIL), anyString(), eq("password-reset"), body.capture(), eq(false));
 
-        String emailed = body.getValue().replaceAll("(?s).*token=(\\S+).*", "$1");
-        assertTrue(body.getValue().contains("https://shop.example/reset-password?token="));
+        String emailed = body.getValue().get("actionUrl").toString().replaceAll("(?s).*token=(\\S+).*", "$1");
+        assertTrue(body.getValue().get("actionUrl").toString().contains("https://shop.example/reset-password?token="));
         assertNotEquals(emailed, saved.getValue().getTokenHash());
         assertEquals(CustomerAuthService.sha256(emailed), saved.getValue().getTokenHash());
     }

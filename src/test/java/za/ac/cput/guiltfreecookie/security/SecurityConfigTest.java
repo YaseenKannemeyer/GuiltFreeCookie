@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** The real filter chain: who may call what, and which headers come back. */
 @WebMvcTest(controllers = {
+        za.ac.cput.guiltfreecookie.controller.engagement.EngagementController.class, za.ac.cput.guiltfreecookie.controller.engagement.EmailPreviewController.class, za.ac.cput.guiltfreecookie.controller.engagement.EmailAssetController.class,
         AdminController.class, CookieController.class, CustomerController.class, NewsletterController.class,
         AuthController.class, AccountController.class, CatalogController.class, AdminCatalogController.class,
         ShopCartController.class, MyCartController.class, AdminDiscountController.class})
@@ -106,6 +107,13 @@ class SecurityConfigTest {
     private ShopCartService shopCartService;
     @MockitoBean
     private DiscountService discountService;
+
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.engagement.ContactService contacts;
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.engagement.SiteInfoService site;
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.engagement.ReviewService reviews;
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.notification.EmailTemplates templates;
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.notification.EmailService email;
+    @MockitoBean private za.ac.cput.guiltfreecookie.service.notification.EmailAssetService assets;
 
     private final Customer thandi = new Customer.Builder()
             .setCustomerEmail("thandi@example.co.za")
@@ -383,5 +391,56 @@ class SecurityConfigTest {
             mvc.perform(post("/api/v1/carts").with(from("203.0.113.55"))).andExpect(status().isCreated());
         }
         mvc.perform(post("/api/v1/carts").with(from("203.0.113.55"))).andExpect(status().isTooManyRequests());
+    }
+
+    @Test void engagementPublicReadsAndContactArePublic() throws Exception {
+        for(String path:List.of("/api/v1/site/info","/api/v1/reviews/featured","/api/v1/cookies/chocolate/reviews"))
+            mvc.perform(get(path)).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/contact").contentType(MediaType.APPLICATION_JSON).content("{\"website\":\"bot\"}"))
+                .andExpect(status().isNoContent());
+    }
+    @Test void reviewCreationRequiresCustomerAndAdminToolsRequireAdmin() throws Exception {
+        mvc.perform(post("/api/v1/me/reviews/c1").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        String customerToken="Bearer "+jwtService.generateToken(thandi);
+        mvc.perform(post("/api/v1/me/reviews/c1").header(HttpHeaders.AUTHORIZATION,customerToken)
+                .contentType(MediaType.APPLICATION_JSON).content("{}")) .andExpect(status().isCreated());
+        for(String path:List.of("/api/v1/admin/messages","/api/v1/admin/reviews","/api/v1/admin/email-previews")) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION,customerToken)).andExpect(status().isForbidden());
+        }
+        when(adminRepository.findById(jane.getAdminId())).thenReturn(Optional.of(jane));
+        mvc.perform(post("/api/v1/me/reviews/c1").header(HttpHeaders.AUTHORIZATION,bearer(jane)).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/email-previews").header(HttpHeaders.AUTHORIZATION,bearer(jane))).andExpect(status().isOk());
+    }
+    @Test void contactIsLimitedToFivePerHourPerIp() throws Exception {
+        for(int i=0;i<5;i++) mvc.perform(post("/api/v1/contact").with(from("192.0.2.66"))
+                .contentType(MediaType.APPLICATION_JSON).content("{}")) .andExpect(status().isNoContent());
+        mvc.perform(post("/api/v1/contact").with(from("192.0.2.66")).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
+    }
+
+    @Test void adminEngagementWritesRejectGuestsAndCustomers() throws Exception {
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        String customerToken="Bearer "+jwtService.generateToken(thandi);
+        for(String path:List.of("/api/v1/admin/messages/m1/resolve", "/api/v1/admin/reviews/r1/approve", "/api/v1/admin/reviews/r1/reject")) {
+            mvc.perform(put(path)).andExpect(status().isUnauthorized());
+            mvc.perform(put(path).header(HttpHeaders.AUTHORIZATION,customerToken)).andExpect(status().isForbidden());
+        }
+        mvc.perform(post("/api/v1/admin/email-previews/password-reset/send-test")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/admin/email-previews/password-reset/send-test").header(HttpHeaders.AUTHORIZATION,customerToken)).andExpect(status().isForbidden());
+    }
+    @Test void testEmailRecipientComesFromAuthenticatedAdmin() throws Exception {
+        when(adminRepository.findById(jane.getAdminId())).thenReturn(Optional.of(jane));
+        when(templates.sample("password-reset")).thenReturn(java.util.Map.of("actionUrl","https://example.test"));
+        mvc.perform(post("/api/v1/admin/email-previews/password-reset/send-test").header(HttpHeaders.AUTHORIZATION,bearer(jane)))
+                .andExpect(status().isAccepted());
+        org.mockito.Mockito.verify(email).sendTemplate(org.mockito.ArgumentMatchers.eq(jane.getEmail()),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.eq("password-reset"),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.eq(false));
+    }
+    @Test void emailAssetsArePublicButUnknownCookiesStayNotFound() throws Exception {
+        when(assets.image("missing")).thenThrow(new za.ac.cput.guiltfreecookie.exception.NotFoundException("Cookie not found"));
+        mvc.perform(get("/api/v1/email-assets/cookies/missing.png")).andExpect(status().isNotFound());
     }
 }

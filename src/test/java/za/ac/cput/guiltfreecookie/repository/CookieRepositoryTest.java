@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Runs the real queries (atomic stock update, search specification) against H2.
 @DataJpaTest
-@Import({CatalogService.class, StockRules.class})
+@Import({CatalogService.class, StockRules.class, za.ac.cput.guiltfreecookie.service.engagement.ReviewService.class, za.ac.cput.guiltfreecookie.service.engagement.NoPurchaseVerifier.class})
 class CookieRepositoryTest {
 
     @Autowired

@@ -69,6 +69,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.customer-auth.window-seconds}") long customerAuthWindowSeconds,
             @Value("${app.rate-limit.cart-create.requests}") int cartCreateRequests,
             @Value("${app.rate-limit.cart-create.window-seconds}") long cartCreateWindowSeconds,
+            @Value("${app.rate-limit.contact.requests}") int contactRequests,
+            @Value("${app.rate-limit.contact.window-seconds}") long contactWindowSeconds,
             @Value("${app.rate-limit.api.requests}") int apiRequests,
             @Value("${app.rate-limit.api.window-seconds}") long apiWindowSeconds) {
         this(List.of(
@@ -80,6 +82,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/forgot-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
                 new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/reset-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
                 new Rule("cart-create", HttpMethod.POST, "/api/v1/carts", cartCreateRequests, cartCreateWindowSeconds * 1000),
+                new Rule("contact", HttpMethod.POST, "/api/v1/contact", contactRequests, contactWindowSeconds * 1000),
                 new Rule("api", null, null, apiRequests, apiWindowSeconds * 1000)
         ), Clock.systemUTC());
     }

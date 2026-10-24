@@ -28,6 +28,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -131,11 +132,8 @@ public class CustomerAuthService {
                 .build());
 
         String link = frontendBaseUrl + "/reset-password?token=" + token;
-        emailService.send(email, "Reset your Guilt Free Cookie password",
-                "We received a request to set or reset the password for your Guilt Free Cookie account.\n\n"
-                        + "Choose a new password here (the link works once and expires in " + resetMinutes + " minutes):\n"
-                        + link + "\n\n"
-                        + "If you didn't ask for this, you can ignore this email.");
+        emailService.sendTemplate(email, "Reset your GuiltFreeCookie password", "password-reset",
+                Map.of("actionUrl", link, "actionLabel", "Reset your password", "resetMinutes", resetMinutes), false);
     }
 
     @Transactional
