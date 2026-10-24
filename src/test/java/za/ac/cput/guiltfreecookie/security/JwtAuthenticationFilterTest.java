@@ -6,9 +6,11 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import za.ac.cput.guiltfreecookie.domain.Admin;
+import za.ac.cput.guiltfreecookie.domain.Customer;
 
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,5 +80,35 @@ class JwtAuthenticationFilterTest {
         assertFalse(jwtService.parse(token.substring(0, token.length() - 2) + "xx").isPresent());
         assertFalse(otherServer.parse(token).isPresent());
         assertFalse(jwtService.parse("not-a-jwt").isPresent());
+    }
+
+    private Customer.Builder customer() {
+        return new Customer.Builder().setCustomerEmail("thandi@example.co.za").setPasswordHash("$2a$10$hash");
+    }
+
+    @Test
+    void tokensCarryTheirRole() {
+        Claims adminClaims = claimsFor(admin().build());
+        Claims customerClaims = jwtService.parse(jwtService.generateToken(customer().build())).orElseThrow();
+
+        assertEquals(JwtService.ROLE_ADMIN, adminClaims.get(JwtService.ROLE_CLAIM));
+        assertEquals(JwtService.ROLE_CUSTOMER, customerClaims.get(JwtService.ROLE_CLAIM));
+        assertEquals("thandi@example.co.za", customerClaims.getSubject());
+    }
+
+    @Test
+    void acceptsACustomerTokenUntilThePasswordChanges() {
+        Customer thandi = customer().build();
+        Claims claims = jwtService.parse(jwtService.generateToken(thandi)).orElseThrow();
+
+        assertTrue(JwtAuthenticationFilter.isStillValid(thandi, claims));
+        assertFalse(JwtAuthenticationFilter.isStillValid(customer().setTokenVersion(1).build(), claims));
+    }
+
+    @Test
+    void rejectsACustomerTokenWhenTheAccountHasNoPassword() {
+        Claims claims = jwtService.parse(jwtService.generateToken(customer().build())).orElseThrow();
+
+        assertFalse(JwtAuthenticationFilter.isStillValid(customer().setPasswordHash(null).build(), claims));
     }
 }

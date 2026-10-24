@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import za.ac.cput.guiltfreecookie.domain.Customer;
 import za.ac.cput.guiltfreecookie.repository.CustomerRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,6 +19,9 @@ public class CustomerService implements IService<Customer, String> {
     }
 
     public Customer create(Customer customer) {
+        if (customer.getCreatedAt() == null) {
+            customer = new Customer.Builder().copy(customer).setCreatedAt(LocalDateTime.now()).build();
+        }
         return repository.save(customer);
     }
 
@@ -26,10 +30,22 @@ public class CustomerService implements IService<Customer, String> {
     }
 
     // Updates only: saving an unknown email would quietly create a new customer.
+    // Only the profile changes here; account fields (password, token version) are kept.
     public Customer update(Customer customer) {
-        if (customer.getCustomerEmail() == null || !repository.existsById(customer.getCustomerEmail())) {
+        Customer existing = customer.getCustomerEmail() == null
+                ? null
+                : repository.findById(customer.getCustomerEmail()).orElse(null);
+        if (existing == null) {
             return null;
         }
+        return repository.save(new Customer.Builder()
+                .copy(existing)
+                .setName(customer.getName())
+                .setMobileNumber(customer.getMobileNumber())
+                .build());
+    }
+
+    public Customer save(Customer customer) {
         return repository.save(customer);
     }
 

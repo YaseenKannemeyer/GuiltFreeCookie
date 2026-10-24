@@ -103,6 +103,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/newsletter/subscribe").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/me", "/api/v1/me/**").hasRole("CUSTOMER")
                         .anyRequest().hasRole("ADMIN")
                 )
                 .addFilterAfter(rateLimitFilter, CorsFilter.class)

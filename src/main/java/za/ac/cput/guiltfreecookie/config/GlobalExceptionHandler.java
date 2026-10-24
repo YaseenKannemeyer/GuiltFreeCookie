@@ -16,6 +16,7 @@ import za.ac.cput.guiltfreecookie.dto.ApiError;
 import za.ac.cput.guiltfreecookie.exception.BadRequestException;
 import za.ac.cput.guiltfreecookie.exception.ConflictException;
 import za.ac.cput.guiltfreecookie.exception.NotFoundException;
+import za.ac.cput.guiltfreecookie.exception.UnauthorizedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +55,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiError> handleConflict(ConflictException e) {
         return error(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException e) {
+        return error(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)

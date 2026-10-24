@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Fixed-window rate limiting per client IP. Login and newsletter sign-up get
+ * Fixed-window rate limiting per client IP. Login, customer auth and newsletter sign-up get
  * tight limits (brute force and spam); every other API call shares a
  * generous one so a single client can't hammer the server. Uploaded images
  * are exempt: a product page legitimately loads a dozen at once.
@@ -65,11 +65,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.login.window-seconds}") long loginWindowSeconds,
             @Value("${app.rate-limit.newsletter.requests}") int newsletterRequests,
             @Value("${app.rate-limit.newsletter.window-seconds}") long newsletterWindowSeconds,
+            @Value("${app.rate-limit.customer-auth.requests}") int customerAuthRequests,
+            @Value("${app.rate-limit.customer-auth.window-seconds}") long customerAuthWindowSeconds,
             @Value("${app.rate-limit.api.requests}") int apiRequests,
             @Value("${app.rate-limit.api.window-seconds}") long apiWindowSeconds) {
         this(List.of(
                 new Rule("login", HttpMethod.POST, "/admin/login", loginRequests, loginWindowSeconds * 1000),
                 new Rule("newsletter", HttpMethod.POST, "/newsletter/subscribe", newsletterRequests, newsletterWindowSeconds * 1000),
+                // Same name, so all customer auth endpoints share one counter per client.
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/login", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/register", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/forgot-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/reset-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
                 new Rule("api", null, null, apiRequests, apiWindowSeconds * 1000)
         ), Clock.systemUTC());
     }

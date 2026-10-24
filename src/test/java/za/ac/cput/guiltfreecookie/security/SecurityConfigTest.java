@@ -11,14 +11,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import za.ac.cput.guiltfreecookie.config.SecurityConfig;
+import za.ac.cput.guiltfreecookie.controller.AccountController;
 import za.ac.cput.guiltfreecookie.controller.AdminController;
+import za.ac.cput.guiltfreecookie.controller.AuthController;
 import za.ac.cput.guiltfreecookie.controller.CookieController;
 import za.ac.cput.guiltfreecookie.controller.CustomerController;
 import za.ac.cput.guiltfreecookie.controller.NewsletterController;
 import za.ac.cput.guiltfreecookie.domain.Admin;
+import za.ac.cput.guiltfreecookie.domain.Customer;
+import za.ac.cput.guiltfreecookie.domain.Name;
 import za.ac.cput.guiltfreecookie.repository.AdminRepository;
+import za.ac.cput.guiltfreecookie.repository.CustomerRepository;
 import za.ac.cput.guiltfreecookie.service.AdminService;
 import za.ac.cput.guiltfreecookie.service.CookieService;
+import za.ac.cput.guiltfreecookie.service.CustomerAuthService;
 import za.ac.cput.guiltfreecookie.service.CustomerService;
 import za.ac.cput.guiltfreecookie.service.ImageStorageService;
 import za.ac.cput.guiltfreecookie.service.NewsletterService;
@@ -39,7 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** The real filter chain: who may call what, and which headers come back. */
 @WebMvcTest(controllers = {
-        AdminController.class, CookieController.class, CustomerController.class, NewsletterController.class})
+        AdminController.class, CookieController.class, CustomerController.class, NewsletterController.class,
+        AuthController.class, AccountController.class})
 @Import({SecurityConfig.class, JwtService.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC10aGF0LWlzLTMyLWJ5dGVzISE=",
@@ -67,6 +74,17 @@ class SecurityConfigTest {
     private ImageStorageService imageStorageService;
     @MockitoBean
     private NewsletterService newsletterService;
+    @MockitoBean
+    private CustomerRepository customerRepository;
+    @MockitoBean
+    private CustomerAuthService customerAuthService;
+
+    private final Customer thandi = new Customer.Builder()
+            .setCustomerEmail("thandi@example.co.za")
+            .setName(new Name.Builder().setFirstName("Thandi").setLastName("Mokoena").build())
+            .setPasswordHash("$2a$10$abcdefghijklmnopqrstuuabcdefghijklmnopqrstuvwxyz012")
+            .setTokenVersion(0)
+            .build();
 
     private final Admin jane = new Admin.Builder()
             .setAdminId("AD001")
@@ -198,5 +216,70 @@ class SecurityConfigTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"));
+    }
+
+    @Test
+    void customerAuthEndpointsArePublic() throws Exception {
+        mvc.perform(post("/api/v1/auth/forgot-password").with(from("198.51.100.30"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"thandi@example.co.za\"}"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void myAccountNeedsACustomerToken() throws Exception {
+        mvc.perform(get("/api/v1/me")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void aCustomerTokenOpensMyAccountAndHidesThePasswordHash() throws Exception {
+        when(customerRepository.findById("thandi@example.co.za")).thenReturn(Optional.of(thandi));
+        when(customerAuthService.getProfile("thandi@example.co.za")).thenReturn(thandi);
+
+        mvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtService.generateToken(thandi)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("thandi@example.co.za")))
+                .andExpect(content().string(not(containsString("$2a$"))))
+                .andExpect(content().string(not(containsString("passwordHash"))));
+    }
+
+    @Test
+    void aCustomerTokenCannotReachAdminEndpoints() throws Exception {
+        when(customerRepository.findById("thandi@example.co.za")).thenReturn(Optional.of(thandi));
+        String token = "Bearer " + jwtService.generateToken(thandi);
+
+        mvc.perform(get("/admin/getAll").header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/customers").header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anAdminTokenIsNotACustomerSession() throws Exception {
+        when(adminRepository.findById("AD001")).thenReturn(Optional.of(jane));
+
+        mvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer(jane)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aCustomerTokenStopsWorkingAfterAPasswordChange() throws Exception {
+        String token = "Bearer " + jwtService.generateToken(thandi);
+        when(customerRepository.findById("thandi@example.co.za"))
+                .thenReturn(Optional.of(new Customer.Builder().copy(thandi).setTokenVersion(1).build()));
+
+        mvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void customerAuthEndpointsShareOneRateLimit() throws Exception {
+        String body = "{\"email\":\"thandi@example.co.za\",\"password\":\"wrong-password\"}";
+        for (int i = 0; i < 10; i++) {
+            mvc.perform(post(i % 2 == 0 ? "/api/v1/auth/login" : "/api/v1/auth/forgot-password")
+                    .with(from("203.0.113.77")).contentType(MediaType.APPLICATION_JSON).content(body));
+        }
+
+        mvc.perform(post("/api/v1/auth/register").with(from("203.0.113.77"))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isTooManyRequests());
     }
 }
