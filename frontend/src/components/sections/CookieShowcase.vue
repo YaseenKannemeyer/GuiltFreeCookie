@@ -9,10 +9,19 @@ import { computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowRightIcon } from "@heroicons/vue/20/solid";
 import BaseButton from "../ui/BaseButton.vue";
-import { useCatalog, cookieImage, cookieName, imageFallback, onePerCategory } from "../../composables/useCatalog";
+import {
+  useCatalog,
+  cookieImage,
+  cookieName,
+  imageFallback,
+  onePerCategory,
+} from "../../composables/useCatalog";
 import { useFormat } from "../../composables/useFormat";
 import { useScrollReveal } from "../../composables/useScrollReveal";
-import { formatCategoryLabel, categoryBlurb } from "../../constants/cookieCategories";
+import {
+  formatCategoryLabel,
+  categoryBlurb,
+} from "../../constants/cookieCategories";
 
 const { cookies: catalog, load } = useCatalog();
 const { rand } = useFormat();
@@ -26,22 +35,26 @@ const washes = ["#8A4B12", "#8E2440", "#9A5310", "#3D1F17"];
 const signature = [
   {
     title: "Double Chocolate Chunk",
-    description: "Deep cocoa dough, generous dark chocolate chunks and a crackled top, with crisp edges and a soft chocolate centre.",
+    description:
+      "Deep cocoa dough, generous dark chocolate chunks and a crackled top, with crisp edges and a soft chocolate centre.",
     image: "/img/cookies/double-chocolate-chunk.webp",
   },
   {
     title: "Cinnamon Pecan",
-    description: "A warmly spiced cookie with a soft middle, gently crisp edges and toasted pecan pieces baked through the dough.",
+    description:
+      "A warmly spiced cookie with a soft middle, gently crisp edges and toasted pecan pieces baked through the dough.",
     image: "/img/cookies/cinnamon-pecan.webp",
   },
   {
     title: "Lemon Almond",
-    description: "Bright lemon zest lifts a tender almond cookie, while toasted almond flakes bring a delicate crunch to its golden top.",
+    description:
+      "Bright lemon zest lifts a tender almond cookie, while toasted almond flakes bring a delicate crunch to its golden top.",
     image: "/img/cookies/lemon-almond.webp",
   },
   {
     title: "Raspberry Coconut",
-    description: "Tart raspberry pieces and toasted coconut brighten a soft vanilla cookie with lightly crisp edges.",
+    description:
+      "Tart raspberry pieces and toasted coconut brighten a soft vanilla cookie with lightly crisp edges.",
     image: "/img/cookies/raspberry-coconut.webp",
   },
 ].map((c, i) => ({
@@ -54,29 +67,44 @@ const signature = [
 }));
 
 const cards = computed(() => {
-  const live = onePerCategory(catalog.value).slice(0, 4).map((c) => ({
-    key: c.cookieId,
-    title: cookieName(c),
-    description:
-      c.longDescription ||
-      [categoryBlurb(c.category), c.ingredients && `Made with ${c.ingredients.toLowerCase()}.`]
-        .filter(Boolean)
-        .join(" "),
-    image: cookieImage(c),
-    onError: imageFallback(c),
-    badge: formatCategoryLabel(c.category),
-    price: c.price,
-    to: { name: "ProductDetail", params: { id: c.cookieId } },
-    secondary: { name: "Products", query: { category: c.category } },
+  const live = onePerCategory(catalog.value.filter((c) => c.featured))
+    .slice(0, 4)
+    .map((c) => ({
+      key: c.cookieId,
+      title: cookieName(c),
+      description:
+        c.longDescription ||
+        [
+          categoryBlurb(c.category),
+          c.ingredients && `Made with ${c.ingredients.toLowerCase()}.`,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      image: cookieImage(c),
+      onError: imageFallback(c),
+      badge: formatCategoryLabel(c.category),
+      price: c.price,
+      to: { name: "ProductDetail", params: { id: c.slug || c.cookieId } },
+      secondary: { name: "Products", query: { category: c.category } },
+    }));
+  return (live.length ? live : signature).map((c, i) => ({
+    ...c,
+    wash: washes[i % washes.length],
   }));
-  return (live.length ? live : signature).map((c, i) => ({ ...c, wash: washes[i % washes.length] }));
 });
 </script>
 
 <template>
-  <section class="bg-tan pt-20 md:pt-28 pb-20 sm:pb-36 lg:pb-44 overflow-hidden" aria-labelledby="showcase-title">
+  <section
+    class="bg-tan pt-20 md:pt-28 pb-20 sm:pb-36 lg:pb-44 overflow-hidden"
+    aria-labelledby="showcase-title"
+  >
     <div class="container-magic">
-      <h2 id="showcase-title" v-reveal class="font-display text-center text-display mb-16 sm:mb-28 lg:mb-40">
+      <h2
+        id="showcase-title"
+        v-reveal
+        class="font-display text-center text-display mb-16 sm:mb-28 lg:mb-40"
+      >
         Hot picks this week
       </h2>
 
@@ -95,20 +123,32 @@ const cards = computed(() => {
 
             <h3 class="showcase-title display">
               <!-- On mobile this link stretches over the whole card -->
-              <RouterLink :to="cookie.to" class="showcase-title-link">{{ cookie.title }}</RouterLink>
+              <RouterLink :to="cookie.to" class="showcase-title-link">{{
+                cookie.title
+              }}</RouterLink>
             </h3>
 
             <p class="showcase-desc">{{ cookie.description }}</p>
 
             <div class="showcase-actions">
-              <BaseButton :to="cookie.to" variant="primary" class="showcase-primary">
+              <BaseButton
+                :to="cookie.to"
+                variant="primary"
+                class="showcase-primary"
+              >
                 View cookie
                 <ArrowRightIcon class="h-5 w-5" />
               </BaseButton>
-              <RouterLink v-if="cookie.secondary" :to="cookie.secondary" class="showcase-link">
+              <RouterLink
+                v-if="cookie.secondary"
+                :to="cookie.secondary"
+                class="showcase-link"
+              >
                 More {{ cookie.badge.toLowerCase() }}
               </RouterLink>
-              <span v-if="cookie.price" class="showcase-price tabular">{{ rand(cookie.price) }}</span>
+              <span v-if="cookie.price" class="showcase-price tabular">{{
+                rand(cookie.price)
+              }}</span>
             </div>
           </div>
 
@@ -177,7 +217,9 @@ const cards = computed(() => {
   color: #fbf9f4;
   font-size: var(--fs-sm);
   font-weight: 700;
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 .showcase-card:hover .showcase-badge {
   background: #fbf9f4;

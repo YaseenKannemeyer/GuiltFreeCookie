@@ -33,7 +33,15 @@ export const routes = [
       description:
         "Every GuiltFreeCookie flavour in one place: diabetic friendly, high protein, gluten free and vegan cookies, with ingredients, allergens and prices.",
       prerender: true,
-      renderQuery: ["category", "q"],
+      renderQuery: [
+        "category",
+        "q",
+        "minPrice",
+        "maxPrice",
+        "sort",
+        "inStock",
+        "page",
+      ],
     },
   },
   {
@@ -66,6 +74,40 @@ export const routes = [
       prerender: true,
     },
   },
+
+  ...[
+    ["/login", "CustomerLogin", "login", "Log in"],
+    ["/register", "Register", "register", "Create account"],
+    ["/forgot-password", "ForgotPassword", "forgot", "Forgot password"],
+    ["/reset-password", "ResetPassword", "reset", "Reset password"],
+  ].map(([path, name, authMode, title]) => ({
+    path,
+    name,
+    component: () => import("../views/CustomerAuthView.vue"),
+    meta: { authMode, title, noindex: true },
+  })),
+  {
+    path: "/account",
+    name: "Account",
+    component: () => import("../views/AccountView.vue"),
+    meta: { title: "My account", requiresCustomer: true, noindex: true },
+  },
+  ...[
+    ["inventory", "AdminInventory", "Stock & packs", "AdminInventoryView"],
+    ["messages", "AdminMessages", "Inbox", "AdminMessagesView"],
+    ["reviews", "AdminReviews", "Reviews", "AdminReviewsView"],
+    [
+      "email-previews",
+      "AdminEmailPreviews",
+      "Email previews",
+      "AdminEmailPreviewsView",
+    ],
+  ].map(([path, name, title, view]) => ({
+    path: `/admindashboard/${path}`,
+    name,
+    component: () => import(`../views/${view}.vue`),
+    meta: { title, requiresAdmin: true, noindex: true },
+  })),
 
   // Legal
   legal(

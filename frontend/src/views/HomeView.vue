@@ -1,4 +1,5 @@
 <script setup>
+import HomeReviews from "../components/engagement/HomeReviews.vue";
 /**
  * HomeView — assembles the homepage sections in order:
  * Hero → ingredients → hot picks → signature drops → made for → CTA → FAQ
@@ -19,6 +20,7 @@ import FaqSection from "../components/sections/FaqSection.vue";
     <CookieShowcase />
     <FeaturedCookies />
     <MadeForSection />
+    <HomeReviews />
     <CtaBanner />
     <FaqSection />
   </div>

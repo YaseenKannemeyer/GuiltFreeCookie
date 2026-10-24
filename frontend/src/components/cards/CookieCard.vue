@@ -7,8 +7,16 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowUpRightIcon } from "@heroicons/vue/20/solid";
 import { useFormat } from "../../composables/useFormat";
-import { cookieImage, allergenText, cookieName, imageFallback } from "../../composables/useCatalog";
-import { formatCategoryLabel, categoryTint } from "../../constants/cookieCategories";
+import {
+  cookieImage,
+  allergenText,
+  cookieName,
+  imageFallback,
+} from "../../composables/useCatalog";
+import {
+  formatCategoryLabel,
+  categoryTint,
+} from "../../constants/cookieCategories";
 
 const props = defineProps({
   cookie: {
@@ -33,7 +41,10 @@ const name = computed(() => cookieName(props.cookie));
 
 <template>
   <RouterLink
-    :to="{ name: 'ProductDetail', params: { id: props.cookie.cookieId } }"
+    :to="{
+      name: 'ProductDetail',
+      params: { id: props.cookie.slug || props.cookie.cookieId },
+    }"
     class="group block rounded-2xl focus-visible:outline-offset-4"
   >
     <div
@@ -61,14 +72,31 @@ const name = computed(() => cookieName(props.cookie));
 
     <div class="pt-4 px-1">
       <p class="text-sm font-semibold text-primary-700">{{ label }}</p>
-      <div class="mt-0.5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-x-3">
-        <h3 class="text-base font-semibold leading-snug text-chocolate line-clamp-2">
+      <div
+        class="mt-0.5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-x-3"
+      >
+        <h3
+          class="text-base font-semibold leading-snug text-chocolate line-clamp-2"
+        >
           {{ name }}
         </h3>
         <span class="shrink-0 text-base font-semibold tabular text-chocolate">
-          {{ rand(props.cookie.price) }}
+          {{ rand(props.cookie.fromPrice ?? props.cookie.price) }}
         </span>
       </div>
+      <p
+        v-if="cookie.stockStatus === 'OUT_OF_STOCK'"
+        class="mt-2 text-sm font-bold"
+      >
+        Sold out
+      </p>
+      <p v-else-if="cookie.stockStatus === 'LOW_STOCK'" class="mt-2 text-sm">
+        Low stock
+      </p>
+      <p v-if="cookie.reviewCount" class="mt-1 text-sm">
+        {{ Number(cookie.averageRating).toFixed(1) }} / 5 ·
+        {{ cookie.reviewCount }} reviews
+      </p>
       <p v-if="allergens" class="mt-1 text-sm text-chocolate/70 line-clamp-1">
         Allergens: {{ allergens }}
       </p>

@@ -1,7 +1,11 @@
 <script setup>
+import LowStockWidget from "../components/admin/LowStockWidget.vue";
 import { ref, computed, onMounted } from "vue";
 import cookieApi from "../api/cookieApi";
-import { COOKIE_CATEGORIES, formatCategoryLabel } from "../constants/cookieCategories";
+import {
+  COOKIE_CATEGORIES,
+  formatCategoryLabel,
+} from "../constants/cookieCategories";
 import { useToast } from "../composables/useToast";
 import CookieForm from "../components/admin/CookieForm.vue";
 import CookieGrid from "../components/admin/CookieGrid.vue";
@@ -44,7 +48,10 @@ const counts = computed(() => {
 const categoryOptions = computed(() =>
   categories.value.map((c) => ({
     value: c.id,
-    label: c.id !== "all" && counts.value[c.id] !== undefined ? `${c.label} (${counts.value[c.id]})` : c.label,
+    label:
+      c.id !== "all" && counts.value[c.id] !== undefined
+        ? `${c.label} (${counts.value[c.id]})`
+        : c.label,
   })),
 );
 
@@ -65,7 +72,9 @@ const filteredCookies = computed(() => {
   }
 
   if (status.value !== "all") {
-    result = result.filter((c) => (status.value === "archived" ? c.archived : !c.archived));
+    result = result.filter((c) =>
+      status.value === "archived" ? c.archived : !c.archived,
+    );
   }
 
   return result;
@@ -80,7 +89,9 @@ const statusTabs = computed(() => {
   ];
 });
 
-const hasFilters = computed(() => !!search.value || category.value !== "all" || status.value !== "all");
+const hasFilters = computed(
+  () => !!search.value || category.value !== "all" || status.value !== "all",
+);
 const clearFilters = () => {
   search.value = "";
   category.value = "all";
@@ -122,8 +133,13 @@ const saveCookie = async ({ cookie, imageFile }) => {
   } catch (error) {
     logError("Failed to save cookie:", error);
     // The API explains a rejected photo ("Upload a JPEG, PNG, WebP or GIF image").
-    const reason = typeof error.response?.data === "string" && error.response.data;
-    showToast(reason || (isEditing ? "Failed to update cookie." : "Failed to add cookie."), "error");
+    const reason =
+      typeof error.response?.data === "string" && error.response.data;
+    showToast(
+      reason ||
+        (isEditing ? "Failed to update cookie." : "Failed to add cookie."),
+      "error",
+    );
   }
 };
 
@@ -182,7 +198,11 @@ onMounted(loadCookies);
 
 <template>
   <div>
-    <AdminPageHeader title="Cookies" description="Everything on the menu, including archived cookies.">
+    <LowStockWidget />
+    <AdminPageHeader
+      title="Cookies"
+      description="Everything on the menu, including archived cookies."
+    >
       <BaseButton variant="primary" size="sm" @click="openForm()">
         <PlusIcon class="h-5 w-5 -ml-1" />
         Add cookie
@@ -190,22 +210,41 @@ onMounted(loadCookies);
     </AdminPageHeader>
 
     <!-- Status segments double as a summary -->
-    <div class="flex gap-1 p-1 mb-5 rounded-xl bg-chocolate/[0.06] w-fit max-w-full overflow-x-auto no-scrollbar" role="group" aria-label="Filter by status">
+    <div
+      class="flex gap-1 p-1 mb-5 rounded-xl bg-chocolate/[0.06] w-fit max-w-full overflow-x-auto no-scrollbar"
+      role="group"
+      aria-label="Filter by status"
+    >
       <button
         v-for="tab in statusTabs"
         :key="tab.id"
         type="button"
         :aria-pressed="status === tab.id"
-        :class="[ 'flex items-center gap-2 rounded-lg h-11 px-4 text-sm font-semibold whitespace-nowrap transition-colors', status === tab.id ? 'bg-surface text-chocolate shadow-soft' : 'text-chocolate/70 hover:text-chocolate', ]"
+        :class="[
+          'flex items-center gap-2 rounded-lg h-11 px-4 text-sm font-semibold whitespace-nowrap transition-colors',
+          status === tab.id
+            ? 'bg-surface text-chocolate shadow-soft'
+            : 'text-chocolate/70 hover:text-chocolate',
+        ]"
         @click="status = tab.id"
       >
         {{ tab.label }}
-        <span class="tabular text-sm" :class="status === tab.id ? 'text-chocolate/60' : 'text-chocolate/50'">{{ tab.count }}</span>
+        <span
+          class="tabular text-sm"
+          :class="status === tab.id ? 'text-chocolate/60' : 'text-chocolate/50'"
+          >{{ tab.count }}</span
+        >
       </button>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-3 mb-5">
-      <SearchBar v-model="search" size="sm" label="Search cookies" placeholder="Search by name or ingredient" class="flex-1" />
+      <SearchBar
+        v-model="search"
+        size="sm"
+        label="Search cookies"
+        placeholder="Search by name or ingredient"
+        class="flex-1"
+      />
       <BaseInput
         v-model="category"
         type="select"
@@ -216,7 +255,12 @@ onMounted(loadCookies);
     </div>
 
     <!-- Loading -->
-    <div v-if="loading && !cookies.length" class="card divide-y divide-chocolate/10" aria-busy="true" aria-label="Loading cookies">
+    <div
+      v-if="loading && !cookies.length"
+      class="card divide-y divide-chocolate/10"
+      aria-busy="true"
+      aria-label="Loading cookies"
+    >
       <div v-for="n in 5" :key="n" class="flex items-center gap-4 p-4">
         <div class="shimmer h-14 w-14 rounded-xl" />
         <div class="flex-1 space-y-2">
@@ -230,7 +274,9 @@ onMounted(loadCookies);
     <!-- Error -->
     <div v-else-if="loadError" class="card py-16 px-6 text-center" role="alert">
       <h2 class="text-base font-semibold">Couldn't load cookies</h2>
-      <p class="mt-1 text-chocolate/70">Check the API is running, then try again.</p>
+      <p class="mt-1 text-chocolate/70">
+        Check the API is running, then try again.
+      </p>
       <BaseButton variant="outline" size="sm" class="mt-5" @click="loadCookies">
         <ArrowPathIcon class="h-4 w-4" />
         Try again
@@ -239,9 +285,15 @@ onMounted(loadCookies);
 
     <!-- Empty catalogue -->
     <div v-else-if="cookies.length === 0" class="card py-16 px-6 text-center">
-      <img src="/img/cookie.webp" alt="" class="mx-auto w-20 -rotate-12 drop-shadow-cookie-sm" />
+      <img
+        src="/img/cookie.webp"
+        alt=""
+        class="mx-auto w-20 -rotate-12 drop-shadow-cookie-sm"
+      />
       <h2 class="mt-4 font-sans text-base font-semibold">No cookies yet</h2>
-      <p class="mt-1 text-chocolate/70">Add the first cookie and it will show up in the store.</p>
+      <p class="mt-1 text-chocolate/70">
+        Add the first cookie and it will show up in the store.
+      </p>
       <BaseButton variant="primary" size="sm" class="mt-5" @click="openForm()">
         <PlusIcon class="h-5 w-5 -ml-1" />
         Add cookie
@@ -249,10 +301,22 @@ onMounted(loadCookies);
     </div>
 
     <!-- No matches -->
-    <div v-else-if="filteredCookies.length === 0" class="card py-16 px-6 text-center">
+    <div
+      v-else-if="filteredCookies.length === 0"
+      class="card py-16 px-6 text-center"
+    >
       <h2 class="text-base font-semibold">No cookies match these filters</h2>
-      <p class="mt-1 text-chocolate/70">Try a different search, range or status.</p>
-      <BaseButton v-if="hasFilters" variant="outline" size="sm" class="mt-5" @click="clearFilters">Clear filters</BaseButton>
+      <p class="mt-1 text-chocolate/70">
+        Try a different search, range or status.
+      </p>
+      <BaseButton
+        v-if="hasFilters"
+        variant="outline"
+        size="sm"
+        class="mt-5"
+        @click="clearFilters"
+        >Clear filters</BaseButton
+      >
     </div>
 
     <CookieGrid
@@ -263,7 +327,12 @@ onMounted(loadCookies);
       @archive="toggleArchive"
     />
 
-    <CookieForm :open="showForm" :cookie="selectedCookie" @save="saveCookie" @close="closeForm" />
+    <CookieForm
+      :open="showForm"
+      :cookie="selectedCookie"
+      @save="saveCookie"
+      @close="closeForm"
+    />
 
     <DeleteModal
       :open="!!deleteTarget"

@@ -8,6 +8,7 @@
  */
 import { ref } from "vue";
 import cookieApi from "../api/cookieApi";
+import { catalogApi } from "../api/storeApi";
 import { fallbackImageFor } from "../constants/cookieCategories";
 
 const cookies = ref([]);
@@ -33,10 +34,14 @@ async function load({ force = false } = {}) {
   stale = false;
   loading.value = true;
   error.value = null;
-  inflight = cookieApi
-    .getAll()
+  inflight = catalogApi
+    .search({ featured: true, size: 48 })
     .then((data) => {
-      cookies.value = Array.isArray(data) ? data : [];
+      cookies.value = data.items.map((c) => ({
+        ...c,
+        description: c.name,
+        price: c.fromPrice,
+      }));
       loaded.value = true;
       return cookies.value;
     })
@@ -53,7 +58,9 @@ async function load({ force = false } = {}) {
 
 // Uploaded image if there is one, otherwise a stable brand cut-out.
 export function cookieImage(cookie) {
-  return cookieApi.getImageUrl(cookie?.image) || fallbackImageFor(cookie?.cookieId);
+  return (
+    cookieApi.getImageUrl(cookie?.image) || fallbackImageFor(cookie?.cookieId)
+  );
 }
 
 // <img @error> handler: swap a failed upload for the brand cut-out (once).
@@ -77,7 +84,7 @@ export function allergenText(cookie) {
 
 // Display name: trims stray trailing full stops from admin-entered names.
 export function cookieName(cookie) {
-  return (cookie?.description || "").trim().replace(/\.+$/, "");
+  return (cookie?.name || cookie?.description || "").trim().replace(/\.+$/, "");
 }
 
 // Homepage favourites by name, chosen so neighbouring cards look different.
@@ -94,7 +101,9 @@ export const HOME_FAVOURITES = [
 // One cookie per range: favourites first, then anything with a photo, then the rest.
 export function onePerCategory(list) {
   const rank = (c) => {
-    const i = HOME_FAVOURITES.findIndex((n) => n.toLowerCase() === cookieName(c).toLowerCase());
+    const i = HOME_FAVOURITES.findIndex(
+      (n) => n.toLowerCase() === cookieName(c).toLowerCase(),
+    );
     return i === -1 ? HOME_FAVOURITES.length + (c.image ? 0 : 1) : i;
   };
   const seen = new Set();

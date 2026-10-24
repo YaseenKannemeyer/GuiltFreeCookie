@@ -1,21 +1,34 @@
 <script setup>
-import { computed } from "vue";
+import { useSiteInfo } from "../composables/useSiteInfo";
+import { computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import { EnvelopeIcon, PhoneIcon, MapPinIcon } from "@heroicons/vue/24/outline";
 import NewsletterSection from "../components/sections/NewsletterSection.vue";
-import { BUSINESS, LEGAL_PAGES } from "../constants/business";
-import { COOKIE_CATEGORIES, formatCategoryLabel } from "../constants/cookieCategories";
+import { LEGAL_PAGES } from "../constants/business";
+import {
+  COOKIE_CATEGORIES,
+  formatCategoryLabel,
+} from "../constants/cookieCategories";
 import { useCatalog } from "../composables/useCatalog";
 
+const { info, load } = useSiteInfo();
+onMounted(load);
 const year = new Date().getFullYear();
 const { cookies: catalog } = useCatalog();
 
 // The ranges actually on the shelf, in the usual order. Before the
 // catalogue has loaded, the four ranges the home page features.
-const FEATURED_RANGES = ["DIABETIC_FRIENDLY", "HIGH_PROTEIN", "GLUTEN_FREE", "VEGAN"];
+const FEATURED_RANGES = [
+  "DIABETIC_FRIENDLY",
+  "HIGH_PROTEIN",
+  "GLUTEN_FREE",
+  "VEGAN",
+];
 const ranges = computed(() => {
   const stocked = new Set(catalog.value.map((c) => c.category));
-  return stocked.size ? COOKIE_CATEGORIES.filter((c) => stocked.has(c)) : FEATURED_RANGES;
+  return stocked.size
+    ? COOKIE_CATEGORIES.filter((c) => stocked.has(c))
+    : FEATURED_RANGES;
 });
 
 // Every link goes somewhere real; no two links share a destination's job.
@@ -76,7 +89,11 @@ const SOCIAL_ICONS = [
 ];
 
 // Only accounts that exist (set their URLs in constants/business.js).
-const socials = SOCIAL_ICONS.filter((s) => BUSINESS.socials[s.key]).map((s) => ({ ...s, href: BUSINESS.socials[s.key] }));
+const socials = computed(() =>
+  SOCIAL_ICONS.filter((s) =>
+    /^https?:\/\//.test(info.value?.social?.[s.key] || ""),
+  ).map((s) => ({ ...s, href: info.value.social[s.key] })),
+);
 </script>
 
 <template>
@@ -85,7 +102,9 @@ const socials = SOCIAL_ICONS.filter((s) => BUSINESS.socials[s.key]).map((s) => (
     <NewsletterSection tone="dark" />
 
     <!-- Main footer grid -->
-    <div class="container-magic py-14 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-x-8 gap-y-12">
+    <div
+      class="container-magic py-14 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-x-8 gap-y-12"
+    >
       <!-- Brand col -->
       <div class="col-span-2 md:col-span-4 lg:col-span-1">
         <RouterLink to="/" class="inline-block wordmark text-cream-50 mb-5">
@@ -96,17 +115,27 @@ const socials = SOCIAL_ICONS.filter((s) => BUSINESS.socials[s.key]).map((s) => (
           Baked fresh in Cape Town.
         </p>
         <ul class="text-base text-cream-100/80">
-          <li class="flex items-center gap-3">
+          <li v-if="info?.phone" class="flex items-center gap-3">
             <PhoneIcon class="h-5 w-5 text-primary shrink-0" />
-            <a :href="BUSINESS.phoneHref" class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors">{{ BUSINESS.phone }}</a>
+            <a
+              v-if="info?.phone"
+              :href="`tel:${info.phone.replace(/[^+0-9]/g, '')}`"
+              class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors"
+              >{{ info.phone }}</a
+            >
           </li>
-          <li class="flex items-center gap-3">
+          <li v-if="info?.supportEmail" class="flex items-center gap-3">
             <EnvelopeIcon class="h-5 w-5 text-primary shrink-0" />
-            <a :href="`mailto:${BUSINESS.email}`" class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors">{{ BUSINESS.email }}</a>
+            <a
+              v-if="info?.supportEmail"
+              :href="`mailto:${info.supportEmail}`"
+              class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors"
+              >{{ info.supportEmail }}</a
+            >
           </li>
-          <li class="flex items-start gap-3">
+          <li v-if="info?.address" class="flex items-start gap-3">
             <MapPinIcon class="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            {{ BUSINESS.address }}
+            {{ info?.address }}
           </li>
         </ul>
       </div>
@@ -131,7 +160,9 @@ const socials = SOCIAL_ICONS.filter((s) => BUSINESS.socials[s.key]).map((s) => (
 
     <!-- Bottom bar -->
     <div class="border-t border-cream-50/10">
-      <div class="container-magic py-6 flex flex-col-reverse md:flex-row items-center justify-between gap-4">
+      <div
+        class="container-magic py-6 flex flex-col-reverse md:flex-row items-center justify-between gap-4"
+      >
         <p class="text-cream-100/60 text-sm" data-allow-mismatch="text">
           &copy; {{ year }} GuiltFreeCookie. Baked in Cape Town.
         </p>
@@ -143,7 +174,12 @@ const socials = SOCIAL_ICONS.filter((s) => BUSINESS.socials[s.key]).map((s) => (
             :aria-label="s.name"
             class="flex items-center justify-center h-11 w-11 rounded-full text-cream-100/75 hover:bg-primary hover:text-chocolate transition-colors"
           >
-            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path :d="s.path" />
             </svg>
           </a>

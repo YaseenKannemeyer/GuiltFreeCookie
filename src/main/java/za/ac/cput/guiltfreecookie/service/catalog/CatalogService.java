@@ -20,11 +20,13 @@ import za.ac.cput.guiltfreecookie.dto.catalog.ImageView;
 import za.ac.cput.guiltfreecookie.dto.catalog.Nutrition;
 import za.ac.cput.guiltfreecookie.dto.catalog.PageResponse;
 import za.ac.cput.guiltfreecookie.dto.catalog.VariantView;
+import za.ac.cput.guiltfreecookie.dto.engagement.RatingSummary;
 import za.ac.cput.guiltfreecookie.exception.BadRequestException;
 import za.ac.cput.guiltfreecookie.exception.NotFoundException;
 import za.ac.cput.guiltfreecookie.repository.CookieImageRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieVariantRepository;
+import za.ac.cput.guiltfreecookie.service.engagement.ReviewService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,13 +51,15 @@ public class CatalogService {
     private final CookieVariantRepository variantRepository;
     private final CookieImageRepository imageRepository;
     private final StockRules stockRules;
+    private final ReviewService reviews;
 
     public CatalogService(CookieRepository cookieRepository, CookieVariantRepository variantRepository,
-                          CookieImageRepository imageRepository, StockRules stockRules) {
+                          CookieImageRepository imageRepository, StockRules stockRules, ReviewService reviews) {
         this.cookieRepository = cookieRepository;
         this.variantRepository = variantRepository;
         this.imageRepository = imageRepository;
         this.stockRules = stockRules;
+        this.reviews = reviews;
     }
 
     public PageResponse<CookieSummary> search(CatalogQuery query) {
@@ -80,6 +84,7 @@ public class CatalogService {
         List<ImageView> images = imageRepository.findByCookieIdOrderBySortOrderAsc(cookie.getCookieId()).stream()
                 .map(CatalogService::toImageView).toList();
 
+        var rating = reviews.ratings(List.of(cookie.getCookieId())).getOrDefault(cookie.getCookieId(), new RatingSummary(null, 0));
         return new CookieDetail(
                 cookie.getCookieId(),
                 cookie.getSlug(),
@@ -97,8 +102,8 @@ public class CatalogService {
                 status == StockStatus.LOW_STOCK ? cookie.getStockQuantity() : null,
                 new Nutrition(cookie.getWeightGrams(), cookie.getCalories(), cookie.getSugarGrams(),
                         cookie.getProteinGrams(), cookie.getCarbsGrams(), cookie.getFatGrams()),
-                null,
-                0,
+                rating.averageRating(),
+                Math.toIntExact(rating.reviewCount()),
                 related(cookie));
     }
 
@@ -123,7 +128,9 @@ public class CatalogService {
         Map<String, List<CookieVariant>> variantsByCookie = variantRepository
                 .findByCookieIdInAndActiveTrue(cookies.stream().map(Cookie::getCookieId).toList())
                 .stream().collect(Collectors.groupingBy(CookieVariant::getCookieId));
+        var ratings = reviews.ratings(cookies.stream().map(Cookie::getCookieId).toList());
         return cookies.stream().map(cookie -> {
+            var rating = ratings.getOrDefault(cookie.getCookieId(), new RatingSummary(null, 0));
             List<CookieVariant> active = variantsByCookie.getOrDefault(cookie.getCookieId(), List.of());
             return new CookieSummary(
                     cookie.getCookieId(),
@@ -134,8 +141,8 @@ public class CatalogService {
                     fromPrice(cookie, active),
                     cookie.isFeatured(),
                     stockRules.status(cookie, active),
-                    null,
-                    0);
+                    rating.averageRating(),
+                    Math.toIntExact(rating.reviewCount()));
         }).toList();
     }
 

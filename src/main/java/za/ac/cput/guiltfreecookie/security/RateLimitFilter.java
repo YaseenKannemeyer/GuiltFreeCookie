@@ -67,9 +67,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.newsletter.window-seconds}") long newsletterWindowSeconds,
             @Value("${app.rate-limit.customer-auth.requests}") int customerAuthRequests,
             @Value("${app.rate-limit.customer-auth.window-seconds}") long customerAuthWindowSeconds,
+            @Value("${app.rate-limit.contact.requests}") int contactRequests,
+            @Value("${app.rate-limit.contact.window-seconds}") long contactWindowSeconds,
             @Value("${app.rate-limit.api.requests}") int apiRequests,
             @Value("${app.rate-limit.api.window-seconds}") long apiWindowSeconds) {
         this(List.of(
+                new Rule("contact", HttpMethod.POST, "/api/v1/contact", contactRequests, contactWindowSeconds * 1000),
                 new Rule("login", HttpMethod.POST, "/admin/login", loginRequests, loginWindowSeconds * 1000),
                 new Rule("newsletter", HttpMethod.POST, "/newsletter/subscribe", newsletterRequests, newsletterWindowSeconds * 1000),
                 // Same name, so all customer auth endpoints share one counter per client.

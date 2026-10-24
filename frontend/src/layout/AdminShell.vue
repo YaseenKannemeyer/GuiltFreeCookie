@@ -18,13 +18,39 @@ const router = useRouter();
 const { admin, logout } = useAdminAuth();
 
 const navLinks = [
+  {
+    label: "Stock & packs",
+    to: { name: "AdminInventory" },
+    icon: Squares2X2Icon,
+  },
+  {
+    label: "Inbox",
+    to: { name: "AdminMessages" },
+    icon: ClipboardDocumentListIcon,
+  },
+  {
+    label: "Reviews",
+    to: { name: "AdminReviews" },
+    icon: ClipboardDocumentListIcon,
+  },
+  {
+    label: "Email previews",
+    to: { name: "AdminEmailPreviews" },
+    icon: ClipboardDocumentListIcon,
+  },
   { label: "Cookies", to: { name: "AdminDashboard" }, icon: Squares2X2Icon },
   { label: "Users", to: { name: "AdminUsers" }, icon: UsersIcon },
-  { label: "Orders", to: { name: "AdminOrders" }, icon: ClipboardDocumentListIcon },
+  {
+    label: "Orders",
+    to: { name: "AdminOrders" },
+    icon: ClipboardDocumentListIcon,
+  },
 ];
 
-const fullName = computed(() =>
-  [admin.value?.firstName, admin.value?.lastName].filter(Boolean).join(" ") || "Admin",
+const fullName = computed(
+  () =>
+    [admin.value?.firstName, admin.value?.lastName].filter(Boolean).join(" ") ||
+    "Admin",
 );
 const initials = computed(() =>
   fullName.value
@@ -42,14 +68,20 @@ const signOut = () => {
 </script>
 
 <template>
-  <div class="admin min-h-[100dvh] bg-background lg:grid lg:grid-cols-[27.2rem_1fr]">
+  <div
+    class="admin min-h-[100dvh] bg-background lg:grid lg:grid-cols-[27.2rem_1fr]"
+  >
     <!-- Desktop sidebar -->
-    <aside class="hidden lg:flex sticky top-0 h-[100dvh] flex-col bg-chocolate text-cream-100 px-4 py-6">
+    <aside
+      class="hidden lg:flex sticky top-0 h-[100dvh] flex-col bg-chocolate text-cream-100 px-4 py-6"
+    >
       <RouterLink :to="{ name: 'AdminDashboard' }" class="px-3 block">
         <span class="wordmark text-cream-50">
           GuiltFree<span class="text-primary">Cookie</span>
         </span>
-        <span class="mt-1.5 block text-sm font-semibold text-cream-100/60">Admin</span>
+        <span class="mt-1.5 block text-sm font-semibold text-cream-100/60"
+          >Admin</span
+        >
       </RouterLink>
 
       <nav class="mt-10 flex flex-col gap-1" aria-label="Admin">
@@ -60,7 +92,10 @@ const signOut = () => {
           class="group flex items-center gap-3 rounded-xl px-3 h-11 text-sm font-medium text-cream-100/75 hover:text-cream-50 hover:bg-cream-50/[0.06] transition-colors"
           active-class="!bg-cream-50/10 !text-cream-50"
         >
-          <component :is="link.icon" class="h-5 w-5 text-primary/80 group-[.router-link-active]:text-primary" />
+          <component
+            :is="link.icon"
+            class="h-5 w-5 text-primary/80 group-[.router-link-active]:text-primary"
+          />
           {{ link.label }}
         </RouterLink>
       </nav>
@@ -74,18 +109,27 @@ const signOut = () => {
           View store
         </RouterLink>
 
-        <div class="mt-3 pt-4 border-t border-cream-50/10 flex items-center gap-2">
+        <div
+          class="mt-3 pt-4 border-t border-cream-50/10 flex items-center gap-2"
+        >
           <RouterLink
             :to="{ name: 'AdminProfile' }"
             class="flex-1 min-w-0 flex items-center gap-3 rounded-xl p-2 hover:bg-cream-50/[0.06] transition-colors"
             active-class="bg-cream-50/10"
           >
-            <span class="h-9 w-9 shrink-0 rounded-full bg-primary text-chocolate text-sm font-bold flex items-center justify-center">
+            <span
+              class="h-9 w-9 shrink-0 rounded-full bg-primary text-chocolate text-sm font-bold flex items-center justify-center"
+            >
               {{ initials }}
             </span>
             <span class="min-w-0">
-              <span class="block text-sm font-semibold text-cream-50 truncate">{{ fullName }}</span>
-              <span class="block text-sm text-cream-100/60 truncate">{{ admin?.email }}</span>
+              <span
+                class="block text-sm font-semibold text-cream-50 truncate"
+                >{{ fullName }}</span
+              >
+              <span class="block text-sm text-cream-100/60 truncate">{{
+                admin?.email
+              }}</span>
             </span>
           </RouterLink>
           <button
@@ -104,7 +148,10 @@ const signOut = () => {
     <!-- Mobile top bar -->
     <header class="lg:hidden sticky top-0 z-40 bg-chocolate text-cream-100">
       <div class="flex items-center justify-between gap-2 px-4 h-16">
-        <RouterLink :to="{ name: 'AdminDashboard' }" class="wordmark text-cream-50 pt-1">
+        <RouterLink
+          :to="{ name: 'AdminDashboard' }"
+          class="wordmark text-cream-50 pt-1"
+        >
           GuiltFree<span class="text-primary">Cookie</span>
         </RouterLink>
         <div class="flex items-center gap-1">
@@ -113,7 +160,9 @@ const signOut = () => {
             class="h-11 w-11 flex items-center justify-center rounded-full"
             aria-label="My profile"
           >
-            <span class="h-8 w-8 rounded-full bg-primary text-chocolate text-sm font-bold flex items-center justify-center">
+            <span
+              class="h-8 w-8 rounded-full bg-primary text-chocolate text-sm font-bold flex items-center justify-center"
+            >
               {{ initials }}
             </span>
           </RouterLink>
@@ -127,7 +176,10 @@ const signOut = () => {
           </button>
         </div>
       </div>
-      <nav class="flex gap-1 px-3 pb-2 overflow-x-auto no-scrollbar" aria-label="Admin">
+      <nav
+        class="flex gap-1 px-3 pb-2 overflow-x-auto no-scrollbar"
+        aria-label="Admin"
+      >
         <RouterLink
           v-for="link in navLinks"
           :key="link.label"

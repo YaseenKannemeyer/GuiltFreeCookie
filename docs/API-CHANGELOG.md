@@ -4,6 +4,80 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-24 — Phase 6: Engagement, branded email, and frontend integration
+
+Implemented on `phase-6-chatgpt`, based on Phase 2 commit `bd3a6c3`. Cart, order, payment and shipping code remains owned by the Phase 3–5 branch.
+
+### Contact and site information
+
+| Method | Path | Access / result |
+|---|---|---|
+| POST | `/api/v1/contact` | Public, **204**. `{name, email, phone?, subject, message, website?}`. A non-empty `website` silently drops the message. Limit: **5 per hour per client IP**; 429 includes `Retry-After`. |
+| GET | `/api/v1/site/info` | Public. `{supportEmail, phone, whatsapp, hours, responseTime, address, social:{instagram,facebook,tiktok}, stats:{averageRating,reviewCount,customersServed,cookiesSold}}`. |
+| GET | `/api/v1/admin/messages?status=NEW\|RESOLVED` | Admin. Newest first; omit status for all. |
+| PUT | `/api/v1/admin/messages/{id}/resolve` | Admin. Idempotent; records `resolvedAt` and authenticated admin ID in `resolvedBy`. |
+
+Contact limits: name 100, email 254, phone 30 (optional SA mobile), subject 150, message 5000 characters. Inputs use `Helper`; invalid inputs return the standard 400 error. Saving queues a shop notification and customer auto-reply through `EmailService`. SMTP failure is logged and does not remove the saved contact message.
+
+`ContactMessage` = `{id,name,email,phone,subject,message,createdAt,status,resolvedAt,resolvedBy}`. Customer contact details are available only in the admin inbox.
+
+Site values are configured with `SITE_SUPPORT_EMAIL`, `SITE_PHONE`, `SITE_WHATSAPP`, `SITE_HOURS`, `SITE_RESPONSE_TIME`, `SITE_ADDRESS`, `SITE_INSTAGRAM`, `SITE_FACEBOOK`, `SITE_TIKTOK`, `SITE_FOUNDER_NAME`, `SITE_FOUNDER_MESSAGE`, `SITE_FOUNDER_PHOTO_URL` (`app.site.*`). Phone and social values default to empty rather than invented contacts. Set the real business address and contacts before deployment. `customersServed` and `cookiesSold` are intentionally null until the order integration. With no approved reviews, `averageRating` is null and `reviewCount` is 0.
+
+### Reviews
+
+| Method | Path | Access / result |
+|---|---|---|
+| POST | `/api/v1/me/reviews/{cookieId}` | Customer JWT; **201**. `{rating, title, body, authorName}`. Starts `PENDING`; one per customer/cookie, including rejected reviews; duplicates return 409. |
+| GET | `/api/v1/cookies/{idOrSlug}/reviews?page=0&size=12&sort=newest` | Public; approved reviews only. `sort=newest\|highest\|lowest`, size 1–48. |
+| GET | `/api/v1/reviews/featured?limit=6` | Public; approved ratings 4–5, longest bodies first. Limit 1–12. Archived/deleted cookies excluded. |
+| GET | `/api/v1/admin/reviews?status=PENDING\|APPROVED\|REJECTED` | Admin; newest first. Omit status for all. |
+| PUT | `/api/v1/admin/reviews/{id}/approve` | Admin; updates status and `moderatedAt`. |
+| PUT | `/api/v1/admin/reviews/{id}/reject` | Admin; updates status and `moderatedAt`. |
+
+`ReviewView` = `{id,cookieId,rating,title,body,authorName,verifiedBuyer,status,createdAt,moderatedAt}`. **No customer email is exposed**, including in moderation responses. Rating must be 1–5; title/authorName 1–100 characters; body 1–2000.
+
+Public review page = `{summary:{averageRating,reviewCount,histogram:{"5":n,"4":n,"3":n,"2":n,"1":n}},page:{items:ReviewView[],page,size,totalItems,totalPages}}`. Empty histograms include all five zero buckets. Unknown or archived cookies return 404.
+
+`CatalogService` now populates ratings from approved reviews with one aggregate query per list of cookies, including related-cookie lists. Moderation immediately affects catalog ratings and site statistics.
+
+**Phase 4 integration:** replace `service/engagement/NoPurchaseVerifier` with a `PurchaseVerifier` implementation using paid orders; do not register both as unqualified beans. Current reviews correctly report `verifiedBuyer=false`. Verification happens at submission time; no retrospective re-verification job is included.
+
+### Email system
+
+- Added Thymeleaf and TwelveMonkeys WebP support.
+- `EmailService.sendTemplate(to, subject, template, Map<String,Object> model, marketing)` renders HTML and sends MIME `multipart/alternative` with a plain-text part. Existing `send(...)` remains supported.
+- Marketing sends require an absolute HTTPS `unsubscribeUrl` without CR/LF; the footer and `List-Unsubscribe: <url>` use it. No marketing email is sent automatically by this phase.
+- `MAIL_ENABLED=false` renders and logs metadata without sending or logging reset tokens/message bodies. With mail enabled, SMTP failures are logged; durable retries are not part of this phase.
+- Password-reset mail now uses `password-reset`; account/reset-token behavior is unchanged.
+- Set `PUBLIC_BASE_URL` (default `http://localhost:8080/guiltFreeCookie`) for absolute images and `FRONTEND_BASE_URL` for shop/account links. Public static assets: `/email/wordmark@2x.png` and `/email/cookie.png`.
+- `GET /api/v1/email-assets/cookies/{cookieId}.png` is public; returns a 600×750 opaque cream PNG with a soft shadow, cached under `uploads/email/` with a source-derived filename, ETag and seven-day public cache lifetime. New requests reject unknown/archived cookies or missing images with 404. A changed source produces a new cached file; clients can retain a previously fetched URL for the advertised cache lifetime.
+
+| Method | Path | Result (admin JWT required) |
+|---|---|---|
+| GET | `/api/v1/admin/email-previews` | Six supported template names. |
+| GET | `/api/v1/admin/email-previews/{template}` | Rendered `text/html` with illustrative sample data; `Cache-Control: no-store`. Fetch as text and render with a sandboxed `srcdoc` iframe. |
+| POST | `/api/v1/admin/email-previews/{template}/send-test` | **202**; recipient is looked up from the authenticated admin, never supplied by the request. Uses existing mail-enabled configuration. |
+
+Templates: `password-reset`, `contact-auto-reply`, `contact-to-shop`, `order-confirmation`, `order-shipped`, `order-ready-for-pickup`. Unknown template names return 404. See [Phase 6 email models](handoff/phase-6-email-models.md) for the exact order integration contract and reusable fragments.
+
+### Frontend
+
+- `/login`, `/register`, `/forgot-password`, `/reset-password?token=...`, `/account`; separate customer session storage and role-scoped bearer selection. Customer 401s end the customer session. A wrong-current-password 401 is checked against `GET /me` before treating it as expiry.
+- `/products` uses paged server search, 300 ms debounced input, category counts, price bounds, in-stock filtering and sorting. Filters are in the URL.
+- `/product/{slug}` supports gallery thumbnails, pack availability/pricing, low stock, nutrition, related products, review histogram/list and authenticated review submission. Legacy ID URLs resolve through the API and replace the URL with the slug. Existing cart controls retain their pre-cart behavior.
+- Homepage featured selection uses `featured=true`; testimonials and rating counts use approved reviews. Contact and footer use site information. Contact submission now stays on-site with success/error states.
+- Admin navigation adds `/admindashboard/inventory` (stock adjustments/stocktake, keyboard-accessible history drawer, pack editor, gallery upload/reorder, details/nutrition), `/messages`, `/reviews`, `/email-previews`. Existing cookie CRUD remains available. The cookie dashboard adds low-stock alerts.
+- Prerendering fetches the paged catalog and product details; generated product paths use slugs. As before, without `PRERENDER_API_URL`, product pages render client-side and are omitted from the generated sitemap.
+
+### Validation and integration notes
+
+New `contact_messages` and `reviews` tables are additive. `reviews` has a database unique constraint on `(cookie_id,customer_email)` to enforce duplicate protection under concurrency. Existing dev `ddl-auto=update` creates these tables; production schema management must include them before running with `validate`.
+
+Backend tests cover contact/reviews/site info, actual H2 review queries and uniqueness, public/admin/customer boundaries and rate limiting, complete submission→approval→rejection rating flow, PNG/WebP conversion, MIME and template rendering. `MailpitDeliveryTest` is opt-in (`RUN_MAILPIT_TEST=true`) and sends only to the local SMTP listener at `127.0.0.1:1025`. Six sample emails were captured in Mailpit during verification. Outlook/Gmail client-specific rendering has not been tested; templates include inline styles, font fallbacks and Outlook VML buttons.
+
+`frontend/tests/phase6.browser.cjs` exercises twelve routes at 390px and 1440px, contact submission, slug canonicalization, unavailable packs, iframe sandboxing and separate customer/admin bearer tokens. It uses mocked API fixtures; backend integration is covered independently by the real Spring/H2 tests. Run with Playwright available and Vite on port 5173 (optional `PLAYWRIGHT_MODULE`, `CHROME_PATH`, `TEST_ORIGIN`).
+
+
 ## 2026-10-24 — Phase 2: Catalog
 
 Use these endpoints for the storefront from now on. `/cookie/getAll` and `/cookie/read/{id}` still work but return the raw entity.
