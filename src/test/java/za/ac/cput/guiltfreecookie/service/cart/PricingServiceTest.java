@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class PricingServiceTest {
 
     private PricingService pricing(boolean vatRegistered) {
-        return new PricingService(null, null, null, vatRegistered, new BigDecimal("0.15"));
+        return new PricingService(null, null, null, null, vatRegistered, new BigDecimal("0.15"));
     }
 
     @Test

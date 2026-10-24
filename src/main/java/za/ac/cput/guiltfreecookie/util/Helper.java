@@ -16,6 +16,7 @@ public class Helper {
     // something a person meant to type into a form.
     private static final Pattern CONTROL_CHARS = Pattern.compile("[\\p{Cntrl}&&[^\\t\\n]]");
 
+    private static final Pattern SA_POSTAL_CODE_PATTERN = Pattern.compile("^\\d{4}$");
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern NON_SLUG_CHARS = Pattern.compile("[^a-z0-9]+");
     private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
@@ -90,5 +91,9 @@ public class Helper {
 
     public static boolean isValidSlug(String slug) {
         return slug != null && slug.length() <= MAX_SLUG_LENGTH && SLUG_PATTERN.matcher(slug).matches();
+    }
+
+    public static boolean isValidPostalCode(String postalCode) {
+        return postalCode != null && SA_POSTAL_CODE_PATTERN.matcher(postalCode.trim()).matches();
     }
 }

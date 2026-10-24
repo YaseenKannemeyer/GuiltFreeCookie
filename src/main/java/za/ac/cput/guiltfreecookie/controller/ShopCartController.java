@@ -6,13 +6,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import za.ac.cput.guiltfreecookie.domain.ShippingMethod;
 import za.ac.cput.guiltfreecookie.dto.cart.AddItemRequest;
 import za.ac.cput.guiltfreecookie.dto.cart.CartEmailRequest;
 import za.ac.cput.guiltfreecookie.dto.cart.CartView;
 import za.ac.cput.guiltfreecookie.dto.cart.DiscountCodeRequest;
 import za.ac.cput.guiltfreecookie.dto.cart.QuantityRequest;
+import za.ac.cput.guiltfreecookie.dto.shipping.ShippingQuote;
 import za.ac.cput.guiltfreecookie.security.CurrentUser;
 import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
+
+import java.util.List;
 
 // The storefront cart. /cart/* (admin) is the older admin view of the same carts.
 @RestController
@@ -33,8 +37,16 @@ public class ShopCartController {
     }
 
     @GetMapping("/{cartId}")
-    public ResponseEntity<CartView> get(@PathVariable String cartId) {
-        return ResponseEntity.ok(cartService.get(cartId));
+    @Operation(summary = "The priced cart", description = "Add shippingMethod to include delivery in the total.")
+    public ResponseEntity<CartView> get(@PathVariable String cartId,
+                                        @RequestParam(required = false) ShippingMethod shippingMethod) {
+        return ResponseEntity.ok(cartService.get(cartId, shippingMethod));
+    }
+
+    @GetMapping("/{cartId}/shipping-options")
+    @Operation(summary = "Delivery options and prices for this cart", description = "Free delivery thresholds and FREE_SHIPPING codes are already applied.")
+    public ResponseEntity<List<ShippingQuote>> shippingOptions(@PathVariable String cartId) {
+        return ResponseEntity.ok(cartService.shippingOptions(cartId));
     }
 
     @PostMapping("/{cartId}/items")

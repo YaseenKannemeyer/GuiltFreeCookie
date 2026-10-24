@@ -23,6 +23,8 @@ import za.ac.cput.guiltfreecookie.repository.CookieRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieVariantRepository;
 import za.ac.cput.guiltfreecookie.repository.DiscountCodeRepository;
 import za.ac.cput.guiltfreecookie.service.discount.DiscountService;
+import za.ac.cput.guiltfreecookie.service.shipping.RuleBasedShippingProvider;
+import za.ac.cput.guiltfreecookie.service.shipping.ShippingSettingsService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Real queries on H2: locking, stock arithmetic, pricing and merging together.
 @DataJpaTest
-@Import({ShopCartService.class, PricingService.class, DiscountService.class})
+@Import({ShopCartService.class, PricingService.class, DiscountService.class,
+        RuleBasedShippingProvider.class, ShippingSettingsService.class})
 class ShopCartServiceTest {
 
     @Autowired

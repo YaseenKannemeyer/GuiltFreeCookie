@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,10 +128,5 @@ class ReviewServiceTest {
         when(cookieRepository.findById("c1")).thenReturn(Optional.of(new Cookie.Builder().copy(cookie).setArchived(true).build()));
 
         assertThrows(NotFoundException.class, () -> service.create("s", "c1", request));
-    }
-
-    @Test
-    void theDefaultVerifierNeverInventsPurchases() {
-        assertFalse(new NoPurchaseVerifier().hasBought("s", "c1"));
     }
 }

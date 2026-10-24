@@ -13,7 +13,12 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import za.ac.cput.guiltfreecookie.config.SecurityConfig;
 import za.ac.cput.guiltfreecookie.controller.AccountController;
 import za.ac.cput.guiltfreecookie.controller.AdminCatalogController;
+import za.ac.cput.guiltfreecookie.controller.AdminOrderController;
+import za.ac.cput.guiltfreecookie.controller.AdminShippingController;
+import za.ac.cput.guiltfreecookie.controller.CheckoutController;
 import za.ac.cput.guiltfreecookie.controller.ContactController;
+import za.ac.cput.guiltfreecookie.controller.OrderController;
+import za.ac.cput.guiltfreecookie.controller.PayFastController;
 import za.ac.cput.guiltfreecookie.controller.EmailAssetController;
 import za.ac.cput.guiltfreecookie.controller.EmailPreviewController;
 import za.ac.cput.guiltfreecookie.controller.ReviewController;
@@ -43,6 +48,11 @@ import za.ac.cput.guiltfreecookie.service.engagement.ContactService;
 import za.ac.cput.guiltfreecookie.service.engagement.ReviewService;
 import za.ac.cput.guiltfreecookie.service.engagement.SiteInfoService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailAssetService;
+import za.ac.cput.guiltfreecookie.service.order.AdminOrderService;
+import za.ac.cput.guiltfreecookie.service.order.CheckoutService;
+import za.ac.cput.guiltfreecookie.service.order.OrderService;
+import za.ac.cput.guiltfreecookie.service.payment.PayFastNotificationService;
+import za.ac.cput.guiltfreecookie.service.shipping.ShippingSettingsService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailTemplates;
 import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
@@ -79,7 +89,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AuthController.class, AccountController.class, CatalogController.class, AdminCatalogController.class,
         ShopCartController.class, MyCartController.class, AdminDiscountController.class,
         ContactController.class, SiteInfoController.class, ReviewController.class,
-        EmailPreviewController.class, EmailAssetController.class})
+        EmailPreviewController.class, EmailAssetController.class,
+        CheckoutController.class, OrderController.class, PayFastController.class, AdminOrderController.class,
+        AdminShippingController.class})
 @Import({SecurityConfig.class, JwtService.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC10aGF0LWlzLTMyLWJ5dGVzISE=",
@@ -138,6 +150,16 @@ class SecurityConfigTest {
     private EmailService emailService;
     @MockitoBean
     private EmailAssetService emailAssetService;
+    @MockitoBean
+    private CheckoutService checkoutService;
+    @MockitoBean
+    private OrderService orderService;
+    @MockitoBean
+    private PayFastNotificationService payFastNotificationService;
+    @MockitoBean
+    private AdminOrderService adminOrderService;
+    @MockitoBean
+    private ShippingSettingsService shippingSettingsService;
 
     private final Customer thandi = new Customer.Builder()
             .setCustomerEmail("thandi@example.co.za")
@@ -493,5 +515,58 @@ class SecurityConfigTest {
         when(emailAssetService.image("missing")).thenThrow(new NotFoundException("Cookie not found"));
 
         mvc.perform(get("/api/v1/email-assets/cookies/missing.png")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void guestsCanCheckOutAndViewTheirOrderWithItsToken() throws Exception {
+        mvc.perform(post("/api/v1/checkout").with(from("198.51.100.60"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/orders/GFC-261024-ABCD").param("token", "t")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/orders/GFC-261024-ABCD")).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/orders/GFC-261024-ABCD/cancel").param("token", "t")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/orders/GFC-261024-ABCD/payment").param("token", "t")).andExpect(status().isOk());
+    }
+
+    @Test
+    void payFastCanReachTheNotificationEndpoint() throws Exception {
+        when(payFastNotificationService.handle(anyMap(), anyString())).thenReturn(true);
+
+        mvc.perform(post("/api/v1/payments/payfast/notify").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .content("m_payment_id=GFC-261024-ABCD&payment_status=COMPLETE&signature=x"))
+                .andExpect(status().isOk());
+
+        when(payFastNotificationService.handle(anyMap(), anyString())).thenReturn(false);
+        mvc.perform(post("/api/v1/payments/payfast/notify").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .content("signature=forged"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void orderManagementAndShippingSettingsNeedAnAdmin() throws Exception {
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        String customerToken = "Bearer " + jwtService.generateToken(thandi);
+
+        for (String path : List.of("/api/v1/admin/orders", "/api/v1/admin/orders/GFC-1", "/api/v1/admin/shipping-settings")) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, customerToken)).andExpect(status().isForbidden());
+        }
+        mvc.perform(put("/api/v1/admin/orders/GFC-1/tracking").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/admin/orders/GFC-1/refund").header(HttpHeaders.AUTHORIZATION, customerToken))
+                .andExpect(status().isForbidden());
+
+        when(adminRepository.findById(jane.getAdminId())).thenReturn(Optional.of(jane));
+        mvc.perform(get("/api/v1/admin/orders").header(HttpHeaders.AUTHORIZATION, bearer(jane))).andExpect(status().isOk());
+    }
+
+    @Test
+    void checkoutIsRateLimited() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            mvc.perform(post("/api/v1/checkout").with(from("203.0.113.70")).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isCreated());
+        }
+        mvc.perform(post("/api/v1/checkout").with(from("203.0.113.70")).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isTooManyRequests());
     }
 }

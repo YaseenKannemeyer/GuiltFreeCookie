@@ -4,6 +4,83 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-24 — Phase 4: Checkout, orders, shipping & PayFast
+
+### ⚠️ Action required before deploying
+1. **Database:** `Address.postalCode` is now text, so codes like `0002` keep their leading zero. Hibernate won't change an existing column's type, so run this once on MySQL:
+   `ALTER TABLE delivery_details MODIFY postal_code VARCHAR(10);`
+2. **PayFast:** create a free sandbox account at sandbox.payfast.co.za (Settings → Integration). Set a passphrase there, then set `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE`. The shared test merchant `10000100` **rejects signatures**, so use your own.
+3. **Public URLs:** PayFast must be able to reach `PAYFAST_NOTIFY_URL` (it defaults to `PUBLIC_BASE_URL` + `/api/v1/payments/payfast/notify`). For local testing, run `cloudflared tunnel --url http://localhost:8080` and set `PUBLIC_BASE_URL` to the tunnel URL + `/guiltFreeCookie`. `FRONTEND_BASE_URL` is where customers return after paying.
+
+### Delivery options
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/carts/{cartId}/shipping-options` | `[{method, label, cost, eta, freeShipping, requiresAddress, details}]`. Free delivery and FREE_SHIPPING codes are already applied |
+| GET | `/api/v1/carts/{cartId}?shippingMethod=COURIER` | The cart with `shippingMethod`, `shipping` and a `total` that includes delivery. **Show this total on the checkout page**: it's exactly what checkout charges |
+
+Methods: `COURIER` (needs an address), `PUDO` (needs a locker name), `PICKUP` (`details` is the pickup address and instructions). Defaults: courier R80, PUDO R60, free over R500 for both, pickup free. Admins change these at `/api/v1/admin/shipping-settings`.
+
+### Checkout (public; a customer token is optional)
+
+**`POST /api/v1/checkout`**:
+```json
+{ "cartId": "…", "email": "thandi@example.co.za", "firstName": "Thandi", "lastName": "Mokoena",
+  "phone": "082 123 4567", "shippingMethod": "COURIER",
+  "address": { "streetNumber": "12", "streetName": "Bakery Lane", "complex": "Unit 4, Oak Court",
+               "suburb": "Strandfontein", "city": "Cape Town", "province": "WESTERN_CAPE", "postalCode": "7798" },
+  "pudoLocker": null, "note": "Leave at the gate", "newsletterOptIn": true }
+```
+- `phone` is required for COURIER and PUDO. `address` is only for COURIER; `pudoLocker` is only for PUDO.
+- `province` is one of `EASTERN_CAPE`, `FREE_STATE`, `GAUTENG`, `KWAZULU_NATAL`, `LIMPOPO`, `MPUMALANGA`, `NORTH_WEST`, `NORTHERN_CAPE`, `WESTERN_CAPE`.
+- When signed in, `email` is ignored and the account email is used.
+
+**`201`** returns `{orderNumber, accessToken, status, total, payment: {gateway, actionUrl, fields}}`
+- **Store `orderNumber` and `accessToken`** (they make up the order link), then **POST a form** to `payment.actionUrl` with one hidden input per entry in `payment.fields`, in the given order, and submit it. That sends the customer to PayFast.
+- `payment` is `null` and `status` is `PAID` when nothing is owed (100% discount). Go straight to the order page.
+- Stock is held for **30 minutes**. Unpaid orders are then cancelled and the cart reopens.
+
+Errors (show `message`):
+- `400`: missing or invalid details (email, name, SA mobile number, address, 4-digit postal code, locker), or an empty cart.
+- `404`: cart not found, or someone else's account cart.
+- `409`: the cart was already checked out; an item changed or sold out ("Please review your cart"); the discount no longer applies; or "You've already used code X".
+- `429`: too many checkouts (20 per hour per IP).
+
+### After PayFast
+
+PayFast sends the customer back to:
+- **Paid or "back to shop":** `FRONTEND_BASE_URL/order/{orderNumber}?token={accessToken}`. The status can stay `PENDING_PAYMENT` for a few seconds until PayFast's notification arrives, so poll every few seconds while it's pending.
+- **Cancelled:** `FRONTEND_BASE_URL/checkout/cancelled?order={orderNumber}&token={accessToken}`. Call the cancel endpoint below, then send them back to their cart, which is active again.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/orders/{orderNumber}?token=` | `OrderView`: the thank-you and tracking page. `404` for a wrong token |
+| POST | `/api/v1/orders/{orderNumber}/payment?token=` | A fresh `PaymentRedirect` ("Pay now" again) while `canPay` is true; `409` after that |
+| POST | `/api/v1/orders/{orderNumber}/cancel?token=` | Cancel an unpaid order: the stock is released and the cart reopens. `409` if it isn't unpaid |
+
+`OrderView` = `{orderNumber, status, createdAt, paidAt, email, firstName, lastName, phone, shippingMethod, address, pudoLocker, pickupDetails, deliveryEta, items: [{cookieId, name, variantLabel, unitsPerPack, unitPrice, quantity, lineTotal}], subtotal, discountCode, discountTotal, shippingTotal, vatIncluded, total, courierName, trackingNumber, trackingUrl, timeline: [{status, note, at}], payBy, canPay, canCancel}`
+
+Statuses: `PENDING_PAYMENT` → `PAID` → `PROCESSING` → `READY_FOR_PICKUP` (pickup orders) or `SHIPPED` → `DELIVERED`, with `PAYMENT_FAILED`, `CANCELLED` and `REFUNDED` on the side.
+
+Emails are sent automatically: order confirmation (on payment), shipped (with tracking) and ready for pickup. Each one links to the order page with its token.
+
+### Admin orders (admin token)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/admin/orders?q=&status=&from=&to=&page=&size=` | `PageResponse<OrderSummary>` (`{orderNumber, createdAt, customerName, email, shippingMethod, itemCount, total, status}`), newest first. `q` matches order number, email or last name. Dates are `yyyy-MM-dd`, inclusive |
+| GET | `/api/v1/admin/orders/{orderNumber}` | `{order: OrderView, customerNote, events: [{status, note, actor, createdAt}], payments: [...]}` |
+| PUT | `/api/v1/admin/orders/{orderNumber}/status` | `{status, note?}`. Allowed moves: PAID→PROCESSING, PROCESSING→READY_FOR_PICKUP (pickup only; emails the customer), READY_FOR_PICKUP or SHIPPED→DELIVERED, PENDING_PAYMENT→CANCELLED (frees stock). Anything else is a `409` |
+| PUT | `/api/v1/admin/orders/{orderNumber}/tracking` | `{courierName, trackingNumber, trackingUrl?}` (`https://` only). Marks a courier or PUDO order SHIPPED and emails the customer; call again to correct the details |
+| POST | `/api/v1/admin/orders/{orderNumber}/refund` | `{note?}`. Records the refund; restocks if the order hadn't shipped. **The money itself is paid back in the PayFast dashboard** |
+| GET/PUT | `/api/v1/admin/shipping-settings` | `{courierEnabled, courierRate, courierEta, pudoEnabled, pudoRate, pudoEta, pickupEnabled, pickupAddress, pickupInstructions, pickupEta, freeShippingThreshold}`. An empty threshold switches free delivery off |
+
+### Also changed
+- `CartView` gained `shippingMethod`; `shipping` is filled in when you ask for a method.
+- Reviews now get a real "Verified buyer" badge (a paid order containing that cookie).
+- `/api/v1/site/info` `stats.customersServed` and `stats.cookiesSold` are now live (paid, unrefunded orders; cookies are counted individually).
+- `Address` (used by delivery details) gained `complex`, `suburb` and `province`; `postalCode` is now a string.
+
 ## 2026-10-24 — Phase 6: Engagement, branded email, and frontend integration
 
 Implemented on `phase-6-chatgpt`, based on Phase 2 commit `bd3a6c3`. Cart, order, payment and shipping code remains owned by the Phase 3–5 branch.

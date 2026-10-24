@@ -42,7 +42,7 @@ public class DeliveryDetailsControllerTest {
                 "15",
                 "Main Road",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         deliveryDetails = DeliveryDetailsFactory.createDeliveryDetails(

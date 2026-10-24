@@ -81,7 +81,7 @@ class EngagementFlowTest {
                 .andExpect(jsonPath("$.page.items[0].customerEmail").doesNotExist());
         mvc.perform(get("/api/v1/site/info"))
                 .andExpect(jsonPath("$.stats.reviewCount").value(1))
-                .andExpect(jsonPath("$.stats.customersServed").isEmpty());
+                .andExpect(jsonPath("$.stats.customersServed").value(0));
 
         mvc.perform(put("/api/v1/admin/reviews/" + reviewId + "/reject").header(HttpHeaders.AUTHORIZATION, adminToken))
                 .andExpect(status().isOk());

@@ -21,6 +21,9 @@ The renderer supplies `site`, `publicBase`, `frontendBase`, the CTA VML fallback
 
 ## Template-specific models
 
+Wired in Phase 4: `service/order/OrderEmailListener` sends `order-confirmation` when an order is paid, `order-shipped` when tracking is added, and `order-ready-for-pickup`, each after the change commits.
+
+
 | Template | Required fields |
 |---|---|
 | `password-reset` | `actionUrl`, `actionLabel`, `resetMinutes` (number). The existing password-reset service is wired. |

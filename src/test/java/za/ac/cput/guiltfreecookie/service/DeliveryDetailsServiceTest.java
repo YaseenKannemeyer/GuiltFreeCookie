@@ -28,7 +28,7 @@ class DeliveryDetailsServiceTest {
                 "15",
                 "Main Road",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         deliveryDetails = DeliveryDetailsFactory.createDeliveryDetails(
@@ -62,7 +62,7 @@ class DeliveryDetailsServiceTest {
                 "25",
                 "Long Street",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         DeliveryDetails updatedDetails =

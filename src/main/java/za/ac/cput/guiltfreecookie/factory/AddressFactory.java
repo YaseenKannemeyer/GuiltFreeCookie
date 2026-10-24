@@ -9,13 +9,12 @@ public class AddressFactory {
             String streetNumber,
             String streetName,
             String city,
-            Long postalCode) {
+            String postalCode) {
 
         if (Helper.isNullOrEmpty(streetNumber)
                 || Helper.isNullOrEmpty(streetName)
                 || Helper.isNullOrEmpty(city)
-                || postalCode == null
-                || postalCode <= 0) {
+                || !Helper.isValidPostalCode(postalCode)) {
             return null;
         }
 

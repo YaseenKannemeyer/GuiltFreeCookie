@@ -13,7 +13,7 @@ public record SiteInfo(
     public record Social(String instagram, String facebook, String tiktok) {
     }
 
-    // customersServed and cookiesSold stay null until orders exist (Phase 4).
+    // customersServed and cookiesSold count paid, unrefunded orders (cookies are individual cookies, not packs).
     public record Stats(Double averageRating, long reviewCount, Long customersServed, Long cookiesSold) {
     }
 }

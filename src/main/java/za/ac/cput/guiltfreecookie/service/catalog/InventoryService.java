@@ -25,6 +25,7 @@ public class InventoryService {
     static final int MAX_STOCK = 1_000_000;
     static final int MAX_NOTE_LENGTH = 255;
     static final int MAX_HISTORY = 200;
+    static final String SYSTEM_ACTOR = "system";
     // Only the order flow (Phase 4) records these.
     private static final Set<InventoryReason> SYSTEM_REASONS =
             EnumSet.of(InventoryReason.ORDER_RESERVED, InventoryReason.ORDER_RELEASED, InventoryReason.REFUNDED);
@@ -77,6 +78,25 @@ public class InventoryService {
         return updated;
     }
 
+    // For checkout: atomic, so two orders can't both take the last cookies. False when there aren't enough.
+    @Transactional
+    public boolean reserve(String cookieId, int units, String orderNumber) {
+        if (cookieRepository.adjustStock(cookieId, -units) == 0) {
+            return false;
+        }
+        record(cookieId, -units, currentStock(cookieId), InventoryReason.ORDER_RESERVED, "Order " + orderNumber, SYSTEM_ACTOR);
+        return true;
+    }
+
+    // Puts an unpaid, cancelled or refunded order's cookies back. A cookie deleted since is skipped.
+    @Transactional
+    public void release(String cookieId, int units, String orderNumber, InventoryReason reason) {
+        if (cookieRepository.adjustStock(cookieId, units) == 0) {
+            return;
+        }
+        record(cookieId, units, currentStock(cookieId), reason, "Order " + orderNumber, SYSTEM_ACTOR);
+    }
+
     public List<InventoryMovement> history(String cookieId, int limit) {
         if (!cookieRepository.existsById(cookieId)) {
             throw new NotFoundException("Cookie not found");
@@ -95,5 +115,9 @@ public class InventoryService {
                 .setActor(actor)
                 .setCreatedAt(LocalDateTime.now())
                 .build());
+    }
+
+    private int currentStock(String cookieId) {
+        return cookieRepository.findById(cookieId).map(Cookie::getStockQuantity).orElse(0);
     }
 }
