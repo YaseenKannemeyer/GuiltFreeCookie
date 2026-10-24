@@ -4,6 +4,83 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-24 — Phase 3: Cart & discount codes
+
+Guest-first cart. **Store `cartId` in localStorage**; there's no login needed. Every cart endpoint returns the full priced cart (`CartView`), so just re-render from the response. Prices always come from the server.
+
+### Storefront (public; a customer token is optional)
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | `/api/v1/carts` | – | `201 CartView`. With a customer token it returns their existing cart if there is one. Rate-limited (30/hour per IP) |
+| GET | `/api/v1/carts/{cartId}` | – | `404` if it doesn't exist: start a new cart |
+| POST | `/api/v1/carts/{cartId}/items` | `{variantId, quantity}` | Adds a pack (`variantId` from product detail). The same pack again increases its quantity |
+| PUT | `/api/v1/carts/{cartId}/items/{cartItemId}` | `{quantity}` | `0` removes the item |
+| DELETE | `/api/v1/carts/{cartId}/items/{cartItemId}` | – | Remove one item |
+| DELETE | `/api/v1/carts/{cartId}/items` | – | Empty the cart (also drops the discount code) |
+| POST | `/api/v1/carts/{cartId}/discount` | `{code}` | Case-insensitive. `400` with a message to show ("This code has expired", "Spend R150.00 or more to use this code", …) |
+| DELETE | `/api/v1/carts/{cartId}/discount` | – | |
+| PUT | `/api/v1/carts/{cartId}/email` | `{email}` | Guests: ask for the email **first** in checkout (it enables cart-recovery emails). `409` for a signed-in customer's cart |
+
+### Signed-in customers (customer token)
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| GET | `/api/v1/me/cart` | – | Their saved cart; `404` if none |
+| POST | `/api/v1/me/cart/merge` | `{cartId}` | **Call right after login or registration** with the browser's cartId. It returns the cart to use from now on (it can be a different `cartId`: store the returned one) |
+
+### CartView
+```json
+{
+  "cartId": "…", "status": "ACTIVE", "email": "thandi@example.co.za", "accountOwned": false,
+  "items": [
+    { "cartItemId": "…", "cookieId": "…", "slug": "double-chocolate-chunk", "name": "Double Chocolate Chunk",
+      "image": "cookies/….webp", "variantId": "…", "variantLabel": "Box of 6", "unitsPerPack": 6,
+      "unitPrice": 170.00, "quantity": 1, "lineTotal": 170.00, "maxQuantity": 1, "issue": null }
+  ],
+  "itemCount": 3, "cookieCount": 8,
+  "subtotal": 234.00,
+  "discount": { "code": "TREAT10", "type": "PERCENT", "description": "10% off your treat", "amount": 23.40,
+                "freeShipping": false, "applied": true, "message": null },
+  "discountTotal": 23.40,
+  "shipping": null,
+  "vatIncluded": null,
+  "total": 210.60, "currency": "ZAR",
+  "canCheckout": true
+}
+```
+- **Quantity selector:** limit it to `maxQuantity`, which already accounts for other pack sizes of the same cookie in the cart (max 50).
+- **`issue`** on a line:
+  - `NOT_ENOUGH_STOCK`: stock dropped after adding. Show "Only N available", offer to set the quantity to `maxQuantity`, or remove it.
+  - `UNAVAILABLE`: the cookie was archived or the pack hidden. It's priced at 0; offer "Remove".
+- **`canCheckout: false`** while any line has an issue or the cart is empty. Disable the checkout button.
+- **`discount.applied: false`:** the code is still on the cart but isn't counting right now. Show `discount.message` (e.g. the subtotal dropped below the minimum).
+- **`shipping`** is `null` until Phase 4: show "Calculated at checkout". `vatIncluded` is `null` unless the shop is VAT-registered.
+- **Errors:**
+  - `409` when adding more than is in stock. Show `message`, e.g. "Sorry, you can only add 2 more Double Chocolate Chunk cookies" or "… is sold out".
+  - `409` when changing a checked-out cart. Start a new cart.
+  - `404` for an unknown pack or cookie.
+  - `400` for a quantity outside 1–50 or more than 30 different items.
+
+### Admin: discount codes (admin token)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/admin/discounts` | Newest first |
+| GET | `/api/v1/admin/discounts/{id}` | |
+| POST | `/api/v1/admin/discounts` | See the body below. `409` if the code exists |
+| PUT | `/api/v1/admin/discounts/{id}` | Same body; replaces everything except `usedCount` |
+| DELETE | `/api/v1/admin/discounts/{id}` | Switches it off (`active: false`); it isn't deleted |
+
+Body: `{code, type, value, minSubtotal?, startsAt?, endsAt?, maxUses?, onePerEmail?, restrictedToEmail?, description?, active?}`
+- `type`: `PERCENT` (`value` 1–100), `FIXED` (rand), `FREE_SHIPPING` (no value; it takes effect on shipping in Phase 4)
+- `code`: 3–30 letters, numbers, `-` or `_`; stored in upper case
+- `maxUses: 1` makes a single-use code. `restrictedToEmail` makes a personal code. Leave the dates empty for "always". Dates are local time (`2026-12-01T00:00:00`)
+- A use is counted when an order is paid (Phase 4), not when the code is applied to a cart
+
+### Unchanged
+`/cart/*` (admin) still works and now shows the server-computed `totalPrice` of storefront carts.
+
 ## 2026-10-24 — Phase 2: Catalog
 
 Use these endpoints for the storefront from now on. `/cookie/getAll` and `/cookie/read/{id}` still work but return the raw entity.

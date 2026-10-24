@@ -14,6 +14,9 @@ import za.ac.cput.guiltfreecookie.config.SecurityConfig;
 import za.ac.cput.guiltfreecookie.controller.AccountController;
 import za.ac.cput.guiltfreecookie.controller.AdminCatalogController;
 import za.ac.cput.guiltfreecookie.controller.AdminController;
+import za.ac.cput.guiltfreecookie.controller.AdminDiscountController;
+import za.ac.cput.guiltfreecookie.controller.MyCartController;
+import za.ac.cput.guiltfreecookie.controller.ShopCartController;
 import za.ac.cput.guiltfreecookie.controller.CatalogController;
 import za.ac.cput.guiltfreecookie.controller.AuthController;
 import za.ac.cput.guiltfreecookie.controller.CookieController;
@@ -30,6 +33,8 @@ import za.ac.cput.guiltfreecookie.service.CustomerAuthService;
 import za.ac.cput.guiltfreecookie.service.CustomerService;
 import za.ac.cput.guiltfreecookie.service.ImageStorageService;
 import za.ac.cput.guiltfreecookie.service.NewsletterService;
+import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
+import za.ac.cput.guiltfreecookie.service.discount.DiscountService;
 import za.ac.cput.guiltfreecookie.service.catalog.CatalogAdminService;
 import za.ac.cput.guiltfreecookie.service.catalog.CatalogService;
 import za.ac.cput.guiltfreecookie.service.catalog.CookieImageService;
@@ -54,7 +59,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** The real filter chain: who may call what, and which headers come back. */
 @WebMvcTest(controllers = {
         AdminController.class, CookieController.class, CustomerController.class, NewsletterController.class,
-        AuthController.class, AccountController.class, CatalogController.class, AdminCatalogController.class})
+        AuthController.class, AccountController.class, CatalogController.class, AdminCatalogController.class,
+        ShopCartController.class, MyCartController.class, AdminDiscountController.class})
 @Import({SecurityConfig.class, JwtService.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC10aGF0LWlzLTMyLWJ5dGVzISE=",
@@ -96,6 +102,10 @@ class SecurityConfigTest {
     private CookieImageService cookieImageService;
     @MockitoBean
     private InventoryService inventoryService;
+    @MockitoBean
+    private ShopCartService shopCartService;
+    @MockitoBean
+    private DiscountService discountService;
 
     private final Customer thandi = new Customer.Builder()
             .setCustomerEmail("thandi@example.co.za")
@@ -327,5 +337,51 @@ class SecurityConfigTest {
         mvc.perform(put("/api/v1/admin/cookies/CK1/stock").header(HttpHeaders.AUTHORIZATION, bearer(jane))
                         .contentType(MediaType.APPLICATION_JSON).content(stock))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void theCartWorksForGuests() throws Exception {
+        mvc.perform(post("/api/v1/carts").with(from("198.51.100.40"))).andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/carts/some-cart-id")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/carts/some-cart-id/items").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\":\"V1\",\"quantity\":1}")).andExpect(status().isOk());
+        mvc.perform(delete("/api/v1/carts/some-cart-id/discount")).andExpect(status().isOk());
+    }
+
+    @Test
+    void aSignedInCustomerIsRecognisedWhenStartingACart() throws Exception {
+        when(customerRepository.findById("thandi@example.co.za")).thenReturn(Optional.of(thandi));
+
+        mvc.perform(post("/api/v1/carts").with(from("198.51.100.41"))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtService.generateToken(thandi)))
+                .andExpect(status().isCreated());
+        org.mockito.Mockito.verify(shopCartService).create("thandi@example.co.za");
+
+        mvc.perform(post("/api/v1/carts").with(from("198.51.100.42"))).andExpect(status().isCreated());
+        org.mockito.Mockito.verify(shopCartService).create(null);
+    }
+
+    @Test
+    void mySavedCartNeedsACustomerToken() throws Exception {
+        mvc.perform(get("/api/v1/me/cart")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/me/cart/merge").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void discountCodesAreManagedByAdminsOnly() throws Exception {
+        when(customerRepository.findById("thandi@example.co.za")).thenReturn(Optional.of(thandi));
+
+        mvc.perform(get("/api/v1/admin/discounts")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/discounts").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtService.generateToken(thandi)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void startingCartsIsRateLimited() throws Exception {
+        for (int i = 0; i < 30; i++) {
+            mvc.perform(post("/api/v1/carts").with(from("203.0.113.55"))).andExpect(status().isCreated());
+        }
+        mvc.perform(post("/api/v1/carts").with(from("203.0.113.55"))).andExpect(status().isTooManyRequests());
     }
 }
