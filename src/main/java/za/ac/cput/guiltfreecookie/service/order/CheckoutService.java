@@ -142,7 +142,7 @@ public class CheckoutService {
         orderService.addEvent(order, OrderStatus.PENDING_PAYMENT, "Order placed", "customer");
         cartRepository.save(new Cart.Builder().copy(cart).setStatus(CartStatus.CHECKED_OUT).setUpdatedAt(now).build());
         if (Boolean.TRUE.equals(request.newsletterOptIn())) {
-            newsletterService.subscribe(contact.email());
+            newsletterService.subscribe(contact.email(), "checkout");
         }
 
         String token = orderLinks.token(order);

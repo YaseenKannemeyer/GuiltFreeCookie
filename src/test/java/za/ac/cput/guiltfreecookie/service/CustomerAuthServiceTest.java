@@ -88,7 +88,7 @@ class CustomerAuthServiceTest {
         assertNotEquals(PASSWORD, saved.getValue().getPasswordHash());
         assertTrue(passwordEncoder.matches(PASSWORD, saved.getValue().getPasswordHash()));
         assertNotNull(response.token());
-        verify(newsletterService, never()).subscribe(anyString());
+        verify(newsletterService, never()).subscribe(anyString(), any());
     }
 
     @Test
@@ -97,7 +97,7 @@ class CustomerAuthServiceTest {
 
         service.register(registration(EMAIL, PASSWORD, null, true));
 
-        verify(newsletterService).subscribe(EMAIL);
+        verify(newsletterService).subscribe(EMAIL, "register");
     }
 
     @Test

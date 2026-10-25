@@ -45,7 +45,7 @@ export const BUSINESS = {
 };
 
 export const LEGAL = {
-  lastUpdated: "12 October 2026",
+  lastUpdated: "25 October 2026",
   // Set to true once an attorney has reviewed the four policies. While false,
   // each policy page shows a short "draft" notice at the top.
   reviewed: false,

@@ -9,7 +9,7 @@ export function requestRole(url) {
   const path = url.slice(API_BASE.length).split("?")[0];
   if (/^\/api\/v1\/me(?:\/|$)/.test(path)) return "customer";
   // Public, but a signed-in customer's cart and checkout belong to their account.
-  if (/^\/api\/v1\/(?:carts|checkout)(?:\/|$)/.test(path)) return "customer-optional";
+  if (/^\/api\/v1\/(?:carts|checkout|events)(?:\/|$)/.test(path)) return "customer-optional";
   if (
     (/^\/admin\//.test(path) && path !== "/admin/login") ||
     /^\/api\/v1\/admin(?:\/|$)/.test(path) ||

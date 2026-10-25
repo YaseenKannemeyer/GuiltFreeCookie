@@ -29,7 +29,7 @@ public class NewsletterController {
         if (!Helper.isValidEmail(email)) {
             return ResponseEntity.badRequest().build();
         }
-        newsletterService.subscribe(email);
+        newsletterService.subscribe(email, "footer");
         return ResponseEntity.noContent().build();
     }
 

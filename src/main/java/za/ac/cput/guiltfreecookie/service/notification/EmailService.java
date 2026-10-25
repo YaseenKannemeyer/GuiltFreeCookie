@@ -55,15 +55,16 @@ public class EmailService {
         }
     }
 
-    // Branded HTML plus a plain-text alternative. Marketing email must carry an HTTPS unsubscribe
-    // link, which also goes in the List-Unsubscribe header. Bodies are never logged (they can hold reset links).
+    // Branded HTML plus a plain-text alternative. Marketing email must carry an HTTPS unsubscribe link (plain
+    // HTTP only on localhost); oneClickUnsubscribeUrl, when given, goes in the List-Unsubscribe header so mail
+    // apps can unsubscribe in one tap (RFC 8058). Bodies are never logged (they can hold reset links).
     @Async
     public void sendTemplate(String to, String subject, String template, Map<String, Object> model, boolean marketing) {
         Map<String, Object> values = new HashMap<>(model);
         values.put("marketing", marketing);
         String unsubscribeUrl = Objects.toString(model.get("unsubscribeUrl"), "");
-        if (marketing && (!unsubscribeUrl.startsWith("https://")
-                || unsubscribeUrl.contains("\r") || unsubscribeUrl.contains("\n"))) {
+        String headerUrl = Objects.toString(model.get("oneClickUnsubscribeUrl"), unsubscribeUrl);
+        if (marketing && (!isUnsubscribeUrl(unsubscribeUrl) || !isUnsubscribeUrl(headerUrl))) {
             throw new IllegalArgumentException("Marketing email needs an HTTPS unsubscribeUrl");
         }
         String html = templates.render(template, values);
@@ -80,11 +81,19 @@ public class EmailService {
             String plainText = EmailTemplates.plainText(html) + "\n\n" + Objects.toString(values.get("actionUrl"), "");
             helper.setText(plainText, html);
             if (marketing) {
-                message.setHeader("List-Unsubscribe", "<" + unsubscribeUrl + ">");
+                message.setHeader("List-Unsubscribe", "<" + headerUrl + ">");
+                if (model.containsKey("oneClickUnsubscribeUrl")) {
+                    message.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+                }
             }
             mailSender.send(message);
         } catch (MessagingException | MailException e) {
             log.error("Failed to send email template '{}' to {}", template, to, e);
         }
+    }
+
+    private static boolean isUnsubscribeUrl(String url) {
+        return (url.startsWith("https://") || url.matches("http://localhost(:\\d+)?/.*"))
+                && !url.contains("\r") && !url.contains("\n");
     }
 }

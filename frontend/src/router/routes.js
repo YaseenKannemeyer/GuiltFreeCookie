@@ -110,11 +110,48 @@ export const routes = [
     component: () => import("../views/OrderView.vue"),
     meta: { title: "Your order", noindex: true },
   },
+  // Landing pages for links in the automated emails.
+  {
+    path: "/cart/recover/:token",
+    name: "CartRecover",
+    component: () => import("../views/CartFromLinkView.vue"),
+    meta: { title: "Your cart", noindex: true },
+  },
+  {
+    path: "/reorder/:orderNumber",
+    name: "Reorder",
+    component: () => import("../views/CartFromLinkView.vue"),
+    meta: { title: "Reorder", noindex: true },
+  },
+  {
+    path: "/review/:orderNumber",
+    name: "OrderReview",
+    component: () => import("../views/OrderReviewView.vue"),
+    meta: { title: "Review your cookies", noindex: true },
+  },
+  {
+    path: "/email/unsubscribe",
+    name: "EmailUnsubscribe",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "Unsubscribe", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/email/subscribed",
+    name: "EmailSubscribed",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "You're subscribed", noindex: true },
+  },
   {
     path: "/account",
     name: "Account",
     component: () => import("../views/AccountView.vue"),
     meta: { title: "My account", requiresCustomer: true, noindex: true },
+  },
+  {
+    path: "/account/claim",
+    name: "ClaimOrders",
+    component: () => import("../views/ClaimOrdersView.vue"),
+    meta: { title: "Add earlier orders", requiresCustomer: true, noindex: true },
   },
   ...[
     ["inventory", "AdminInventory", "Stock & packs", "AdminInventoryView"],
@@ -126,6 +163,7 @@ export const routes = [
       "Email previews",
       "AdminEmailPreviewsView",
     ],
+    ["email-flows", "AdminEmailFlows", "Email flows", "AdminEmailFlowsView"],
   ].map(([path, name, title, view]) => ({
     path: `/admindashboard/${path}`,
     name,

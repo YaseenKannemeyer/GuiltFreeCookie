@@ -120,5 +120,7 @@ export function useCart() {
       return load();
     },
     isGone,
+    // A cart that arrived from an email link (recovery or reorder) becomes this browser's cart.
+    adopt,
   };
 }

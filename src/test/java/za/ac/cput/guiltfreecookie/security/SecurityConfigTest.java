@@ -12,6 +12,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import za.ac.cput.guiltfreecookie.config.SecurityConfig;
 import za.ac.cput.guiltfreecookie.controller.AccountController;
+import za.ac.cput.guiltfreecookie.controller.AdminEmailFlowController;
+import za.ac.cput.guiltfreecookie.controller.EmailController;
+import za.ac.cput.guiltfreecookie.controller.FlowLinkController;
+import za.ac.cput.guiltfreecookie.controller.account.MyAddressController;
+import za.ac.cput.guiltfreecookie.controller.account.MyOrderController;
 import za.ac.cput.guiltfreecookie.controller.AdminCatalogController;
 import za.ac.cput.guiltfreecookie.controller.AdminOrderController;
 import za.ac.cput.guiltfreecookie.controller.AdminShippingController;
@@ -53,6 +58,14 @@ import za.ac.cput.guiltfreecookie.service.order.CheckoutService;
 import za.ac.cput.guiltfreecookie.service.order.OrderService;
 import za.ac.cput.guiltfreecookie.service.payment.PayFastNotificationService;
 import za.ac.cput.guiltfreecookie.service.shipping.ShippingSettingsService;
+import za.ac.cput.guiltfreecookie.service.account.AddressBookService;
+import za.ac.cput.guiltfreecookie.service.account.ClaimOrderService;
+import za.ac.cput.guiltfreecookie.service.account.MyOrderService;
+import za.ac.cput.guiltfreecookie.service.flow.EmailFlowSettingsService;
+import za.ac.cput.guiltfreecookie.service.flow.EmailLinkService;
+import za.ac.cput.guiltfreecookie.service.flow.EmailTrackingService;
+import za.ac.cput.guiltfreecookie.service.flow.FlowStatsService;
+import za.ac.cput.guiltfreecookie.service.flow.ProductViewService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailTemplates;
 import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
@@ -91,7 +104,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ContactController.class, SiteInfoController.class, ReviewController.class,
         EmailPreviewController.class, EmailAssetController.class,
         CheckoutController.class, OrderController.class, PayFastController.class, AdminOrderController.class,
-        AdminShippingController.class})
+        AdminShippingController.class, EmailController.class, FlowLinkController.class, AdminEmailFlowController.class,
+        MyOrderController.class, MyAddressController.class})
 @Import({SecurityConfig.class, JwtService.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC10aGF0LWlzLTMyLWJ5dGVzISE=",
@@ -100,6 +114,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.security.require-https=false"
 })
 class SecurityConfigTest {
+
+    @MockitoBean
+    private MyOrderService myOrderService;
+    @MockitoBean
+    private AddressBookService addressBookService;
+    @MockitoBean
+    private ClaimOrderService claimOrderService;
 
     @Autowired
     private MockMvc mvc;
@@ -160,6 +181,16 @@ class SecurityConfigTest {
     private AdminOrderService adminOrderService;
     @MockitoBean
     private ShippingSettingsService shippingSettingsService;
+    @MockitoBean
+    private EmailTrackingService emailTrackingService;
+    @MockitoBean
+    private EmailLinkService emailLinkService;
+    @MockitoBean
+    private ProductViewService productViewService;
+    @MockitoBean
+    private EmailFlowSettingsService emailFlowSettingsService;
+    @MockitoBean
+    private FlowStatsService flowStatsService;
 
     private final Customer thandi = new Customer.Builder()
             .setCustomerEmail("thandi@example.co.za")
@@ -568,5 +599,73 @@ class SecurityConfigTest {
         }
         mvc.perform(post("/api/v1/checkout").with(from("203.0.113.70")).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void emailLinksWorkWithoutSigningIn() throws Exception {
+        when(emailTrackingService.clicked("abc", "http://localhost:5173/cart")).thenReturn("http://localhost:5173/cart");
+
+        mvc.perform(get("/api/v1/email/o/abc.gif")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/email/c/abc").param("u", "http://localhost:5173/cart"))
+                .andExpect(status().isFound()).andExpect(header().string(HttpHeaders.LOCATION, "http://localhost:5173/cart"));
+        for (String path : List.of("/api/v1/email/unsubscribe", "/api/v1/email/resubscribe", "/api/v1/email/stay")) {
+            mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"a@b.co\",\"token\":\"t\"}"))
+                    .andExpect(status().isNoContent());
+        }
+        mvc.perform(post("/api/v1/email/unsubscribe/one-click").param("e", "a@b.co").param("t", "t")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/events/product-view").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isAccepted());
+        mvc.perform(get("/api/v1/carts/recover/token")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/orders/GFC-1/reorder").param("token", "t")).andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/reviews/by-link").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void emailFlowSettingsNeedAnAdmin() throws Exception {
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        String customerToken = "Bearer " + jwtService.generateToken(thandi);
+
+        for (String path : List.of("/api/v1/admin/email-flows", "/api/v1/admin/email-flows/stats")) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, customerToken)).andExpect(status().isForbidden());
+        }
+        when(adminRepository.findById(jane.getAdminId())).thenReturn(Optional.of(jane));
+        mvc.perform(get("/api/v1/admin/email-flows").header(HttpHeaders.AUTHORIZATION, bearer(jane))).andExpect(status().isOk());
+    }
+
+    @Test
+    void reviewLinksAreRateLimited() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            mvc.perform(post("/api/v1/reviews/by-link").with(from("203.0.113.71")).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isCreated());
+        }
+        mvc.perform(post("/api/v1/reviews/by-link").with(from("203.0.113.71")).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void accountOrdersAndAddressesRejectAnonymousAndAdminTokens() throws Exception {
+        when(adminRepository.findById(jane.getAdminId())).thenReturn(Optional.of(jane));
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        for (String path : List.of("/api/v1/me/orders", "/api/v1/me/addresses", "/api/v1/me/orders/claimable")) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, bearer(jane))).andExpect(status().isForbidden());
+            mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtService.generateToken(thandi))).andExpect(status().isOk());
+        }
+        for (String path : List.of("/api/v1/me/addresses", "/api/v1/me/orders/claim", "/api/v1/me/orders/claim/confirm")) {
+            mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isUnauthorized());
+            mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, bearer(jane)).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void claimEmailsAreLimitedToThreePerHour() throws Exception {
+        when(customerRepository.findById(thandi.getCustomerEmail())).thenReturn(Optional.of(thandi));
+        String token = "Bearer " + jwtService.generateToken(thandi);
+        for (int i = 0; i < 3; i++) mvc.perform(post("/api/v1/me/orders/claim").with(from("192.0.2.105"))
+                .header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isNoContent());
+        mvc.perform(post("/api/v1/me/orders/claim").with(from("192.0.2.105")).header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
     }
 }

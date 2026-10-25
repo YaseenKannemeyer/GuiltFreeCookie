@@ -110,6 +110,14 @@ const summary = [
         telling you about our own similar products. Every marketing email has an unsubscribe link, and you
         can also just reply and ask us to stop. We'll stop straight away, at no cost to you.
       </p>
+      <p>
+        Some of these emails send themselves when something happens: a short welcome series when you subscribe,
+        a reminder if you leave cookies in your cart, or a note asking how your order was. Our emails contain a
+        tiny image and tracked links, so we can tell whether an email was opened or a link was clicked. We use
+        that only to send fewer emails to people who aren't reading them, and to see which emails are useful. If
+        you haven't opened our emails for a few months, we'll ask whether you'd like to stay subscribed, and
+        stop if you don't answer.
+      </p>
     </LegalSection>
 
     <LegalSection id="sharing" :number="6" title="Who we share it with">

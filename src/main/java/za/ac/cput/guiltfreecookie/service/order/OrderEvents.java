@@ -14,4 +14,7 @@ public final class OrderEvents {
 
     public record ReadyForPickup(String orderNumber) {
     }
+
+    public record Delivered(String orderNumber) {
+    }
 }

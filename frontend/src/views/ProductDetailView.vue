@@ -1,5 +1,6 @@
 <script setup>
 import { catalogApi, errorMessage } from "../api/storeApi";
+import { emailLinkApi } from "../api/flowApi";
 import { useCart } from "../composables/useCart";
 import cookieApi from "../api/cookieApi";
 import ProductReviews from "../components/engagement/ProductReviews.vue";
@@ -31,7 +32,7 @@ const route = useRoute();
 const router = useRouter();
 const { rand } = useFormat();
 const { showToast } = useToast();
-const { add: addPack } = useCart();
+const { add: addPack, cart } = useCart();
 const loadFailed = ref(false);
 const { cookies: catalog } = useCatalog();
 
@@ -118,6 +119,7 @@ const fetchCookie = async () => {
         params: { id: data.slug },
       });
     applyHead(headForRoute(route, { cookie: cookie.value }));
+    emailLinkApi.productViewed(data.cookieId, cart.value?.cartId).catch(() => {});
   } catch (e) {
     if (version !== requestVersion) return;
     cookie.value = null;

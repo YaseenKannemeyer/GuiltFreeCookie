@@ -118,6 +118,9 @@ public class AdminOrderService {
         if (target == OrderStatus.READY_FOR_PICKUP) {
             events.publishEvent(new OrderEvents.ReadyForPickup(orderNumber));
         }
+        if (target == OrderStatus.DELIVERED) {
+            events.publishEvent(new OrderEvents.Delivered(orderNumber));
+        }
         return adminView(updated);
     }
 

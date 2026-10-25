@@ -104,7 +104,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/carts", "/api/v1/carts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/payment", "/api/v1/orders/*/cancel").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/payment", "/api/v1/orders/*/cancel",
+                                "/api/v1/orders/*/reorder").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/payfast/notify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
@@ -113,6 +114,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/site/info", "/api/v1/reviews/featured", "/api/v1/email-assets/cookies/**", "/email/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/api/v1/email-assets/cookies/**", "/email/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/email/o/*", "/api/v1/email/c/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/email/unsubscribe", "/api/v1/email/unsubscribe/one-click",
+                                "/api/v1/email/resubscribe", "/api/v1/email/stay").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/product-view", "/api/v1/reviews/by-link").permitAll()
                         .requestMatchers("/api/v1/me", "/api/v1/me/**").hasRole("CUSTOMER")
                         .anyRequest().hasRole("ADMIN")
                 )

@@ -32,6 +32,17 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
     boolean existsByCustomerEmailAndDiscountCodeAndStatusIn(String customerEmail, String discountCode,
                                                             Collection<OrderStatus> statuses);
 
+    boolean existsByCustomerEmailAndStatusIn(String customerEmail, Collection<OrderStatus> statuses);
+
+    boolean existsByCustomerEmailAndStatusInAndPaidAtAfter(String customerEmail, Collection<OrderStatus> statuses,
+                                                           LocalDateTime time);
+
+    // [email, last paid at] for customers whose most recent paid order is between the two times.
+    @Query("select o.customerEmail, max(o.paidAt) from CustomerOrder o where o.status in :statuses"
+            + " group by o.customerEmail having max(o.paidAt) < :before and max(o.paidAt) > :after")
+    List<Object[]> lastPaidBetween(@Param("statuses") Collection<OrderStatus> statuses,
+                                   @Param("after") LocalDateTime after, @Param("before") LocalDateTime before);
+
     @Query("select count(distinct o.customerEmail) from CustomerOrder o where o.status in :statuses")
     long countCustomers(@Param("statuses") Collection<OrderStatus> statuses);
 }

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import za.ac.cput.guiltfreecookie.service.NewsletterService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,7 +30,7 @@ class NewsletterControllerTest {
                 new NewsletterController.SubscribeRequest("  Thandi@Example.CO.ZA "));
 
         assertEquals(HttpStatus.NO_CONTENT, result.getStatusCode());
-        verify(newsletterService).subscribe("thandi@example.co.za");
+        verify(newsletterService).subscribe("thandi@example.co.za", "footer");
     }
 
     @Test
@@ -38,7 +39,7 @@ class NewsletterControllerTest {
                 new NewsletterController.SubscribeRequest("not an email"));
 
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
-        verify(newsletterService, never()).subscribe(anyString());
+        verify(newsletterService, never()).subscribe(anyString(), any());
     }
 
     @Test

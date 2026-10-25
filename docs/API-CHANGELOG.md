@@ -4,6 +4,140 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-25 — Phase 7: Automated email flows
+
+Seven email sequences that send themselves, built on Spring Mail. A job checks every 5 minutes (`app.flows.run-ms`) and sends whatever is due.
+
+| Flow | Starts when | Emails |
+|---|---|---|
+| Welcome | Someone subscribes (footer, register or checkout opt-in). Once per address, ever | Now (personal single-use code, default 10%, lasts 5 days), +24h favourites, +48h how we bake, +72h boxes and real reviews, +96h "code ends tomorrow" (skipped if used or expired) |
+| Browsed, didn't add | `POST /api/v1/events/product-view` from a signed-in shopper or a cart with an email. At most once a week | +1h the cookie, +24h similar cookies |
+| Left in the cart | A cart with an email and items sits untouched for 1 hour (checked every 15 min) | Now, +23h delivery facts, +47h code (default 10%, 3 days) |
+| After delivery | An admin marks the order `DELIVERED` | +3 days storage tips, +7 days review request (review-by-link page) |
+| Refill | Same trigger | +21 days (configurable) "reorder" with a one-tap link |
+| Win back | Daily at 09:00: a subscriber's last paid order was 60 days ago (configurable) | Now new cookies, +3 days favourites, +7 days code (default 15%, 7 days) |
+| Quiet subscribers | Daily: a subscriber hasn't opened or clicked for 90 days | Now "still want us?", +48h favourites, +72h last call. No click within 48h after that pauses them |
+
+**Rules every flow follows:**
+- **Consent (POPIA s69):** Welcome, Win back and Quiet need an active newsletter subscription. Cart and browse reminders need a subscription or a past paid order. A guest who only typed their email at checkout has not agreed to marketing, so they don't get reminders. After-delivery and Refill use the existing-customer rule. An unsubscribe or a pause stops all of them.
+- **Ending a flow:** a purchase ends Welcome, Browse, Cart, Win back and Refill. Any marketing unsubscribe ends everything. Order and account emails are not affected.
+- **Pacing:**
+  - At most one flow email per address every 16 hours.
+  - Nothing goes out between 20:00 and 08:00 shop time (`Africa/Johannesburg`).
+  - The first welcome email is the only exception to both.
+- **Codes:** the codes are ordinary discount codes, single-use and restricted to the recipient's email, so they show up in the admin discount list.
+- **Every email has:**
+  - An unsubscribe link to the storefront page.
+  - `List-Unsubscribe` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click` headers (RFC 8058, required by Gmail and Yahoo for bulk senders).
+  - A plain-text part, an open pixel and tracked links.
+- **Reviews:** only real approved reviews appear. With none, the block is left out.
+
+### Public endpoints
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/api/v1/events/product-view` | `{cookieId, cartId?}`. Optional customer token. Always `202`; anonymous views are ignored |
+| GET | `/api/v1/carts/recover/{token}` | The saved guest cart from a reminder email. Store its `cartId`. `404` once it's ordered, cleared or belongs to an account |
+| POST | `/api/v1/orders/{orderNumber}/reorder?token=` | A **new** guest cart holding whatever from the order is still in stock (`201`). `409` if nothing is. Merge it after login |
+| POST | `/api/v1/reviews/by-link` | `{orderNumber, token, cookieId, rating, title, body, authorName}`. The order must be `DELIVERED` and contain the cookie. Rate-limited to 10 an hour |
+| GET | `/api/v1/email/o/{sendId}.gif` | Open pixel |
+| GET | `/api/v1/email/c/{sendId}?u=` | Tracked link. Redirects only to the storefront (`FRONTEND_BASE_URL`); anything else goes to the home page |
+| POST | `/api/v1/email/unsubscribe` | `{email, token}` → `204`. `400` for a bad token |
+| POST | `/api/v1/email/unsubscribe/one-click?e=&t=` | For mail apps (RFC 8058) |
+| POST | `/api/v1/email/resubscribe`, `/api/v1/email/stay` | `{email, token}`: undo an unsubscribe, or "keep me subscribed" |
+
+The `email` and `token` (`t`) values come from the link in the email. The token is an HMAC of the address (`EMAIL_LINK_SECRET`, which defaults to `JWT_SECRET`).
+
+### Admin
+
+- `GET | PUT /api/v1/admin/email-flows`: an on/off switch per flow, discount percentages (`0` sends no code), welcome code days, refill, win-back and quiet-subscriber days. Missing fields keep their value.
+- `GET /api/v1/admin/email-flows/stats?days=30`: `[{flow, sent, opened, clicked}]` for every flow. Opens are approximate because Apple Mail and others preload images.
+- Email previews now list every step (`flow-welcome-1` … `flow-sunset-3`).
+
+### Also changed
+
+- **Newsletter subscribers:** gained `status` (`ACTIVE`, `PAUSED` or `UNSUBSCRIBED`; null on old rows means active), `source`, `lastEngagedAt` and `statusChangedAt`. Subscribing again after unsubscribing counts as a fresh opt-in.
+- **Order events:** marking an order `DELIVERED` now publishes `OrderEvents.Delivered`.
+- **Unsubscribe links:** marketing email still needs an HTTPS unsubscribe link, but `http://localhost` is now allowed so the flows work in local development.
+- **New tables:** `flow_enrollments`, `email_sends`, `email_suppressions` and `email_flow_settings` (created by `ddl-auto=update`). Unsubscribes from people who never subscribed go in `email_suppressions`.
+- **Frontend:**
+  - New pages: `/email/unsubscribe`, `/email/subscribed`, `/cart/recover/:token`, `/reorder/:orderNumber`, `/review/:orderNumber` and admin **Email flows**.
+  - Product pages send the view signal.
+  - A checkout opt-in is now recorded when the shopper leaves the "You" step, not only at payment.
+  - The privacy policy explains the automated emails and the open and click tracking.
+
+### Config (all optional)
+
+| Setting | Effect |
+|---|---|
+| `FLOWS_ENABLED=false` | Seed the settings with every flow off |
+| `EMAIL_LINK_SECRET` | Rotate unsubscribe links separately from JWTs |
+| `app.flows.*` | Defaults, intervals and `daily-cron`. `-` switches off the daily check |
+
+## 2026-10-25 — Phase 5: Customer accounts
+
+All routes below require a **customer** bearer token. Anonymous requests return 401; admin tokens return 403. Existing profile/password, guest tracking and backend checkout contracts are unchanged.
+
+### Order history
+
+- `GET /api/v1/me/orders?page=0&size=10` → `{items, page, size, totalItems, totalPages}`. Page is zero-based; size is 1–100. Newest first, with a stable order-ID tie-breaker. Only the signed-in email's `accountOwned=true` orders appear. Expired pending reservations and never-paid cancelled attempts are excluded; previously paid cancelled/refunded orders remain.
+- Items: `{orderNumber, createdAt, status, shippingMethod, itemCount, total, image, token}`. `itemCount` sums pack quantities. `image` is the current cookie image for the first line (stable item-ID order), or null if unavailable. Lines and images are fetched in batches. Link to `/order/{orderNumber}?token={token}` using the existing tracking page.
+- `GET /api/v1/me/orders/{orderNumber}` → the existing full `OrderView` fields **at the top level**, plus `token`. An unowned or missing order returns the same 404.
+
+### Saved addresses
+
+| Method | Path | Response |
+|---|---|---|
+| GET | `/api/v1/me/addresses` | Array, newest first |
+| POST | `/api/v1/me/addresses` | 201, saved address |
+| PUT | `/api/v1/me/addresses/{id}` | Updated saved address |
+| DELETE | `/api/v1/me/addresses/{id}` | 204 |
+| PUT | `/api/v1/me/addresses/{id}/default` | Updated saved address |
+
+Create/update body:
+```json
+{"label":"Home","recipientName":"Thandi Mokoena","phone":"0821234567","isDefault":false,
+ "address":{"streetNumber":"12","streetName":"Bakery Lane","complex":null,"suburb":"Gardens",
+ "city":"Cape Town","province":"WESTERN_CAPE","postalCode":"0002"}}
+```
+Response: `{id, label, recipientName, phone, isDefault, createdAt, address}`. The postal code remains a **four-digit String**. Label is required, max 30; recipient name required, max 200; phone required, max 30 and a valid SA mobile. Address validation matches checkout: street number max 20, other text parts max 100, province required, complex optional. Invalid data returns 400.
+
+Maximum 10 per customer (409 on an eleventh). The first becomes default. Choosing another default clears the previous one; deleting the default promotes the newest remaining address. Editing the current default with `isDefault:false` keeps it default until a replacement is chosen. Ownership failures return 404. Writes lock the customer row to serialize cap/default changes, including simultaneous first-address creation. Legacy delivery records without a customer remain available through the existing admin routes, excluded from the account book; nullable legacy default flags read as false.
+
+### Claim earlier guest orders
+
+- `GET /api/v1/me/orders/claimable` → `{count}` only, never order details. Eligible orders match the account email, have `accountOwned=false` and a non-null `paidAt` (including later refunded/cancelled paid orders).
+- `POST /api/v1/me/orders/claim` → 204. If eligible orders exist, sends the branded `claim-orders` email to the **account's own inbox**. No caller-supplied recipient. Rate limited to 3 requests per hour per IP (429 with `Retry-After`). Available in admin email previews.
+- Email link: `/account/claim?token=…`. Uses a separate HMAC-SHA256 secret and expires after 24 hours. It's signed with `ACCOUNT_CLAIM_SECRET`, which defaults to `JWT_SECRET` (the same pattern as order and unsubscribe links). Set it to rotate claim links separately; rotating it invalidates outstanding links.
+- `POST /api/v1/me/orders/claim/confirm` with `{"token":"…"}` → `{claimed}`. Verifies signature, expiry and equality with the signed-in email before reading/updating eligible orders. Invalid, expired and other-email links return 400. Claims are transactional and serialized; repeating a valid link returns 0 after all eligible orders have been claimed. Links remain valid until expiry and can claim newly paid eligible orders during that period.
+
+### Frontend
+
+Account now has Orders and Addresses above the existing profile/password forms, mobile anchors and desktop section navigation, paged order rows, inbox-link prompt, inline address editing and inline delete confirmation. `/account/claim` preserves its token through sign-in and shows success/error feedback.
+
+Signed-in courier checkout offers saved-address choice tiles, fills the default when no address draft exists, and copies the selected address into the unchanged checkout payload. An optional, initially unchecked save runs immediately before placing the order; a failure (including 401) shows a notice and **still submits checkout**, with a four-second timeout. The selection and save preference survive checkout step navigation.
+
+### Database
+
+`ddl-auto=update` adds these nullable columns to `delivery_details`; existing rows require no backfill. For manually managed MySQL schemas, add only columns not already present:
+```sql
+ALTER TABLE delivery_details
+  ADD COLUMN customer_email VARCHAR(254) NULL,
+  ADD COLUMN label VARCHAR(30) NULL,
+  ADD COLUMN recipient_name VARCHAR(200) NULL,
+  ADD COLUMN phone VARCHAR(30) NULL,
+  ADD COLUMN is_default BIT NULL,
+  ADD COLUMN created_at DATETIME(6) NULL;
+```
+Keep the Phase 4 `postal_code VARCHAR(10)` migration. No order-table migration is needed.
+
+### Validation
+
+`./mvnw test`: 378 tests, zero failures/errors, one existing skip. `cd frontend && npm run build`: passes (product prerendering still needs `PRERENDER_API_URL`). Browser regression passes at 390px and 1280px, including optional-save 401 continuation and signed-out claim redirect preservation.
+
+Backend unit, repository, security and real H2/HTTP integration tests cover ownership, history filtering/pagination, claim signatures/expiry/identity/idempotence, rate limiting, address limits, default switching and deletion promotion. The browser regression is `frontend/tests/phase5.browser.cjs` (Vite on port 5175; `PLAYWRIGHT_MODULE` and `CHROME_PATH` can select the local installation). It uses mocked HTTP fixtures; it does not verify a real PayFast payment or Mailpit delivery.
+
+
 ## 2026-10-24 — Phase 4: Checkout, orders, shipping & PayFast
 
 ### ⚠️ Action required before deploying

@@ -7,7 +7,9 @@ import StepRail from "../components/checkout/StepRail.vue";
 import StickyTotalBar from "../components/checkout/StickyTotalBar.vue";
 import ChoiceTile from "../components/checkout/ChoiceTile.vue";
 import CartLine from "../components/checkout/CartLine.vue";
+import newsletterApi from "../api/newsletterApi";
 import { useCart } from "../composables/useCart";
+import { useCheckoutAddresses } from "../composables/useCheckoutAddresses";
 import { useCustomerAuth } from "../composables/useCustomerAuth";
 import { useSiteInfo } from "../composables/useSiteInfo";
 import { useFormat } from "../composables/useFormat";
@@ -64,6 +66,8 @@ const form = reactive({
   lastName: draft.lastName || "",
   phone: draft.phone || "",
   newsletterOptIn: !!draft.newsletterOptIn,
+  savedAddressId: draft.savedAddressId || "",
+  saveAddress: !!draft.saveAddress,
   shippingMethod: draft.shippingMethod || null,
   address: {
     streetNumber: "",
@@ -78,6 +82,7 @@ const form = reactive({
   pudoLocker: draft.pudoLocker || "",
   note: draft.note || "",
 });
+const { addresses: savedAddresses, unavailable: addressesUnavailable, loading: addressesLoading, loadAddresses, chooseAddress, saveBeforeCheckout } = useCheckoutAddresses(form, isLoggedIn);
 watch(
   form,
   (value) => {
@@ -152,6 +157,8 @@ async function continueFromYou() {
   busy.value = true;
   try {
     if (!isLoggedIn.value) await setEmail(form.email.trim());
+    // Recorded now, not only at payment, so a shopper who ticked it and left still hears from us.
+    if (form.newsletterOptIn) newsletterApi.subscribe(contactEmail.value).catch(() => {});
     go("delivery");
   } catch (e) {
     error.value = errorMessage(e);
@@ -195,6 +202,7 @@ async function pay() {
   clearErrors();
   busy.value = true;
   try {
+    await saveBeforeCheckout();
     const result = await checkoutApi.placeOrder({
       cartId: cart.value.cartId,
       email: contactEmail.value,
@@ -353,13 +361,24 @@ onMounted(async () => {
 
         <div v-if="form.shippingMethod === 'COURIER'" class="mt-8 grid gap-5">
           <h2 class="font-bold">Delivery address</h2>
-          <div class="grid grid-cols-[9rem_1fr] gap-4">
+          <p v-if="isLoggedIn && addressesLoading" role="status">Loading saved addresses…</p>
+          <p v-if="isLoggedIn && addressesUnavailable" class="text-sm">Saved addresses could not be loaded. Enter your address below or <button type="button" class="underline min-h-11" @click="loadAddresses">try again</button>.</p>
+          <fieldset v-if="isLoggedIn && savedAddresses.length" class="min-w-0">
+            <legend class="font-semibold mb-3">Use a saved address</legend>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <ChoiceTile v-for="saved in savedAddresses" :key="saved.id" :model-value="form.savedAddressId" :value="saved.id" name="savedAddress" class="min-w-0" @update:model-value="chooseAddress">
+                <span class="block font-bold break-words">{{ saved.label }}{{ saved.isDefault ? ' · Default' : '' }}</span>
+                <span class="block text-sm break-words">{{ saved.recipientName }} · {{ saved.address.streetNumber }} {{ saved.address.streetName }}, {{ saved.address.city }}, {{ saved.address.postalCode }}</span>
+              </ChoiceTile>
+            </div>
+          </fieldset>
+          <div class="grid grid-cols-[9rem_minmax(0,1fr)] gap-4 [&>*]:min-w-0">
             <BaseInput v-model="form.address.streetNumber" label="Number" autocomplete="address-line1" required :error="errors.streetNumber" />
             <BaseInput v-model="form.address.streetName" label="Street" required :error="errors.streetName" />
           </div>
           <BaseInput v-model="form.address.complex" label="Unit or complex (optional)" autocomplete="address-line2" />
           <BaseInput v-model="form.address.suburb" label="Suburb" autocomplete="address-level3" required :error="errors.suburb" />
-          <div class="grid grid-cols-[1fr_12rem] gap-4">
+          <div class="grid grid-cols-[minmax(0,1fr)_12rem] gap-4 [&>*]:min-w-0">
             <BaseInput v-model="form.address.city" label="City or town" autocomplete="address-level2" required :error="errors.city" />
             <BaseInput
               v-model="form.address.postalCode"
@@ -375,6 +394,10 @@ onMounted(async () => {
             type="select"
             :options="PROVINCES.map(([value, label]) => ({ value, label }))"
           />
+          <label v-if="isLoggedIn" class="flex items-start gap-3 min-h-11 cursor-pointer">
+            <input v-model="form.saveAddress" type="checkbox" class="mt-1.5 h-5 w-5 shrink-0" />
+            <span>Save this address to my account</span>
+          </label>
         </div>
 
         <div v-if="form.shippingMethod === 'PUDO'" class="mt-8">

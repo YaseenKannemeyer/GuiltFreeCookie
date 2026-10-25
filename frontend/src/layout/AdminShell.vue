@@ -16,6 +16,7 @@ import {
   InboxIcon,
   StarIcon,
   EnvelopeIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/vue/24/outline";
 import { useAdminAuth } from "../composables/useAdminAuth";
 
@@ -47,6 +48,11 @@ const navLinks = [
     label: "Reviews",
     to: { name: "AdminReviews" },
     icon: StarIcon,
+  },
+  {
+    label: "Email flows",
+    to: { name: "AdminEmailFlows" },
+    icon: PaperAirplaneIcon,
   },
   {
     label: "Email previews",

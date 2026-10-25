@@ -93,7 +93,7 @@ public class CustomerAuthService {
                 .build());
 
         if (Boolean.TRUE.equals(request.newsletterOptIn())) {
-            newsletterService.subscribe(email);
+            newsletterService.subscribe(email, "register");
         }
         return new CustomerAuthResponse(created, jwtService.generateToken(created));
     }

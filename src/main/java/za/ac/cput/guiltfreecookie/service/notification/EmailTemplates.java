@@ -7,25 +7,34 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import za.ac.cput.guiltfreecookie.exception.BadRequestException;
 import za.ac.cput.guiltfreecookie.exception.NotFoundException;
+import za.ac.cput.guiltfreecookie.domain.EmailFlow;
 import za.ac.cput.guiltfreecookie.service.engagement.SiteInfoService;
+import za.ac.cput.guiltfreecookie.service.flow.FlowCatalog;
+import za.ac.cput.guiltfreecookie.service.flow.FlowCopy;
+import za.ac.cput.guiltfreecookie.service.flow.FlowData;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 // Renders templates/email/*.html. See docs/handoff/phase-6-email-models.md for each template's model.
 @Service
 public class EmailTemplates {
 
-    public static final List<String> NAMES = List.of(
+    // Flow emails all render through marketing-flow; each step is listed separately for previews.
+    public static final String FLOW_TEMPLATE = "marketing-flow";
+    public static final List<String> NAMES = Stream.concat(Stream.of(
             "password-reset",
             "contact-auto-reply",
             "contact-to-shop",
             "order-confirmation",
             "order-shipped",
-            "order-ready-for-pickup");
+            "order-ready-for-pickup",
+            "claim-orders"), FlowCatalog.previewNames().stream()).toList();
 
     private final SpringTemplateEngine engine;
     private final SiteInfoService siteInfoService;
@@ -45,7 +54,9 @@ public class EmailTemplates {
 
     // site, publicBase, frontendBase and ctaVml are supplied here; callers shouldn't set them.
     public String render(String template, Map<String, Object> model) {
-        require(template);
+        if (!template.equals(FLOW_TEMPLATE)) {
+            require(template);
+        }
         Map<String, Object> values = new HashMap<>();
         values.put("site", siteInfoService);
         values.put("publicBase", publicBase);
@@ -63,12 +74,16 @@ public class EmailTemplates {
         values.put("actionUrl", actionUrl);
         values.put("actionLabel", actionLabel);
         values.put("ctaVml", outlookButton(actionUrl, actionLabel));
-        return engine.process("email/" + template, new Context(Locale.ENGLISH, values));
+        String file = template.startsWith("flow-") ? FLOW_TEMPLATE : template;
+        return engine.process("email/" + file, new Context(Locale.ENGLISH, values));
     }
 
     // Illustrative data for the admin previews. Never use it for real customers.
     public Map<String, Object> sample(String template) {
         require(template);
+        if (template.startsWith("flow-")) {
+            return flowSample(template);
+        }
         Map<String, Object> model = new HashMap<>();
         model.put("name", "Sam");
         model.put("email", "sam@example.com");
@@ -110,6 +125,10 @@ public class EmailTemplates {
             case "order-shipped" -> "Track your parcel";
             default -> "View your order";
         });
+        if (template.equals("claim-orders")) {
+            model.put("actionUrl", frontendBase + "/account/claim?token=preview");
+            model.put("actionLabel", "Add my earlier orders");
+        }
         return model;
     }
 
@@ -128,6 +147,30 @@ public class EmailTemplates {
                 .replaceAll("[ \t]+", " ")
                 .replaceAll("\n\\s*\n+", "\n\n");
         return HtmlUtils.htmlUnescape(text).trim();
+    }
+
+    private Map<String, Object> flowSample(String template) {
+        for (EmailFlow flow : EmailFlow.values()) {
+            for (int step = 0; step < 5; step++) {
+                if (FlowCatalog.previewName(flow, step).equals(template)) {
+                    FlowData data = new FlowData(
+                            List.of(sampleProduct("Double Chocolate Chunk"), sampleProduct("Lemon Almond")),
+                            List.of(Map.of("name", "Double Chocolate Chunk", "variant", "Box of 6", "quantity", 1,
+                                    "lineTotal", "R 175.00", "imageUrl", publicBase + "/email/cookie.png")),
+                            List.of(Map.of("quote", "A little moment of joy with my afternoon tea.", "author", "Sample customer",
+                                    "stars", "★★★★★", "rating", 5)),
+                            List.of("Courier to your door: R 80.00 (2–4 business days).", "Collect from our bakery in Strandfontein for free."),
+                            "SAMPLE10", "31 December 2026", 10, "Double Chocolate Chunk", frontendBase + "/cart", 21);
+                    FlowCopy.Message message = FlowCopy.compose(flow, step, data, frontendBase, UnaryOperator.identity());
+                    Map<String, Object> model = new HashMap<>(message.model());
+                    model.put("subject", message.subject());
+                    model.put("marketing", true);
+                    model.put("unsubscribeUrl", frontendBase + "/email/unsubscribe?e=sam%40example.com&t=preview");
+                    return model;
+                }
+            }
+        }
+        throw new NotFoundException("Email template not found");
     }
 
     private Map<String, Object> sampleProduct(String name) {
