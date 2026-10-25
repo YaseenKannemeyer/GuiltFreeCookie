@@ -26,7 +26,7 @@ export function createAppRouter(history) {
     }
 
     if (to.name === "AdminLogin" && isAdminLoggedIn()) {
-      return { name: "AdminDashboard" };
+      return { name: "AdminOverview" };
     }
   });
 

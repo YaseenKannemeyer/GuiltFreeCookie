@@ -101,7 +101,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return HttpMethod.OPTIONS.matches(request.getMethod()) || pathOf(request).startsWith("/uploads/");
+        return HttpMethod.OPTIONS.matches(request.getMethod()) || pathOf(request).startsWith("/uploads/")
+                || pathOf(request).equals("/actuator/health");
     }
 
     @Override

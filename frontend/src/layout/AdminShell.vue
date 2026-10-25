@@ -17,6 +17,7 @@ import {
   StarIcon,
   EnvelopeIcon,
   PaperAirplaneIcon,
+  ChartBarIcon,
 } from "@heroicons/vue/24/outline";
 import { useAdminAuth } from "../composables/useAdminAuth";
 
@@ -24,6 +25,11 @@ const router = useRouter();
 const { admin, logout } = useAdminAuth();
 
 const navLinks = [
+  {
+    label: "Overview",
+    to: { name: "AdminOverview" },
+    icon: ChartBarIcon,
+  },
   {
     label: "Orders",
     to: { name: "AdminOrders" },
@@ -91,7 +97,7 @@ const signOut = () => {
     <aside
       class="hidden lg:flex sticky top-0 h-[100dvh] flex-col bg-chocolate text-cream-100 px-4 py-6"
     >
-      <RouterLink :to="{ name: 'AdminDashboard' }" class="px-3 block">
+      <RouterLink :to="{ name: 'AdminOverview' }" class="px-3 block">
         <span class="wordmark text-cream-50">
           GuiltFree<span class="text-primary">Cookie</span>
         </span>
@@ -165,7 +171,7 @@ const signOut = () => {
     <header class="lg:hidden sticky top-0 z-40 bg-chocolate text-cream-100">
       <div class="flex items-center justify-between gap-2 px-4 h-16">
         <RouterLink
-          :to="{ name: 'AdminDashboard' }"
+          :to="{ name: 'AdminOverview' }"
           class="wordmark text-cream-50 pt-1"
         >
           GuiltFree<span class="text-primary">Cookie</span>

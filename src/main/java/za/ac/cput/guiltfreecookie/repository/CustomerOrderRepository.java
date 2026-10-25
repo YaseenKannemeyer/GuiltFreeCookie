@@ -34,6 +34,21 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
 
     boolean existsByCustomerEmailAndStatusIn(String customerEmail, Collection<OrderStatus> statuses);
 
+    List<CustomerOrder> findByStatusInAndPaidAtGreaterThanEqualAndPaidAtLessThan(Collection<OrderStatus> statuses,
+                                                                                LocalDateTime from, LocalDateTime to);
+
+    long countByStatusAndPaidAtGreaterThanEqualAndPaidAtLessThan(OrderStatus status, LocalDateTime from, LocalDateTime to);
+
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime from, LocalDateTime to);
+
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndPaidAtIsNotNull(LocalDateTime from, LocalDateTime to);
+
+    // Which of these emails had a paid order before the given time.
+    @Query("select distinct o.customerEmail from CustomerOrder o where o.customerEmail in :emails"
+            + " and o.status in :statuses and o.paidAt < :before")
+    List<String> emailsPaidBefore(@Param("emails") Collection<String> emails,
+                                  @Param("statuses") Collection<OrderStatus> statuses, @Param("before") LocalDateTime before);
+
     boolean existsByCustomerEmailAndStatusInAndPaidAtAfter(String customerEmail, Collection<OrderStatus> statuses,
                                                            LocalDateTime time);
 

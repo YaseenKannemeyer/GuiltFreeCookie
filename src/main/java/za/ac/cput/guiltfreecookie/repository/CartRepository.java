@@ -32,6 +32,10 @@ public interface CartRepository extends JpaRepository<Cart, String> {
 
     Optional<Cart> findByRecoveryToken(String recoveryToken);
 
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime from, LocalDateTime to);
+
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndCustomerEmailIsNotNull(LocalDateTime from, LocalDateTime to);
+
     Optional<Cart> findFirstByCustomerEmailAndAccountOwnedTrueAndStatusOrderByUpdatedAtDesc(
             String customerEmail, CartStatus status);
 }

@@ -16,7 +16,7 @@ onMounted(load);
 <template>
   <section class="mb-8 border-b border-chocolate/15 pb-6">
     <div class="flex flex-wrap justify-between gap-3">
-      <h2 class="font-display text-3xl">Stock to watch</h2>
+      <h2 class="text-[2rem] font-extrabold">Stock to watch</h2>
       <RouterLink to="/admindashboard/inventory" class="underline min-h-11"
         >Manage stock & packs</RouterLink
       >

@@ -4,6 +4,35 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-25 — Phase 8: Analytics, health check, first admin, handoff docs
+
+### Admin analytics (admin token)
+
+`GET /api/v1/admin/analytics?from=2026-10-01&to=2026-10-25` covers inclusive shop days (Africa/Johannesburg), at most 366. With no dates it covers the last 30 days. It returns:
+
+- `current`, `previous`: `{revenue, orders, averageOrderValue, cookiesSold, discounts, refunds}`. `previous` is the same number of days just before. Counts paid orders only; refunded orders are excluded and counted in `refunds`.
+- `days`: `[{date, revenue, orders}]`, one per day, with zeros on quiet days.
+- `topCookies`: the top 5 by revenue, `[{cookieId, name, packs, cookies, revenue}]`.
+- `customers`: `{newCustomers, returningCustomers}`. Returning means they'd paid for an order before the period.
+- `funnel`: `{carts, cartsWithEmail, ordersPlaced, ordersPaid}`, for carts and orders started in the period.
+- `delivery`: `[{method, orders}]`.
+- `emailFlows`: `[{flow, sent, opened, clicked, orders, revenue}]` for all 7 flows. An order counts towards the flow whose email was the latest one clicked within the 5 days before payment.
+
+**Frontend:** the new admin **Overview** (`/admindashboard/overview`) is now where admins land after signing in. It has a date range (7, 30 or 90 days, or custom, kept in the URL), headline numbers against the previous period, revenue by day (hover or arrow keys, plus a table view), best sellers, checkout funnel, customers, delivery mix, email-flow results and low stock. No third-party analytics was added, keeping the cookie policy's "no analytics" promise.
+
+### Health check
+
+`GET /actuator/health` → `{"status":"UP"}`. It's public, not rate-limited, and shows no details. It checks the app and database but not mail, so an email-provider outage doesn't make the host restart the shop. No other Actuator endpoint is exposed.
+
+### First admin
+
+Creating an admin requires an admin, so an empty database couldn't get one. Set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` (12+ characters) for the first start. Once any admin exists, they do nothing; remove them after signing in.
+
+### Docs
+
+- `docs/API.md`: how the API fits together. Covers who can call what, the purchase sequence, background jobs, the error format, which endpoints each page uses, and a code map.
+- `docs/DEPLOYMENT.md`: the go-live checklist, every environment variable, the frontend build, database upgrades, the health check and post-deploy checks.
+
 ## 2026-10-25 — Phase 7: Automated email flows
 
 Seven email sequences that send themselves, built on Spring Mail. A job checks every 5 minutes (`app.flows.run-ms`) and sends whatever is due.

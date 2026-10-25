@@ -25,7 +25,7 @@ const submit = async () => {
   try {
     const { admin, token } = await adminApi.login(cleanEmail(email.value), password.value);
     login(admin, token, remember.value);
-    router.push(route.query.redirect || { name: "AdminDashboard" });
+    router.push(route.query.redirect || { name: "AdminOverview" });
   } catch (err) {
     error.value =
       err.response?.status === 401

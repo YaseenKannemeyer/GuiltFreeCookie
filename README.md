@@ -82,6 +82,8 @@ This writes `dist/` with one real HTML page per URL (`about.html`, `product/<id>
 
 ## 🔒 Deploying safely
 
+The full go-live checklist, every environment variable and the first-admin setup are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 **Backend:** run with `SPRING_PROFILES_ACTIVE=prod` and set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` and `CORS_ALLOWED_ORIGINS` (the site's origin). The prod profile validates the schema instead of altering it (set `JPA_DDL_AUTO=update` for the very first deploy only), redirects HTTP to HTTPS, and shortens admin sessions to 8 hours. Use a database user with access to this schema only, not `root`.
 
 **Frontend host:** serve `dist/` over HTTPS, serve `404.html` for unknown paths, and route `/guiltFreeCookie/*` to the API (or build with `VITE_API_BASE_URL`). Add these response headers at the host; a `<meta>` tag can't set them:

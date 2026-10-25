@@ -210,7 +210,13 @@ export const routes = [
   },
   {
     path: "/admindashboard",
-    redirect: "/admindashboard/cookies",
+    redirect: "/admindashboard/overview",
+  },
+  {
+    path: "/admindashboard/overview",
+    name: "AdminOverview",
+    component: () => import("../views/AdminOverviewView.vue"),
+    meta: { title: "Overview · Admin", requiresAdmin: true, noindex: true },
   },
   {
     path: "/admindashboard/cookies",
