@@ -6,8 +6,8 @@ export const emailLinkApi = {
   resubscribe: (email, token) => api("post", "/email/resubscribe", { email, token }),
   stay: (email, token) => api("post", "/email/stay", { email, token }),
   recoverCart: (token) => api("get", `/carts/recover/${encodeURIComponent(token)}`),
-  reorder: (orderNumber, token) =>
-    api("post", `/orders/${encodeURIComponent(orderNumber)}/reorder`, undefined, { params: { token } }),
+  reorder: (orderNumber, token, cartId) =>
+    api("post", `/orders/${encodeURIComponent(orderNumber)}/reorder`, undefined, { params: { token, cartId } }),
   review: (body) => api("post", "/reviews/by-link", body),
   productViewed: (cookieId, cartId) => api("post", "/events/product-view", { cookieId, cartId }),
 };

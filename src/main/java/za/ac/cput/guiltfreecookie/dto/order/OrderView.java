@@ -36,5 +36,7 @@ public record OrderView(
         List<TimelineEntry> timeline,
         LocalDateTime payBy,
         boolean canPay,
-        boolean canCancel) {
+        boolean canCancel,
+        // Only while the order is unpaid or was cancelled unpaid: lets the browser get its cart back.
+        String cartId) {
 }

@@ -10,6 +10,7 @@ import za.ac.cput.guiltfreecookie.domain.SubscriberStatus;
 import za.ac.cput.guiltfreecookie.repository.NewsletterSubscriberRepository;
 import za.ac.cput.guiltfreecookie.service.flow.FlowEnrollmentService;
 import za.ac.cput.guiltfreecookie.service.flow.MarketingConsent;
+import za.ac.cput.guiltfreecookie.service.flow.ResubscribeConfirmation;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -34,6 +35,9 @@ class NewsletterServiceTest {
 
     @Mock
     private FlowEnrollmentService flows;
+
+    @Mock
+    private ResubscribeConfirmation confirmation;
 
     @InjectMocks
     private NewsletterService newsletterService;
@@ -60,12 +64,14 @@ class NewsletterServiceTest {
     }
 
     @Test
-    void subscribingAfterUnsubscribingIsAFreshOptIn() {
+    void someoneWhoUnsubscribedMustConfirmFromTheirInbox() {
         when(repository.findById(EMAIL)).thenReturn(Optional.of(new NewsletterSubscriber.Builder()
                 .setEmail(EMAIL).setSubscribedAt(Instant.now()).setStatus(SubscriberStatus.UNSUBSCRIBED).build()));
 
         newsletterService.subscribe(EMAIL, "footer");
 
-        verify(consent).resubscribe(EMAIL, "footer");
+        verify(confirmation).send(EMAIL);
+        verify(consent, never()).resubscribe(anyString(), any());
+        verify(flows, never()).welcome(anyString());
     }
 }

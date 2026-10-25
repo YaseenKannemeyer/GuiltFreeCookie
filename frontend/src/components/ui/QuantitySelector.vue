@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { MinusIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
+  label: { type: String, default: "Quantity" },
   modelValue: { type: Number, default: 1 },
   min: { type: Number, default: 1 },
   max: { type: Number, default: 99 },
@@ -70,6 +71,7 @@ const increment = () => {
     </button>
     <input
       :value="modelValue"
+      :aria-label="label"
       type="number"
       :min="min"
       :max="max"

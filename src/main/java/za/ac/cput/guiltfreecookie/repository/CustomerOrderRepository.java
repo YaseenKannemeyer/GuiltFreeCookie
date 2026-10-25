@@ -34,14 +34,19 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
 
     boolean existsByCustomerEmailAndStatusIn(String customerEmail, Collection<OrderStatus> statuses);
 
+    long countByCustomerEmailAndStatus(String customerEmail, OrderStatus status);
+
     List<CustomerOrder> findByStatusInAndPaidAtGreaterThanEqualAndPaidAtLessThan(Collection<OrderStatus> statuses,
                                                                                 LocalDateTime from, LocalDateTime to);
 
     long countByStatusAndPaidAtGreaterThanEqualAndPaidAtLessThan(OrderStatus status, LocalDateTime from, LocalDateTime to);
 
-    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime from, LocalDateTime to);
+    // A cart that's checked out, cancelled and checked out again counts once.
+    @Query("select count(distinct coalesce(o.cartId, o.orderId)) from CustomerOrder o where o.createdAt >= :from and o.createdAt < :to")
+    long countCheckedOutCarts(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndPaidAtIsNotNull(LocalDateTime from, LocalDateTime to);
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndStatusIn(LocalDateTime from, LocalDateTime to,
+                                                                          Collection<OrderStatus> statuses);
 
     // Which of these emails had a paid order before the given time.
     @Query("select distinct o.customerEmail from CustomerOrder o where o.customerEmail in :emails"

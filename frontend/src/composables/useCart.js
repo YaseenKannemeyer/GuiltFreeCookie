@@ -2,8 +2,9 @@
  * useCart — the shopper's cart, shared by the navbar, product page, cart and checkout.
  * The cart id lives in localStorage so a guest keeps their cart; the server prices everything.
  */
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { cartApi } from "../api/storeApi";
+import { useCustomerAuth } from "./useCustomerAuth";
 
 const KEY = "gfc_cart_id";
 const CHECKOUT_KEY = "gfc_checkout_cart";
@@ -31,7 +32,10 @@ function storeId(id) {
 const isGone = (e) => {
   const status = e?.response?.status;
   const message = e?.response?.data?.message || "";
-  return (status === 404 && message === "Cart not found") || (status === 409 && message.includes("checked out"));
+  return (
+    (status === 404 && message === "Cart not found") ||
+    (status === 409 && (message.includes("checked out") || message.includes("uses your account")))
+  );
 };
 
 function adopt(view) {
@@ -76,6 +80,14 @@ async function change(run) {
   }
 }
 
+// Signing out leaves the account's cart with the account, so the next shopper here starts fresh.
+watch(useCustomerAuth().customer, (now, before) => {
+  if (before && !now) {
+    storeId(null);
+    cart.value = null;
+  }
+});
+
 export function useCart() {
   return {
     cart,
@@ -108,7 +120,8 @@ export function useCart() {
       }
       adopt({ status: "CHECKED_OUT" });
     },
-    async restore() {
+    // fallbackId comes from the cancelled order itself, for when PayFast returns in a new tab.
+    async restore(fallbackId = null) {
       let id = null;
       try {
         id = sessionStorage.getItem(CHECKOUT_KEY);
@@ -116,6 +129,7 @@ export function useCart() {
       } catch {
         /* Nothing to restore. */
       }
+      if (!id) id = fallbackId;
       if (id) storeId(id);
       return load();
     },

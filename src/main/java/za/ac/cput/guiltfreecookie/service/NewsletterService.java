@@ -8,6 +8,7 @@ import za.ac.cput.guiltfreecookie.domain.SubscriberStatus;
 import za.ac.cput.guiltfreecookie.repository.NewsletterSubscriberRepository;
 import za.ac.cput.guiltfreecookie.service.flow.FlowEnrollmentService;
 import za.ac.cput.guiltfreecookie.service.flow.MarketingConsent;
+import za.ac.cput.guiltfreecookie.service.flow.ResubscribeConfirmation;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,12 +19,14 @@ public class NewsletterService {
     private final NewsletterSubscriberRepository repository;
     private final MarketingConsent consent;
     private final FlowEnrollmentService flows;
+    private final ResubscribeConfirmation confirmation;
 
     public NewsletterService(NewsletterSubscriberRepository repository, MarketingConsent consent,
-                             FlowEnrollmentService flows) {
+                             FlowEnrollmentService flows, ResubscribeConfirmation confirmation) {
         this.repository = repository;
         this.consent = consent;
         this.flows = flows;
+        this.confirmation = confirmation;
     }
 
     public void subscribe(String email) {
@@ -31,17 +34,20 @@ public class NewsletterService {
     }
 
     /**
-     * Idempotent: subscribing twice keeps the original opt-in date. Subscribing again after
-     * unsubscribing is a fresh opt-in. The welcome emails go to each address only once.
+     * Idempotent: subscribing twice keeps the original opt-in date. An address that unsubscribed or was
+     * paused gets a confirmation link instead, since anyone can type anyone's address into the form.
+     * The welcome emails go to each address only once.
      */
     @Transactional
     public void subscribe(String email, String source) {
         NewsletterSubscriber existing = repository.findById(email).orElse(null);
+        if (consent.isUnsubscribed(email) || (existing != null && existing.getStatus() != SubscriberStatus.ACTIVE)) {
+            confirmation.send(email);
+            return;
+        }
         if (existing == null) {
             repository.save(new NewsletterSubscriber.Builder()
                     .setEmail(email).setSubscribedAt(Instant.now()).setSource(source).setStatusChangedAt(Instant.now()).build());
-        } else if (existing.getStatus() != SubscriberStatus.ACTIVE || consent.isUnsubscribed(email)) {
-            consent.resubscribe(email, source);
         }
         flows.welcome(email);
     }

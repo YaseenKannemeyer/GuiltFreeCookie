@@ -33,9 +33,11 @@ import za.ac.cput.guiltfreecookie.util.Helper;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 // Turns a cart into an order: re-prices on the server, holds the stock, then hands over to the payment gateway.
 // Accounts are optional: a guest checks out with just an email address.
@@ -62,6 +64,11 @@ public class CheckoutService {
     private final OrderService orderService;
     private final OrderLinks orderLinks;
     private final long paymentWindowMinutes;
+    static final int MAX_UNPAID_ORDERS = 3;
+
+    // Includes unpaid orders, so the same email can't hold the code on two orders at once.
+    static final Set<OrderStatus> ONE_PER_EMAIL_STATUSES = EnumSet.of(OrderStatus.PENDING_PAYMENT,
+            OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.READY_FOR_PICKUP, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
     private final SecureRandom random = new SecureRandom();
 
     public CheckoutService(CartRepository cartRepository, CartItemRepository cartItemRepository,
@@ -99,6 +106,15 @@ public class CheckoutService {
         }
         CartView priced = pricingService.price(cart, cartItemRepository.findByCartIdOrderByAddedAtAsc(cart.getCartId()), method);
         requireCheckoutable(priced, contact.email());
+        // Unpaid orders hold stock, so one address can't tie up the shelf with a pile of them.
+        if (orderRepository.countByCustomerEmailAndStatus(contact.email(), OrderStatus.PENDING_PAYMENT) >= MAX_UNPAID_ORDERS) {
+            throw new ConflictException("You already have unpaid orders waiting. Finish paying for one, "
+                    + "or try again in " + paymentWindowMinutes + " minutes.");
+        }
+        // The use is taken now, not at payment, so a single-use code can't sit on several unpaid orders.
+        if (priced.discount() != null && discountRepository.redeem(priced.discount().code()) == 0) {
+            throw new ConflictException("Code " + priced.discount().code() + " has just been used up. Remove it to continue.");
+        }
 
         String orderNumber = newOrderNumber();
         reserveStock(priced, orderNumber);
@@ -244,7 +260,7 @@ public class CheckoutService {
         }
         DiscountCode discount = discountRepository.findByCode(priced.discount().code()).orElseThrow();
         if (discount.isOnePerEmail() && orderRepository.existsByCustomerEmailAndDiscountCodeAndStatusIn(
-                email, discount.getCode(), OrderStatus.PAID_STATUSES)) {
+                email, discount.getCode(), ONE_PER_EMAIL_STATUSES)) {
             throw new ConflictException("You've already used code " + discount.getCode());
         }
     }

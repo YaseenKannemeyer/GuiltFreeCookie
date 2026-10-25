@@ -136,6 +136,12 @@ export const routes = [
     meta: { title: "Unsubscribe", noindex: true, hideFooter: true },
   },
   {
+    path: "/email/resubscribe",
+    name: "EmailResubscribe",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "Sign up again", noindex: true, hideFooter: true },
+  },
+  {
     path: "/email/subscribed",
     name: "EmailSubscribed",
     component: () => import("../views/EmailPreferencesView.vue"),

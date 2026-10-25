@@ -20,8 +20,8 @@ onMounted(async () => {
     return;
   }
   try {
-    await orderApi.cancel(order, token);
-    await restore().catch(() => {});
+    const cancelled = await orderApi.cancel(order, token);
+    await restore(cancelled?.cartId).catch(() => {});
     state.value = "cancelled";
   } catch (e) {
     if (e?.response?.status === 409) {

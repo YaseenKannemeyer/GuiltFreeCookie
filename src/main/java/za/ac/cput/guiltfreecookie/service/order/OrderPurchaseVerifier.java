@@ -16,6 +16,8 @@ public class OrderPurchaseVerifier implements PurchaseVerifier {
     }
 
     @Override
+    // Account orders only: there's no email check at sign-up, so a guest order with the same email doesn't count
+    // until its owner claims it from their inbox.
     public boolean hasBought(String email, String cookieId) {
         return itemRepository.hasBought(email, cookieId, OrderStatus.PAID_STATUSES);
     }

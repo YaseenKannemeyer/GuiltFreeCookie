@@ -103,17 +103,21 @@ class FlowEnrollmentServiceTest {
     }
 
     @Test
-    void aPurchaseEndsTheSellingFlows() {
-        FlowEnrollment welcome = new FlowEnrollment.Builder().setEnrollmentId("e1").setEmail(EMAIL)
-                .setFlow(EmailFlow.WELCOME).setStatus(EnrollmentStatus.ACTIVE).build();
-        when(repository.findByEmailAndFlowInAndStatus(eq(EMAIL), any(), eq(EnrollmentStatus.ACTIVE))).thenReturn(List.of(welcome));
+    void aPurchaseEndsTheSellingFlowsButTheFirstWelcomeStillGoes() {
+        FlowEnrollment unsentWelcome = new FlowEnrollment.Builder().setEnrollmentId("e1").setEmail(EMAIL)
+                .setFlow(EmailFlow.WELCOME).setCurrentStep(0).setStatus(EnrollmentStatus.ACTIVE).build();
+        FlowEnrollment cart = new FlowEnrollment.Builder().setEnrollmentId("e2").setEmail(EMAIL)
+                .setFlow(EmailFlow.CART_ABANDONMENT).setCurrentStep(1).setStatus(EnrollmentStatus.ACTIVE).build();
+        when(repository.findByEmailAndFlowInAndStatus(eq(EMAIL), any(), eq(EnrollmentStatus.ACTIVE)))
+                .thenReturn(List.of(unsentWelcome, cart));
 
         service.purchased(EMAIL);
 
         verify(repository).findByEmailAndFlowInAndStatus(eq(EMAIL),
                 argThat(flows -> flows.contains(EmailFlow.CART_ABANDONMENT) && !flows.contains(EmailFlow.POST_PURCHASE)),
                 eq(EnrollmentStatus.ACTIVE));
-        verify(repository).save(argThat(e -> e.getStatus() == EnrollmentStatus.EXITED && "Purchased".equals(e.getExitReason())));
+        verify(repository).save(argThat(e -> "e2".equals(e.getEnrollmentId()) && e.getStatus() == EnrollmentStatus.EXITED));
+        verify(repository, never()).save(argThat(e -> "e1".equals(e.getEnrollmentId())));
     }
 
     @Test

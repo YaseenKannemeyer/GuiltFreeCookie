@@ -89,7 +89,7 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new ConflictException("Only an unpaid order can be cancelled");
         }
-        releaseStock(order, InventoryReason.ORDER_RELEASED);
+        releaseHold(order);
         CustomerOrder cancelled = changeStatus(order, OrderStatus.CANCELLED, "Cancelled before payment", "customer");
         reopenCart(cancelled);
         return orderViews.view(cancelled);
@@ -103,14 +103,15 @@ public class OrderService {
             return;
         }
         List<String> notes = new ArrayList<>(List.of(note));
+        // The code's use was taken at checkout; a late payment on a released order has to take it again.
         if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.PAYMENT_FAILED) {
             if (!reserveStock(order)) {
                 notes.add("The stock had already been released and isn't available now: refund or substitute.");
             }
+            if (order.getDiscountCode() != null && !discountService.redeem(order.getDiscountCode())) {
+                notes.add("Discount code " + order.getDiscountCode() + " had reached its use limit.");
+            }
             closeCart(order);
-        }
-        if (order.getDiscountCode() != null && !discountService.redeem(order.getDiscountCode())) {
-            notes.add("Discount code " + order.getDiscountCode() + " had reached its use limit.");
         }
         orderRepository.save(new CustomerOrder.Builder()
                 .copy(order)
@@ -128,7 +129,7 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             return;
         }
-        releaseStock(order, InventoryReason.ORDER_RELEASED);
+        releaseHold(order);
         reopenCart(changeStatus(order, OrderStatus.PAYMENT_FAILED, note, actor));
     }
 
@@ -141,7 +142,7 @@ public class OrderService {
             if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
                 continue;
             }
-            releaseStock(order, InventoryReason.ORDER_RELEASED);
+            releaseHold(order);
             reopenCart(changeStatus(order, OrderStatus.CANCELLED,
                     "Payment wasn't completed within " + paymentWindowMinutes + " minutes", "system"));
             released++;
@@ -173,6 +174,14 @@ public class OrderService {
                 .build());
     }
 
+    // An unpaid order letting go: its stock, and the discount-code use it was holding.
+    void releaseHold(CustomerOrder order) {
+        releaseStock(order, InventoryReason.ORDER_RELEASED);
+        if (order.getDiscountCode() != null) {
+            discountService.release(order.getDiscountCode());
+        }
+    }
+
     void releaseStock(CustomerOrder order, InventoryReason reason) {
         unitsByCookie(order).forEach((cookieId, units) ->
                 inventoryService.release(cookieId, units, order.getOrderNumber(), reason));
@@ -200,7 +209,11 @@ public class OrderService {
         return units;
     }
 
-    private void reopenCart(CustomerOrder order) {
+    boolean holdsStock(CustomerOrder order) {
+        return inventoryService.isHeldBy(order.getOrderNumber());
+    }
+
+    void reopenCart(CustomerOrder order) {
         setCartStatus(order, CartStatus.CHECKED_OUT, CartStatus.ACTIVE);
     }
 

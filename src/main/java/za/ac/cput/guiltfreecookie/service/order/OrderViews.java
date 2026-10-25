@@ -65,7 +65,8 @@ public class OrderViews {
                 timeline,
                 awaitingPayment ? order.getReservedUntil() : null,
                 awaitingPayment,
-                order.getStatus() == OrderStatus.PENDING_PAYMENT);
+                order.getStatus() == OrderStatus.PENDING_PAYMENT,
+                order.getStatus().isPaid() || order.getStatus() == OrderStatus.REFUNDED ? null : order.getCartId());
     }
 
     public OrderSummary summary(CustomerOrder order, List<OrderItem> items) {

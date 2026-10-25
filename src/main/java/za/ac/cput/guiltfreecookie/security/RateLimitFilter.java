@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int SWEEP_THRESHOLD = 10_000;
+    private static final UrlPathHelper PATHS = new UrlPathHelper();
 
     record Rule(String name, HttpMethod method, String path, int limit, long windowMillis) {
         boolean matches(HttpMethod requestMethod, String requestPath) {
@@ -149,7 +151,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return Math.max(1, (remainingMillis + 999) / 1000);
     }
 
+    // The decoded path Spring routes on, so "/api/v1/auth/logi%6E" can't dodge the login rule.
     private static String pathOf(HttpServletRequest request) {
-        return request.getRequestURI().substring(request.getContextPath().length());
+        return PATHS.getPathWithinApplication(request);
     }
 }

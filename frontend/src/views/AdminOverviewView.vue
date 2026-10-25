@@ -185,7 +185,7 @@ const flows = computed(() => (data.value?.emailFlows || []).filter((flow) => flo
           <RouterLink :to="{ name: 'AdminEmailFlows' }" class="font-bold underline min-h-11 inline-flex items-center">Flow settings</RouterLink>
         </div>
         <p v-if="!flows.length" class="mt-3 text-chocolate/75">No flow emails went out in this period.</p>
-        <div v-else class="mt-4 overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0">
+        <div v-else class="mt-4 overflow-x-auto -mx-5 px-5 md:mx-0 md:px-0 focus-visible:outline-2 focus-visible:outline-chocolate" tabindex="0" role="region" aria-labelledby="flows-heading">
           <table class="w-full min-w-[56rem] text-left">
             <thead>
               <tr class="text-sm text-chocolate/70">

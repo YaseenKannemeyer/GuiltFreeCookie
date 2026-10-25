@@ -55,10 +55,10 @@ public final class FlowCopy {
         int p = data.discountPercent();
         boolean code = data.discountCode() != null;
         return switch (step) {
-            case 0 -> new Draft(code ? "Welcome! Here's " + p + "% off your first order" : "Welcome to GuiltFreeCookie",
+            case 0 -> new Draft(code ? "Welcome! Here's " + p + "% off your next order" : "Welcome to GuiltFreeCookie",
                     "A small Cape Town bakery that bakes every order fresh.", "Welcome in")
                     .say("Thanks for joining us. We're a small bakery in Strandfontein, Cape Town, and we bake every order fresh after you place it.")
-                    .say(code ? "Here's " + p + "% off your first order. The code is yours alone and works once." : null)
+                    .say(code ? "Here's " + p + "% off your next order. The code is yours alone and works once." : null)
                     .code().founder().action("Choose your cookies");
             case 1 -> new Draft("Where to start", "A few of our favourites to begin with.", "Our favourites")
                     .say("Not sure where to start? These are a few of the cookies we're proudest of.")

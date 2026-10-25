@@ -141,6 +141,9 @@ class OrderLifecycleTest {
         assertNotNull(order.getPaidAt());
         assertEquals(1, discountRepository.findByCode("TREAT").orElseThrow().getUsedCount());
         assertEquals(6, stock());
+        // A guest order only counts as a verified purchase once its owner claims it into an account.
+        assertFalse(purchaseVerifier.hasBought("t@example.co.za", cookie.getCookieId()));
+        orderRepository.save(new CustomerOrder.Builder().copy(order).setAccountOwned(true).build());
         assertTrue(purchaseVerifier.hasBought("t@example.co.za", cookie.getCookieId()));
         assertEquals(1L, siteInfoService.info().stats().customersServed());
         assertEquals(6L, siteInfoService.info().stats().cookiesSold());
@@ -277,5 +280,89 @@ class OrderLifecycleTest {
         assertEquals(1, adminOrderService.search("mokoena", OrderStatus.PENDING_PAYMENT, null, null, null, null).totalItems());
         assertEquals(0, adminOrderService.search("mokoena", OrderStatus.PAID, null, null, null, null).totalItems());
         assertEquals(1, adminOrderService.search(null, null, null, null, null, null).items().getFirst().itemCount());
+    }
+
+    @Test
+    void aSingleUseCodeCantSitOnTwoUnpaidOrdersAndComesBackWhenOneIsCancelled() {
+        discountRepository.save(new DiscountCode.Builder().setCode("ONCE").setType(DiscountType.FIXED)
+                .setValue(BigDecimal.TEN).setMaxUses(1).build());
+        Placed first = placeWithCode("ONCE", "first@example.co.za");
+
+        // The cart already refuses it: the unpaid order has taken the only use.
+        assertThrows(BadRequestException.class, () -> placeWithCode("ONCE", "second@example.co.za"));
+        assertEquals(1, discountRepository.findByCode("ONCE").orElseThrow().getUsedCount());
+
+        orderService.cancelUnpaid(first.orderNumber(), first.token());
+        assertEquals(0, discountRepository.findByCode("ONCE").orElseThrow().getUsedCount());
+        placeWithCode("ONCE", "second@example.co.za");
+    }
+
+    @Test
+    void oncePerCustomerCountsUnpaidOrdersToo() {
+        discountRepository.save(new DiscountCode.Builder().setCode("HELLO").setType(DiscountType.FIXED)
+                .setValue(BigDecimal.TEN).setOnePerEmail(true).build());
+        placeWithCode("HELLO", "same@example.co.za");
+
+        assertThrows(ConflictException.class, () -> placeWithCode("HELLO", "same@example.co.za"));
+    }
+
+    @Test
+    void anExpiredHoldGivesTheCodeUseBack() {
+        discountRepository.save(new DiscountCode.Builder().setCode("LATE").setType(DiscountType.FIXED)
+                .setValue(BigDecimal.TEN).setMaxUses(1).build());
+        Placed placed = placeWithCode("LATE", "late@example.co.za");
+        orderRepository.save(new CustomerOrder.Builder().copy(order(placed))
+                .setReservedUntil(LocalDateTime.now().minusMinutes(1)).build());
+
+        orderService.releaseExpired();
+        assertEquals(0, discountRepository.findByCode("LATE").orElseThrow().getUsedCount());
+
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid late");
+        assertEquals(1, discountRepository.findByCode("LATE").orElseThrow().getUsedCount());
+    }
+
+    @Test
+    void refundingALatePaymentThatNeverGotItsCookiesDoesntInventStock() {
+        Placed placed = place(ShippingMethod.PICKUP);
+        orderRepository.save(new CustomerOrder.Builder().copy(order(placed))
+                .setReservedUntil(LocalDateTime.now().minusMinutes(1)).build());
+        orderService.releaseExpired();
+        cookieRepository.save(new Cookie.Builder().copy(cookieRepository.findById(cookie.getCookieId()).orElseThrow())
+                .setStockQuantity(0).build());
+
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid late");
+        adminOrderService.refund(placed.orderNumber(), "Couldn't bake it", "AD001");
+
+        assertEquals(0, stock());
+    }
+
+    @Test
+    void anAdminCancellingAnUnpaidOrderGivesTheShopperTheirCartBack() {
+        Placed placed = place(ShippingMethod.PICKUP);
+
+        adminOrderService.changeStatus(placed.orderNumber(), new StatusChangeRequest(OrderStatus.CANCELLED, null), "AD001");
+
+        assertEquals(CartStatus.ACTIVE, cartRepository.findById(placed.cartId()).orElseThrow().getStatus());
+        assertEquals(12, stock());
+    }
+
+    @Test
+    void oneEmailCantHoldMoreThanThreeUnpaidOrders() {
+        for (int i = 0; i < CheckoutService.MAX_UNPAID_ORDERS; i++) {
+            place(ShippingMethod.PICKUP);
+            cookieRepository.save(new Cookie.Builder().copy(cookieRepository.findById(cookie.getCookieId()).orElseThrow())
+                    .setStockQuantity(12).build());
+        }
+
+        assertThrows(ConflictException.class, () -> place(ShippingMethod.PICKUP));
+    }
+
+    private Placed placeWithCode(String code, String email) {
+        String cartId = cartService.create(null).cartId();
+        cartService.addItem(cartId, new AddItemRequest(boxOfSix, 1));
+        cartService.applyDiscount(cartId, code);
+        var response = checkoutService.checkout(new CheckoutRequest(cartId, email, "Thandi", "Mokoena",
+                null, ShippingMethod.PICKUP, null, null, null, null), null);
+        return new Placed(response.orderNumber(), response.accessToken(), cartId);
     }
 }

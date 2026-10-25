@@ -33,7 +33,7 @@ public record AnalyticsSummary(
     public record Customers(long newCustomers, long returningCustomers) {
     }
 
-    // Carts and orders started in the period, and how many of those orders were paid.
+    // Carts started in the period; carts that went to pay (retries count once); those orders now paid (refunds excluded).
     public record Funnel(long carts, long cartsWithEmail, long ordersPlaced, long ordersPaid) {
     }
 

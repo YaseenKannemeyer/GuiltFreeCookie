@@ -18,7 +18,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, String> {
     List<OrderItem> findByOrderIdIn(Collection<String> orderIds);
 
     @Query("select count(i) > 0 from OrderItem i, CustomerOrder o where i.orderId = o.orderId "
-            + "and o.customerEmail = :email and i.cookieId = :cookieId and o.status in :statuses")
+            + "and o.customerEmail = :email and o.accountOwned = true and i.cookieId = :cookieId and o.status in :statuses")
     boolean hasBought(@Param("email") String email, @Param("cookieId") String cookieId,
                       @Param("statuses") Collection<OrderStatus> statuses);
 

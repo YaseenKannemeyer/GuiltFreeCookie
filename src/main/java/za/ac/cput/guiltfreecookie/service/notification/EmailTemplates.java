@@ -34,7 +34,8 @@ public class EmailTemplates {
             "order-confirmation",
             "order-shipped",
             "order-ready-for-pickup",
-            "claim-orders"), FlowCatalog.previewNames().stream()).toList();
+            "claim-orders",
+            "resubscribe-confirm"), FlowCatalog.previewNames().stream()).toList();
 
     private final SpringTemplateEngine engine;
     private final SiteInfoService siteInfoService;
@@ -125,6 +126,10 @@ public class EmailTemplates {
             case "order-shipped" -> "Track your parcel";
             default -> "View your order";
         });
+        if (template.equals("resubscribe-confirm")) {
+            model.put("actionUrl", frontendBase + "/email/resubscribe?e=sam%40example.com&t=preview");
+            model.put("actionLabel", "Yes, sign me up again");
+        }
         if (template.equals("claim-orders")) {
             model.put("actionUrl", frontendBase + "/account/claim?token=preview");
             model.put("actionLabel", "Add my earlier orders");

@@ -34,10 +34,12 @@ public class FlowLinkController {
     }
 
     @PostMapping("/orders/{orderNumber}/reorder")
-    @Operation(summary = "Put a past order back in a new cart",
-            description = "Anything sold out is left out. Store the returned cartId (merge it after login).")
-    public ResponseEntity<CartView> reorder(@PathVariable String orderNumber, @RequestParam String token) {
-        return new ResponseEntity<>(linkService.reorder(orderNumber, token), HttpStatus.CREATED);
+    @Operation(summary = "Put a past order back in the cart",
+            description = "Adds to the guest cart in cartId when there is one, otherwise a new cart. Anything sold out is "
+                    + "left out. Store the returned cartId (merge it after login).")
+    public ResponseEntity<CartView> reorder(@PathVariable String orderNumber, @RequestParam String token,
+                                            @RequestParam(required = false) String cartId) {
+        return new ResponseEntity<>(linkService.reorder(orderNumber, token, cartId), HttpStatus.CREATED);
     }
 
     @PostMapping("/reviews/by-link")

@@ -50,6 +50,8 @@ function blank() {
     onePerEmail: false,
     restrictedToEmail: "",
     active: true,
+    // The dates as loaded, so saving an untouched date keeps its exact time (flow codes end mid-day).
+    original: { startDate: "", startsAt: null, endDate: "", endsAt: null },
   };
 }
 
@@ -120,6 +122,7 @@ async function open(code) {
       onePerEmail: code.onePerEmail,
       restrictedToEmail: code.restrictedToEmail || "",
       active: code.active,
+      original: { startDate: dateOnly(code.startsAt), startsAt: code.startsAt, endDate: lastDay(code.endsAt), endsAt: code.endsAt },
     });
   }
   showRules.value = !!(form.minSubtotal || form.maxUses || form.onePerEmail || form.restrictedToEmail);
@@ -152,8 +155,8 @@ async function save() {
     type: form.type,
     value: form.type === "FREE_SHIPPING" ? null : number(form.value),
     minSubtotal: number(form.minSubtotal),
-    startsAt: form.startDate ? `${form.startDate}T00:00:00` : null,
-    endsAt: form.endDate ? dayAfter(form.endDate) : null,
+    startsAt: !form.startDate ? null : form.startDate === form.original.startDate ? form.original.startsAt : `${form.startDate}T00:00:00`,
+    endsAt: !form.endDate ? null : form.endDate === form.original.endDate ? form.original.endsAt : dayAfter(form.endDate),
     maxUses: number(form.maxUses),
     onePerEmail: form.onePerEmail,
     restrictedToEmail: form.restrictedToEmail.trim() || null,

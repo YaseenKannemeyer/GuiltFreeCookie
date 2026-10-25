@@ -34,6 +34,10 @@ public class PayFastGateway implements PaymentGateway {
             @Value("${app.payfast.merchant-key}") String merchantKey,
             @Value("${app.payfast.passphrase}") String passphrase,
             @Value("${app.payfast.notify-url}") String notifyUrl) {
+        // Without a passphrase the signature is a plain MD5 anyone can compute, so live payments refuse to start.
+        if (!sandbox && (passphrase == null || passphrase.isBlank())) {
+            throw new IllegalStateException("PAYFAST_PASSPHRASE must be set for live payments");
+        }
         this.orderLinks = orderLinks;
         this.sandbox = sandbox;
         this.merchantId = merchantId;

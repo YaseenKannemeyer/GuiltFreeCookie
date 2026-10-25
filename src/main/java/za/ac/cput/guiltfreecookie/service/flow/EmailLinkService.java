@@ -66,12 +66,17 @@ public class EmailLinkService {
         return shopCartService.get(cart.getCartId());
     }
 
-    // A new guest cart with whatever from the order is still in stock.
+    // Adds whatever from the order is still in stock to the shopper's current guest cart, or a new one.
     @Transactional
-    public CartView reorder(String orderNumber, String token) {
+    public CartView reorder(String orderNumber, String token, String currentCartId) {
         CustomerOrder order = linkedOrder(orderNumber, token);
         List<OrderItem> items = itemRepository.findByOrderId(order.getOrderId());
-        String cartId = shopCartService.create(null).cartId();
+        String cartId = Helper.isNullOrEmpty(currentCartId) ? null : cartRepository.findById(currentCartId)
+                .filter(cart -> cart.getStatus() == CartStatus.ACTIVE && !cart.isAccountOwned())
+                .map(Cart::getCartId).orElse(null);
+        if (cartId == null) {
+            cartId = shopCartService.create(null).cartId();
+        }
         int added = 0;
         for (OrderItem item : items) {
             try {
@@ -84,7 +89,8 @@ public class EmailLinkService {
         if (added == 0) {
             throw new ConflictException("None of the cookies from that order are available right now");
         }
-        return shopCartService.setEmail(cartId, order.getCustomerEmail());
+        CartView cart = shopCartService.get(cartId);
+        return cart.email() == null ? shopCartService.setEmail(cartId, order.getCustomerEmail()) : cart;
     }
 
     @Transactional
@@ -98,7 +104,7 @@ public class EmailLinkService {
         if (!inOrder) {
             throw new BadRequestException("That cookie isn't part of this order");
         }
-        return reviewService.create(order.getCustomerEmail(), request.cookieId(),
+        return reviewService.createFromOrderLink(order.getCustomerEmail(), request.cookieId(),
                 new ReviewRequest(request.rating(), request.title(), request.body(), request.authorName()));
     }
 

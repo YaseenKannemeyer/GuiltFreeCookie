@@ -15,10 +15,11 @@ import java.util.Optional;
 
 public interface AccountOrderRepository extends Repository<CustomerOrder, String> {
 
-    // Leaves out abandoned PayFast attempts: unpaid orders past their hold, and cancelled orders that were never paid.
+    // Leaves out abandoned PayFast attempts: unpaid orders past their hold, and cancelled or failed ones never paid.
     @Query("select o from CustomerOrder o where o.customerEmail = :email and o.accountOwned = true"
             + " and (o.status <> za.ac.cput.guiltfreecookie.domain.OrderStatus.PENDING_PAYMENT or o.reservedUntil > :now)"
-            + " and (o.status <> za.ac.cput.guiltfreecookie.domain.OrderStatus.CANCELLED or o.paidAt is not null)")
+            + " and (o.status not in (za.ac.cput.guiltfreecookie.domain.OrderStatus.CANCELLED,"
+            + " za.ac.cput.guiltfreecookie.domain.OrderStatus.PAYMENT_FAILED) or o.paidAt is not null)")
     Page<CustomerOrder> history(@Param("email") String email, @Param("now") LocalDateTime now, Pageable pageable);
 
     Optional<CustomerOrder> findByOrderNumberAndCustomerEmailAndAccountOwnedTrue(String orderNumber, String email);

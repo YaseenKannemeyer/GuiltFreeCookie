@@ -78,15 +78,16 @@ class EmailLinkServiceTest {
         CartView cart = mock(CartView.class);
         when(cart.cartId()).thenReturn("new-cart");
         when(shopCartService.create(null)).thenReturn(cart);
+        when(shopCartService.get("new-cart")).thenReturn(cart);
         when(shopCartService.addItem(eq("new-cart"), any()))
                 .thenThrow(new ConflictException("Sorry, Lemon Almond is sold out"))
                 .thenReturn(cart);
 
-        service.reorder("GFC-1", "t");
+        service.reorder("GFC-1", "t", null);
         verify(shopCartService).setEmail("new-cart", EMAIL);
 
         when(shopCartService.addItem(eq("new-cart"), any())).thenThrow(new ConflictException("sold out"));
-        assertThrows(ConflictException.class, () -> service.reorder("GFC-1", "t"));
+        assertThrows(ConflictException.class, () -> service.reorder("GFC-1", "t", null));
     }
 
     @Test
@@ -110,9 +111,27 @@ class EmailLinkServiceTest {
         when(orderLinks.matches(any(), eq("wrong"))).thenReturn(false);
         when(marketingLinks.matches(EMAIL, "wrong")).thenReturn(false);
 
-        assertThrows(NotFoundException.class, () -> service.reorder("GFC-1", "wrong"));
+        assertThrows(NotFoundException.class, () -> service.reorder("GFC-1", "wrong", null));
         assertThrows(BadRequestException.class, () -> service.unsubscribe(EMAIL, "wrong", "Unsubscribe page"));
         verify(consent, never()).unsubscribe(anyString(), anyString());
+    }
+
+    @Test
+    void aReorderAddsToTheShoppersCurrentGuestCart() {
+        CustomerOrder order = order(OrderStatus.DELIVERED);
+        when(orderRepository.findByOrderNumber("GFC-1")).thenReturn(Optional.of(order));
+        when(orderLinks.matches(order, "t")).thenReturn(true);
+        when(itemRepository.findByOrderId("o1")).thenReturn(List.of(item("c1", "v1")));
+        when(cartRepository.findById("mine")).thenReturn(Optional.of(new Cart.Builder()
+                .setCartId("mine").setStatus(CartStatus.ACTIVE).setCustomerEmail(EMAIL).build()));
+        CartView cart = mock(CartView.class);
+        when(cart.email()).thenReturn(EMAIL);
+        when(shopCartService.get("mine")).thenReturn(cart);
+
+        service.reorder("GFC-1", "t", "mine");
+
+        verify(shopCartService).addItem(eq("mine"), any());
+        verify(shopCartService, never()).create(any());
     }
 
     private static CustomerOrder order(OrderStatus status) {

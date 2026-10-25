@@ -149,7 +149,10 @@ class FlowJourneyTest {
             assertFalse(consent.canSend(email, flow));
         }
 
+        // Typing the address in again isn't enough: only the link sent to that inbox brings them back.
         newsletterService.subscribe(email, "footer");
+        assertFalse(consent.canSend(email, EmailFlow.WELCOME));
+        linkService.resubscribe(email, links.token(email));
         assertTrue(consent.canSend(email, EmailFlow.WELCOME));
         assertEquals(1, enrollmentRepository.findAll().stream()
                 .filter(e -> e.getEmail().equals(email) && e.getFlow() == EmailFlow.WELCOME).count(), "one welcome, ever");

@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 @Service
 public class DiscountService {
 
+    static final String EMAIL_NEEDED = "It applies once you enter your email at checkout";
+
     static final Pattern CODE_PATTERN = Pattern.compile("^[A-Z0-9][A-Z0-9_-]{2,29}$");
     static final BigDecimal MAX_FIXED = BigDecimal.valueOf(100_000);
     static final int MAX_DESCRIPTION_LENGTH = 150;
@@ -45,21 +47,27 @@ public class DiscountService {
         return new Evaluation(discount, true, amount(discount, subtotal), discount.getType() == DiscountType.FREE_SHIPPING, null);
     }
 
-    // For "apply code": rejects a code that wouldn't count right now.
+    // For "apply code": rejects a code that wouldn't count right now. A personal code is accepted before
+    // the cart has an email (the cart page doesn't ask for one); checkout checks it against the email.
     public DiscountCode requireApplicable(String rawCode, BigDecimal subtotal, String email) {
         String code = normalize(rawCode);
         DiscountCode discount = code == null ? null : repository.findByCode(code).orElse(null);
         String problem = problem(discount, subtotal, email, LocalDateTime.now());
-        if (problem != null) {
+        if (problem != null && !problem.equals(EMAIL_NEEDED)) {
             throw new BadRequestException(problem);
         }
         return discount;
     }
 
-    // Called when an order is paid (Phase 4). False if another order took the last use first.
+    // Called when an order is placed. False if another order took the last use first.
     @Transactional
     public boolean redeem(String code) {
         return repository.redeem(code) == 1;
+    }
+
+    @Transactional
+    public void release(String code) {
+        repository.release(code);
     }
 
     public List<DiscountCode> list() {
@@ -112,7 +120,7 @@ public class DiscountService {
         }
         if (discount.getRestrictedToEmail() != null) {
             if (email == null) {
-                return "Enter your email address to use this code";
+                return EMAIL_NEEDED;
             }
             if (!discount.getRestrictedToEmail().equalsIgnoreCase(email)) {
                 return "This code belongs to a different email address";

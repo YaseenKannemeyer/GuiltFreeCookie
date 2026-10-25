@@ -71,7 +71,16 @@ class DiscountServiceTest {
 
         assertNull(DiscountService.problem(personal, subtotal, "Thandi@Example.co.za", now));
         assertEquals("This code belongs to a different email address", DiscountService.problem(personal, subtotal, "x@example.co.za", now));
-        assertEquals("Enter your email address to use this code", DiscountService.problem(personal, subtotal, null, now));
+        assertEquals(DiscountService.EMAIL_NEEDED, DiscountService.problem(personal, subtotal, null, now));
+    }
+
+    @Test
+    void aPersonalCodeCanGoInACartBeforeTheEmailIsKnownButNotTheWrongEmail() {
+        when(repository.findByCode("WELCOME-ABC234")).thenReturn(Optional.of(
+                code(DiscountType.PERCENT, "10").setCode("WELCOME-ABC234").setRestrictedToEmail("thandi@example.co.za").build()));
+
+        assertEquals("WELCOME-ABC234", service.requireApplicable("welcome-abc234", subtotal, null).getCode());
+        assertThrows(BadRequestException.class, () -> service.requireApplicable("WELCOME-ABC234", subtotal, "x@example.co.za"));
     }
 
     @Test

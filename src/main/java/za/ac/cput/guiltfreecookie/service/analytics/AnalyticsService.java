@@ -93,8 +93,9 @@ public class AnalyticsService {
                 new Funnel(
                         cartRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end),
                         cartRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndCustomerEmailIsNotNull(start, end),
-                        orderRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end),
-                        orderRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndPaidAtIsNotNull(start, end)),
+                        orderRepository.countCheckedOutCarts(start, end),
+                        orderRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndStatusIn(
+                                start, end, OrderStatus.PAID_STATUSES)),
                 delivery(paid),
                 emailFlows(paid, start, end));
     }

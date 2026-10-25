@@ -100,8 +100,15 @@ public class FlowEnrollmentService {
     }
 
     @Transactional
+    // The first welcome email (with the code they signed up for) still goes out; the rest of the series stops.
     public void purchased(String email) {
-        exit(email, ENDED_BY_PURCHASE, "Purchased");
+        for (FlowEnrollment enrollment : repository.findByEmailAndFlowInAndStatus(email, ENDED_BY_PURCHASE, EnrollmentStatus.ACTIVE)) {
+            if (enrollment.getFlow() == EmailFlow.WELCOME && enrollment.getCurrentStep() == 0) {
+                continue;
+            }
+            repository.save(new FlowEnrollment.Builder().copy(enrollment)
+                    .setStatus(EnrollmentStatus.EXITED).setExitReason("Purchased").setUpdatedAt(LocalDateTime.now()).build());
+        }
     }
 
     private void enroll(String email, EmailFlow flow, String contextRef) {

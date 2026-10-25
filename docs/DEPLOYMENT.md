@@ -82,7 +82,7 @@ Run with `SPRING_PROFILES_ACTIVE=prod`. The prod profile has no fallbacks for se
 | `EMAIL_LINK_SECRET` | Unsubscribe links in past emails |
 | `ACCOUNT_CLAIM_SECRET` | Outstanding "add my earlier orders" links (they last 24 hours anyway) |
 
-`ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` create the first admin on an empty database (see step 6).
+`ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` create the first admin on an empty database (see step 7).
 
 `API_DOCS_ENABLED=true` turns Swagger UI on in prod. Leave it off on the public site.
 
@@ -104,11 +104,15 @@ Production uses `ddl-auto=validate`: the app checks the schema but never changes
 - **Upgrading an existing database:** run the SQL listed under "Action required" in each new `docs/API-CHANGELOG.md` entry, or run once with `JPA_DDL_AUTO=update` after taking a backup. Hibernate adds new tables and columns, but it never changes or drops existing ones.
 - **Back up daily.** The orders, payments and consent records (newsletter opt-ins and unsubscribes) are your legal record.
 
-## 5. Health check
+## 5. Time zone
+
+The app sets its own time zone to Africa/Johannesburg when it starts, so order times, delivery holds, discount dates and the daily email check are all in Cape Town time, even on a server set to UTC. Set the MySQL server or connection to the same zone (`serverTimezone=Africa/Johannesburg` in `DB_URL`) so its timestamps agree.
+
+## 6. Health check
 
 `GET /guiltFreeCookie/actuator/health` answers `{"status":"UP"}` when the app and database are up. It's public, isn't rate-limited, and reveals nothing else. Mail isn't part of it, so an email-provider outage doesn't make your host restart the shop. Nothing else under `/actuator` is exposed.
 
-## 6. After deploying
+## 7. After deploying
 
 1. **First admin:** on an empty database, set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` (12+ characters) for the first start. Sign in at `/admin`, change the password (Admin → profile), then remove both variables. They do nothing once any admin exists.
 2. Admin → Delivery: check rates, the pickup address and the free-delivery threshold.

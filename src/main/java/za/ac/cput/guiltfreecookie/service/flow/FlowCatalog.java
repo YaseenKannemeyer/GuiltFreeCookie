@@ -19,7 +19,9 @@ public final class FlowCatalog {
 
     public static List<Duration> delays(EmailFlow flow, EmailFlowSettings settings) {
         return switch (flow) {
-            case WELCOME -> List.of(Duration.ZERO, hours(24), hours(48), hours(72), hours(96));
+            // The last one says "your code ends tomorrow", so it follows the code's lifetime (5 days → 96 hours).
+            case WELCOME -> List.of(Duration.ZERO, hours(24), hours(48), hours(72),
+                    hours(Math.max(72, settings.getWelcomeCodeDays() * 24L - 24)));
             case BROWSE_ABANDONMENT -> List.of(hours(1), hours(24));
             // Enrolled once the cart has sat for an hour, so the first reminder goes straight away.
             case CART_ABANDONMENT -> List.of(Duration.ZERO, hours(23), hours(47));

@@ -24,4 +24,9 @@ public interface DiscountCodeRepository extends JpaRepository<DiscountCode, Stri
     @Query("update DiscountCode d set d.usedCount = d.usedCount + 1 "
             + "where d.code = :code and (d.maxUses is null or d.usedCount < d.maxUses)")
     int redeem(@Param("code") String code);
+
+    // Gives a use back when an unpaid order is cancelled.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update DiscountCode d set d.usedCount = d.usedCount - 1 where d.code = :code and d.usedCount > 0")
+    int release(@Param("code") String code);
 }

@@ -4,6 +4,49 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-25 — Pre-launch review fixes
+
+A security review and a cross-phase correctness review, plus a full browser run on a phone, led to these changes. Each has a test.
+
+### Behaviour changes to know about
+- **Discount codes count when the order is placed, not when it's paid.**
+  - Previously one single-use code could sit on any number of unpaid orders and all of them were discounted.
+  - Now the use is taken at checkout and given back if the order is cancelled unpaid (by the shopper, the admin, an expired hold or a failed payment).
+  - A late payment on a released order takes the use again.
+  - "Once per customer" now also counts that email's unpaid orders.
+  - `usedCount` includes unpaid orders.
+- **Personal codes can go in the cart before the email is known.** The cart answers "It applies once you enter your email at checkout", and checkout still checks the code against the email. Before, guests couldn't use the codes the email flows send them.
+- **Rejoining after an unsubscribe needs the person's own inbox.**
+  - Subscribing an address that unsubscribed or was paused now emails it a confirmation link (`/email/resubscribe?e=&t=`, at most one a day), and nothing changes until it's clicked.
+  - New template: `resubscribe-confirm`.
+  - Before, anyone could type someone else's address in and undo their unsubscribe.
+- **Rate limits** match the decoded path. `/api/v1/auth/logi%6E` used to dodge the login limit.
+- **At most 3 unpaid orders per email at once** (`409` otherwise), so one shopper can't tie up the stock.
+- **The contact auto-reply** no longer repeats the sender's name, subject or message. Anyone can type any address into the form.
+- **"Verified buyer"** on account reviews counts only orders that belong to the account. Reviews from an order's emailed link are verified by the link itself (`ReviewService.createFromOrderLink`).
+- **`PAYFAST_SANDBOX=false` with a blank passphrase** now stops the app from starting.
+- **Time zone:** the app sets its own zone to Africa/Johannesburg at startup (see `docs/DEPLOYMENT.md`).
+
+### Fixes
+- **Refunds:** a refund puts cookies back only if the order was actually holding them, checked against the stock log. A late payment that couldn't get its cookies back no longer creates stock that doesn't exist.
+- **Admin cancel:** cancelling an unpaid order also gives the shopper their cart back, like expiry and customer cancels.
+- **Order history:** no longer lists never-paid `PAYMENT_FAILED` attempts.
+- **Analytics funnel:** "Went to pay" counts distinct carts, so retries count once, and "Paid" excludes refunds to match the headline.
+- **Welcome emails:** the first one (with the code) still goes out if the person buys straight away; a purchase stops emails 2–5. The "code ends tomorrow" email is timed from the code's real lifetime. The first email now says "your next order".
+- **Legacy admin delivery-details endpoint:** `PUT /api/v1/delivery-details/update` changes only the address, so a customer's saved-address fields survive.
+- **`OrderView`:** gained `cartId`. It's set only while an order is unpaid or was cancelled unpaid.
+- **`POST /orders/{n}/reorder`:** accepts an optional `cartId` and adds to that guest cart instead of replacing it.
+
+### Frontend
+- **Sign-out:** clears the account's cart from the browser, so the next shopper on the device starts fresh.
+- **Cart page:** when an unpaid order is waiting, for example after the back button on PayFast, the cart offers "Finish paying" or "Change my order".
+- **Payment-cancelled page:** restores the cart even when PayFast opens it in a new tab.
+- **Discount screen:** editing a code keeps the exact start and end times of dates you didn't change.
+- **Accessibility:**
+  - help text under form fields has stronger contrast;
+  - the cart's quantity box has a label;
+  - the overview's scrolling table can be reached by keyboard.
+
 ## 2026-10-25 — Admin discount-codes screen (frontend only)
 
 No API change. Admin → **Discount codes** (`/admindashboard/discounts`) uses the existing `/api/v1/admin/discounts` endpoints:

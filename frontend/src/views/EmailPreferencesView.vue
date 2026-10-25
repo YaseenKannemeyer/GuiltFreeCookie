@@ -5,14 +5,15 @@ import BaseButton from "../components/ui/BaseButton.vue";
 import { emailLinkApi } from "../api/flowApi";
 import { errorMessage } from "../api/storeApi";
 
-// /email/unsubscribe asks first (mail scanners open links, so nothing happens on load);
+// /email/unsubscribe and /email/resubscribe ask first (mail scanners open links, so nothing happens on load);
 // /email/subscribed is the "keep me subscribed" button in the re-engagement emails.
 const route = useRoute();
 const email = computed(() => (typeof route.query.e === "string" ? route.query.e : ""));
 const token = computed(() => (typeof route.query.t === "string" ? route.query.t : ""));
 const staying = computed(() => route.name === "EmailSubscribed");
 
-const state = ref(email.value && token.value ? (staying.value ? "working" : "ask") : "broken");
+const comingBack = computed(() => route.name === "EmailResubscribe");
+const state = ref(email.value && token.value ? (staying.value ? "working" : comingBack.value ? "ask-back" : "ask") : "broken");
 const busy = ref(false);
 const error = ref("");
 
@@ -50,6 +51,18 @@ onMounted(() => {
         <div class="mt-8 flex flex-wrap gap-3">
           <BaseButton size="lg" :disabled="busy" @click="run(emailLinkApi.unsubscribe, 'unsubscribed')">Unsubscribe</BaseButton>
           <BaseButton :to="{ name: 'Home' }" variant="outline" size="lg">Keep my emails</BaseButton>
+        </div>
+      </section>
+
+      <section v-else-if="state === 'ask-back'">
+        <h1 class="font-display text-display">Sign up again?</h1>
+        <p class="mt-4 text-chocolate/80 max-w-[44ch]">
+          You'll get bakery news and offers at <strong class="break-all">{{ email }}</strong> again. You can unsubscribe from any of them.
+        </p>
+        <p v-if="error" role="alert" class="mt-5 rounded-xl bg-red-800/[0.08] px-4 py-3 text-red-900 max-w-[44ch]">{{ error }}</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <BaseButton size="lg" :disabled="busy" @click="run(emailLinkApi.resubscribe, 'back')">Yes, sign me up</BaseButton>
+          <BaseButton :to="{ name: 'Home' }" variant="outline" size="lg">No thanks</BaseButton>
         </div>
       </section>
 

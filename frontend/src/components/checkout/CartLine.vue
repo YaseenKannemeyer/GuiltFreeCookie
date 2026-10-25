@@ -78,6 +78,7 @@ const packText = computed(() =>
       <div v-if="editable" class="mt-3 flex items-center justify-between gap-3">
         <QuantitySelector
           v-if="line.issue !== 'UNAVAILABLE'"
+          :label="`Quantity of ${line.name}`"
           :model-value="line.quantity"
           :min="1"
           :max="Math.max(line.quantity, line.maxQuantity)"

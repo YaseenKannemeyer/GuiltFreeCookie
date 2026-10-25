@@ -90,6 +90,12 @@ public class InventoryService {
 
     // Puts an unpaid, cancelled or refunded order's cookies back. A cookie deleted since is skipped.
     @Transactional
+    // True while the order still has cookies taken from stock (a late payment may not have got them back).
+    public boolean isHeldBy(String orderNumber) {
+        return movementRepository.netChange("Order " + orderNumber, EnumSet.of(InventoryReason.ORDER_RESERVED,
+                InventoryReason.ORDER_RELEASED, InventoryReason.REFUNDED)) < 0;
+    }
+
     public void release(String cookieId, int units, String orderNumber, InventoryReason reason) {
         if (cookieRepository.adjustStock(cookieId, units) == 0) {
             return;

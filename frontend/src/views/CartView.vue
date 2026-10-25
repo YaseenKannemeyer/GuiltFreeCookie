@@ -7,10 +7,10 @@ import StickyTotalBar from "../components/checkout/StickyTotalBar.vue";
 import CartLine from "../components/checkout/CartLine.vue";
 import { useCart } from "../composables/useCart";
 import { useFormat } from "../composables/useFormat";
-import { errorMessage } from "../api/storeApi";
+import { errorMessage, orderApi, submitPaymentForm } from "../api/storeApi";
 
 const router = useRouter();
-const { cart, ready, load, setQuantity, remove, applyDiscount, removeDiscount } = useCart();
+const { cart, ready, load, setQuantity, remove, applyDiscount, removeDiscount, restore } = useCart();
 const { rand } = useFormat();
 
 const busy = ref(false);
@@ -70,7 +70,56 @@ async function reload() {
   }
 }
 
-onMounted(reload);
+// Someone who left PayFast with the back button still has an unpaid order holding their cookies.
+const LAST_ORDER = "gfc_last_order";
+const unpaid = ref(null);
+const unpaidBusy = ref(false);
+
+async function checkUnpaid() {
+  let last = null;
+  try {
+    last = JSON.parse(localStorage.getItem(LAST_ORDER) || "null");
+  } catch {
+    return;
+  }
+  if (!last?.orderNumber) return;
+  try {
+    const order = await orderApi.get(last.orderNumber, last.token);
+    if (order.status === "PENDING_PAYMENT" && order.canPay) unpaid.value = { ...last, total: order.total };
+    else localStorage.removeItem(LAST_ORDER);
+  } catch {
+    /* Not ours to worry about: the order page still works from its email. */
+  }
+}
+
+async function finishPaying() {
+  unpaidBusy.value = true;
+  try {
+    submitPaymentForm(await orderApi.payAgain(unpaid.value.orderNumber, unpaid.value.token));
+  } catch (e) {
+    error.value = errorMessage(e);
+    unpaidBusy.value = false;
+  }
+}
+
+async function changeOrder() {
+  unpaidBusy.value = true;
+  try {
+    const cancelled = await orderApi.cancel(unpaid.value.orderNumber, unpaid.value.token);
+    localStorage.removeItem(LAST_ORDER);
+    unpaid.value = null;
+    await restore(cancelled?.cartId);
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    unpaidBusy.value = false;
+  }
+}
+
+onMounted(() => {
+  reload();
+  checkUnpaid();
+});
 </script>
 
 <template>
@@ -79,6 +128,17 @@ onMounted(reload);
       <StepRail :steps="steps" label="Checkout progress" />
 
       <h1 class="font-display text-display mt-8">Your cart</h1>
+
+      <section v-if="unpaid" class="mt-6 rounded-2xl border border-chocolate/15 bg-cream-100/70 p-5" aria-labelledby="unpaid-heading">
+        <h2 id="unpaid-heading" class="font-bold">You have an unpaid order</h2>
+        <p class="mt-1 text-chocolate/80">
+          Order {{ unpaid.orderNumber }} for {{ rand(unpaid.total) }} is waiting for payment, and we're holding its cookies for you.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <BaseButton :disabled="unpaidBusy" @click="finishPaying">Finish paying</BaseButton>
+          <BaseButton variant="outline" :disabled="unpaidBusy" @click="changeOrder">Change my order</BaseButton>
+        </div>
+      </section>
 
       <p v-if="loadError" role="alert" class="mt-6">
         {{ loadError }}

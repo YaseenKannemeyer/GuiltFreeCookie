@@ -76,6 +76,7 @@ public class ContactService {
                 "messageId", saved.getId());
         emailService.sendTemplate(siteInfoService.setting("support-email"), "New contact message: " + subject,
                 "contact-to-shop", model, false);
+        // The auto-reply repeats nothing the sender typed: anyone can enter any address here.
         emailService.sendTemplate(email, "We received your message", "contact-auto-reply", model, false);
     }
 

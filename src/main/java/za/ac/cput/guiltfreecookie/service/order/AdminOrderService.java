@@ -112,9 +112,12 @@ public class AdminOrderService {
         }
         String note = note(request.note());
         if (target == OrderStatus.CANCELLED) {
-            orderService.releaseStock(order, InventoryReason.ORDER_RELEASED);
+            orderService.releaseHold(order);
         }
         CustomerOrder updated = orderService.changeStatus(order, target, note, adminId);
+        if (target == OrderStatus.CANCELLED) {
+            orderService.reopenCart(updated);
+        }
         if (target == OrderStatus.READY_FOR_PICKUP) {
             events.publishEvent(new OrderEvents.ReadyForPickup(orderNumber));
         }
@@ -167,7 +170,8 @@ public class AdminOrderService {
         if (!order.getStatus().isPaid()) {
             throw new ConflictException("Only a paid order can be refunded");
         }
-        boolean restocked = RESTOCK_ON_REFUND.contains(order.getStatus());
+        // A late payment may never have got its cookies back from stock; don't return what wasn't taken.
+        boolean restocked = RESTOCK_ON_REFUND.contains(order.getStatus()) && orderService.holdsStock(order);
         if (restocked) {
             orderService.releaseStock(order, InventoryReason.REFUNDED);
         }
@@ -175,7 +179,9 @@ public class AdminOrderService {
         if (rawNote != null && !rawNote.isBlank()) {
             notes.add(note(rawNote));
         }
-        notes.add(restocked ? "Cookies returned to stock." : "Already sent, so stock is unchanged.");
+        notes.add(restocked ? "Cookies returned to stock."
+                : RESTOCK_ON_REFUND.contains(order.getStatus()) ? "Its cookies weren't held, so stock is unchanged."
+                : "Already sent, so stock is unchanged.");
         notes.add("Pay the refund in the PayFast dashboard.");
         return adminView(orderService.changeStatus(order, OrderStatus.REFUNDED, String.join(" ", notes), adminId));
     }

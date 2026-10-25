@@ -78,7 +78,7 @@ class AnalyticsServiceTest {
         assertEquals(1, summary.customers().newCustomers());
         assertEquals(1, summary.customers().returningCustomers());
         assertEquals(4, summary.funnel().ordersPlaced());
-        assertEquals(3, summary.funnel().ordersPaid());
+        assertEquals(2, summary.funnel().ordersPaid());
     }
 
     @Test

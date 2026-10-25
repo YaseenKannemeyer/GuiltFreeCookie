@@ -53,6 +53,16 @@ public class ReviewService {
     // One review per customer per cookie, including ones that were rejected. Starts as PENDING.
     @Transactional
     public ReviewView create(String email, String idOrSlug, ReviewRequest request) {
+        return create(email, idOrSlug, request, null);
+    }
+
+    // From an order's emailed review link: the link proves the purchase, so it's a verified buyer.
+    @Transactional
+    public ReviewView createFromOrderLink(String email, String idOrSlug, ReviewRequest request) {
+        return create(email, idOrSlug, request, true);
+    }
+
+    private ReviewView create(String email, String idOrSlug, ReviewRequest request, Boolean verified) {
         Cookie cookie = requireCookie(idOrSlug);
         String title = Helper.clean(request.title());
         String body = Helper.clean(request.body());
@@ -77,7 +87,7 @@ public class ReviewService {
                     .setTitle(title)
                     .setBody(body)
                     .setAuthorName(authorName)
-                    .setVerifiedBuyer(purchaseVerifier.hasBought(email, cookie.getCookieId()))
+                    .setVerifiedBuyer(verified != null ? verified : purchaseVerifier.hasBought(email, cookie.getCookieId()))
                     .setStatus(ReviewStatus.PENDING)
                     .setCreatedAt(LocalDateTime.now())
                     .build()));
