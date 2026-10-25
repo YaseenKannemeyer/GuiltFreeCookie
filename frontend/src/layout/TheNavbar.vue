@@ -11,7 +11,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import { cookieDropPinned } from "../composables/cookieDropState";
-import { useToast } from "../composables/useToast";
+import { useCart } from "../composables/useCart";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -62,14 +62,10 @@ const goSearch = () => {
   router.push({ name: "Products", query: { focus: "search" } });
 };
 
-// Same message as "Add to cart" until the cart exists.
-const { showToast } = useToast();
-const openCart = () => {
-  showToast(
-    "The cart is almost ready. You'll be able to order very soon.",
-    "info",
-  );
-};
+const { itemCount, ready: cartReady, load: loadCart } = useCart();
+onMounted(() => {
+  if (!cartReady.value) loadCart().catch(() => {});
+});
 </script>
 
 <template>
@@ -126,20 +122,24 @@ const openCart = () => {
         >
           <MagnifyingGlassIcon class="h-[22px] w-[22px]" />
         </button>
-        <!-- Cart (the cart feature replaces openCart) -->
-        <button
-          type="button"
+        <RouterLink
+          :to="{ name: 'Cart' }"
           :class="[
             'relative h-11 w-11 flex items-center justify-center rounded-full transition-all hover:-translate-y-0.5',
             overHero
               ? 'bg-primary text-chocolate hover:bg-primary-300'
               : 'bg-chocolate text-cream-50 hover:bg-chocolate-300',
           ]"
-          aria-label="Open cart"
-          @click="openCart"
+          :aria-label="itemCount ? `Cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : 'Cart'"
         >
           <ShoppingBagIcon class="h-5 w-5" />
-        </button>
+          <span
+            v-if="itemCount"
+            class="absolute -top-1 -right-1 min-w-[2.2rem] h-[2.2rem] px-1 rounded-full bg-primary text-chocolate text-[1.2rem] leading-[2.2rem] font-extrabold text-center tabular ring-2 ring-background"
+            aria-hidden="true"
+            >{{ itemCount > 99 ? "99+" : itemCount }}</span
+          >
+        </RouterLink>
 
         <!-- Hamburger (mobile) -->
         <button

@@ -87,6 +87,30 @@ export const routes = [
     meta: { authMode, title, noindex: true },
   })),
   {
+    path: "/cart",
+    name: "Cart",
+    component: () => import("../views/CartView.vue"),
+    meta: { title: "Your cart", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/checkout/cancelled",
+    name: "PaymentCancelled",
+    component: () => import("../views/PaymentCancelledView.vue"),
+    meta: { title: "Payment cancelled", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/checkout/:step(you|delivery|pay)?",
+    name: "Checkout",
+    component: () => import("../views/CheckoutView.vue"),
+    meta: { title: "Checkout", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/order/:orderNumber",
+    name: "Order",
+    component: () => import("../views/OrderView.vue"),
+    meta: { title: "Your order", noindex: true },
+  },
+  {
     path: "/account",
     name: "Account",
     component: () => import("../views/AccountView.vue"),
@@ -167,6 +191,18 @@ export const routes = [
     name: "AdminOrders",
     component: () => import("../views/AdminOrdersView.vue"),
     meta: { title: "Orders · Admin", requiresAdmin: true, noindex: true },
+  },
+  {
+    path: "/admindashboard/orders/:orderNumber",
+    name: "AdminOrderDetail",
+    component: () => import("../views/AdminOrderDetailView.vue"),
+    meta: { title: "Order · Admin", requiresAdmin: true, noindex: true },
+  },
+  {
+    path: "/admindashboard/delivery",
+    name: "AdminShipping",
+    component: () => import("../views/AdminShippingView.vue"),
+    meta: { title: "Delivery · Admin", requiresAdmin: true, noindex: true },
   },
   {
     path: "/admindashboard/profile",

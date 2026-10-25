@@ -11,6 +11,11 @@ import {
   ClipboardDocumentListIcon,
   ArrowLeftStartOnRectangleIcon,
   BuildingStorefrontIcon,
+  TruckIcon,
+  ArchiveBoxIcon,
+  InboxIcon,
+  StarIcon,
+  EnvelopeIcon,
 } from "@heroicons/vue/24/outline";
 import { useAdminAuth } from "../composables/useAdminAuth";
 
@@ -19,32 +24,37 @@ const { admin, logout } = useAdminAuth();
 
 const navLinks = [
   {
-    label: "Stock & packs",
-    to: { name: "AdminInventory" },
-    icon: Squares2X2Icon,
-  },
-  {
-    label: "Inbox",
-    to: { name: "AdminMessages" },
-    icon: ClipboardDocumentListIcon,
-  },
-  {
-    label: "Reviews",
-    to: { name: "AdminReviews" },
-    icon: ClipboardDocumentListIcon,
-  },
-  {
-    label: "Email previews",
-    to: { name: "AdminEmailPreviews" },
-    icon: ClipboardDocumentListIcon,
-  },
-  { label: "Cookies", to: { name: "AdminDashboard" }, icon: Squares2X2Icon },
-  { label: "Users", to: { name: "AdminUsers" }, icon: UsersIcon },
-  {
     label: "Orders",
     to: { name: "AdminOrders" },
     icon: ClipboardDocumentListIcon,
   },
+  {
+    label: "Delivery",
+    to: { name: "AdminShipping" },
+    icon: TruckIcon,
+  },
+  {
+    label: "Stock & packs",
+    to: { name: "AdminInventory" },
+    icon: ArchiveBoxIcon,
+  },
+  {
+    label: "Inbox",
+    to: { name: "AdminMessages" },
+    icon: InboxIcon,
+  },
+  {
+    label: "Reviews",
+    to: { name: "AdminReviews" },
+    icon: StarIcon,
+  },
+  {
+    label: "Email previews",
+    to: { name: "AdminEmailPreviews" },
+    icon: EnvelopeIcon,
+  },
+  { label: "Cookies", to: { name: "AdminDashboard" }, icon: Squares2X2Icon },
+  { label: "Users", to: { name: "AdminUsers" }, icon: UsersIcon },
 ];
 
 const fullName = computed(

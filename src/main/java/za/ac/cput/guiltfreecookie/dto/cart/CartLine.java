@@ -8,6 +8,7 @@ public record CartLine(
         String slug,
         String name,
         String image,
+        String allergens,
         String variantId,
         String variantLabel,
         int unitsPerPack,

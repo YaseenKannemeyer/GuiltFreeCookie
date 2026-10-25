@@ -1,0 +1,123 @@
+{
+  "title": "Choose the checkout structure",
+  "question": "Your visual world stays as it is. Choose how the cart, checkout and order page are organised. Steer with a note if something is missing.",
+  "options": [
+    {
+      "id": "drawer",
+      "label": "Cart drawer + one-page checkout",
+      "kicker": "THE ROLL",
+      "thesis": "Review the cart without leaving the shop; check out on one page with the total always in view.",
+      "palette": ["#E3D9C8", "#F5F0E6", "#2E0E0B", "#C59F71"],
+      "materials": ["slide-over drawer", "single-page form", "sticky total"],
+      "viewport": "The navbar bag opens a cream drawer over the page: items with pack, allergens, quantity and price; subtotal and Checkout pinned at the bottom.",
+      "risk": "Drawer plus a separate full cart page is two places to maintain; long carts scroll inside the drawer.",
+      "html": ".impeccable/mocks/decision/drawer.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "wizard",
+      "label": "Step-by-step checkout",
+      "thesis": "One decision per screen, sized for one hand: Cart, You, Delivery, Pay.",
+      "palette": ["#E3D9C8", "#F5F0E6", "#2E0E0B", "#C59F71"],
+      "materials": ["progress pills", "big option tiles", "sticky total bar"],
+      "viewport": "A progress row, one big question in Luckiest Guy, three delivery tiles with price and ETA, and the total incl. delivery above Continue.",
+      "risk": "More taps for returning or desktop shoppers; review of the whole order happens late.",
+      "html": ".impeccable/mocks/decision/wizard.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "delivery-first",
+      "label": "Delivery-first cart",
+      "thesis": "The cart answers 'what will I actually pay?' first: delivery choice and free-delivery progress sit above the items.",
+      "palette": ["#E3D9C8", "#F5F0E6", "#2E0E0B", "#C59F71"],
+      "materials": ["free-delivery meter", "segmented delivery choice", "sticky total"],
+      "viewport": "A caramel progress meter 'R270 away from free delivery', a Courier / PUDO / Collect switch with prices, then the items, with the total incl. delivery pinned at the bottom.",
+      "risk": "Upsell-adjacent meter must stay honest; checkout still needs a details page after the cart.",
+      "html": ".impeccable/mocks/decision/delivery-first.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-order-pass",
+      "label": "Order pass (fused)",
+      "verdict": "competitive",
+      "lineage": "boarding pass and live gate board",
+      "thesis": "The thank-you page as a segmented order pass whose status band changes colour and holds it until you've seen it.",
+      "palette": ["#F5F0E6", "#2E0E0B", "#C59F71", "#BBA98A"],
+      "materials": ["perforated segments", "tabular figures", "status band"],
+      "viewport": "Order, Via and ETA segments over a caramel status band, then the timeline.",
+      "case": "Fuses cleanly into tracking and can sit on top of any of the three checkout structures; loses on scope because it only shapes the order page.",
+      "risk": "Pushed too far it reads as travel, not baking.",
+      "html": ".impeccable/mocks/decision/order-pass.html",
+      "htmlFrame": "390x844",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp"
+    },
+    {
+      "id": "challenger-doujin-catalog",
+      "label": "Newsprint circle catalog",
+      "verdict": "declined",
+      "lineage": "doujin event catalog",
+      "thesis": "Thumbnail cells packed on newsprint.",
+      "palette": ["#f2efe6", "#111111"],
+      "materials": ["newsprint", "biro circles"],
+      "viewport": "A packed thumbnail grid.",
+      "risk": "Unreadable as a checkout.",
+      "case": "Shoppers don't identify with event catalogs and density hurts a two-item cart.",
+      "kept": "Mark state by hand: the chosen delivery option is visibly 'circled', not just tinted."
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "Crouwel grid specimen",
+      "verdict": "declined",
+      "lineage": "Wim Crouwel posters",
+      "thesis": "Letterforms built on a visible grid.",
+      "palette": ["#ffffff", "#1b1b1b", "#2f6fff"],
+      "materials": ["construction grid"],
+      "viewport": "Grid-built display type.",
+      "risk": "Fights Luckiest Guy.",
+      "case": "Conflicts with the committed type system.",
+      "kept": "Strict column alignment for prices and totals (tabular figures on one right edge)."
+    },
+    {
+      "id": "challenger-metro",
+      "label": "Metro tiles",
+      "verdict": "declined",
+      "lineage": "Metro typographic tiles",
+      "thesis": "Flat tiles and cropped giant type.",
+      "palette": ["#000000", "#00aba9", "#ffffff"],
+      "materials": ["flat tiles"],
+      "viewport": "A tile panorama.",
+      "risk": "Black ground breaks the world.",
+      "case": "Wrong palette and gesture model for a cream bakery checkout.",
+      "kept": "Selection floods the chosen tile instead of adding a small checkmark."
+    },
+    {
+      "id": "challenger-zoo-map",
+      "label": "Zoo guide map",
+      "verdict": "declined",
+      "lineage": "zoo and gardens guide maps",
+      "thesis": "Swelling colour lobes as regions.",
+      "palette": ["#8ED462", "#F5F1E4", "#2C2E2A"],
+      "materials": ["flat colour lobes"],
+      "viewport": "One lobe per screen.",
+      "risk": "Decorative geometry on a form.",
+      "case": "Organic regions obscure form fields and totals.",
+      "kept": "One dominant region per screen on mobile."
+    },
+    {
+      "id": "challenger-font-specimen",
+      "label": "Variable font specimen",
+      "verdict": "declined",
+      "lineage": "type specimens",
+      "thesis": "Sliders morph glyphs live.",
+      "palette": ["#fafafa", "#111111", "#ff4d00"],
+      "materials": ["axis sliders"],
+      "viewport": "A giant glyph.",
+      "risk": "No task fit.",
+      "case": "No relationship to buying cookies.",
+      "kept": "Live readouts: totals update in place as choices change."
+    }
+  ],
+  "reroll": true,
+  "buildPath": { "value": "code", "toggle": false },
+  "steer": true
+}

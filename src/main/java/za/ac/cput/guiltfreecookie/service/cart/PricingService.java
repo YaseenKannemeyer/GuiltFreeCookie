@@ -90,7 +90,7 @@ public class PricingService {
             BigDecimal unitPrice = variant.effectivePrice(cookie);
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
             lines.add(new CartLine(item.getCartItemId(), cookie.getCookieId(), cookie.getSlug(), cookie.getDescription(),
-                    cookie.getImage(), variant.getVariantId(), variant.getLabel(), variant.getUnitsPerPack(), unitPrice,
+                    cookie.getImage(), cookie.getAllergies(), variant.getVariantId(), variant.getLabel(), variant.getUnitsPerPack(), unitPrice,
                     item.getQuantity(), lineTotal, maxQuantity,
                     item.getQuantity() > maxQuantity ? LineIssue.NOT_ENOUGH_STOCK : null));
             subtotal = subtotal.add(lineTotal);
@@ -159,6 +159,7 @@ public class PricingService {
                 cookie == null ? null : cookie.getSlug(),
                 cookie == null ? "No longer available" : cookie.getDescription(),
                 cookie == null ? null : cookie.getImage(),
+                cookie == null ? null : cookie.getAllergies(),
                 item.getVariantId(),
                 variant == null ? null : variant.getLabel(),
                 variant == null ? 0 : variant.getUnitsPerPack(),

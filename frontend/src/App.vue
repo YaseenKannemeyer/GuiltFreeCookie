@@ -22,7 +22,7 @@
       </RouterView>
     </main>
 
-    <TheFooter v-if="!route.meta.hideChrome" />
+    <TheFooter v-if="!route.meta.hideChrome && !route.meta.hideFooter" />
   </div>
 
   <ToastContainer />

@@ -8,6 +8,8 @@ export function requestRole(url) {
   if (!url?.startsWith(`${API_BASE}/`)) return null;
   const path = url.slice(API_BASE.length).split("?")[0];
   if (/^\/api\/v1\/me(?:\/|$)/.test(path)) return "customer";
+  // Public, but a signed-in customer's cart and checkout belong to their account.
+  if (/^\/api\/v1\/(?:carts|checkout)(?:\/|$)/.test(path)) return "customer-optional";
   if (
     (/^\/admin\//.test(path) && path !== "/admin/login") ||
     /^\/api\/v1\/admin(?:\/|$)/.test(path) ||
@@ -21,7 +23,7 @@ export function installAuthInterceptors(client, router) {
   client.interceptors.request.use((config) => {
     const role = requestRole(config.url);
     const token =
-      role === "customer"
+      role === "customer" || role === "customer-optional"
         ? getCustomerToken()
         : role === "admin"
           ? getAdminToken()

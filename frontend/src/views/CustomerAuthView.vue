@@ -1,4 +1,5 @@
 <script setup>
+import { useCart } from "../composables/useCart";
 import { computed, reactive, ref, watch } from "vue";
 import { useRoute, useRouter, RouterLink } from "vue-router";
 import BaseInput from "../components/ui/BaseInput.vue";
@@ -64,6 +65,8 @@ async function submit() {
           : { email: form.email.trim(), password: form.password };
     const session = await api("post", `/auth/${endpoint}`, body);
     auth.login(session.customer, session.token, remember.value);
+    // Bring a guest cart into the account; a failure here mustn't block signing in.
+    await useCart().merge().catch(() => {});
     const redirect = route.query.redirect;
     router.replace(
       typeof redirect === "string" &&

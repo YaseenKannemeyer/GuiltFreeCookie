@@ -76,6 +76,7 @@ Emails are sent automatically: order confirmation (on payment), shipped (with tr
 | GET/PUT | `/api/v1/admin/shipping-settings` | `{courierEnabled, courierRate, courierEta, pudoEnabled, pudoRate, pudoEta, pickupEnabled, pickupAddress, pickupInstructions, pickupEta, freeShippingThreshold}`. An empty threshold switches free delivery off |
 
 ### Also changed
+- Cart lines gained `allergens` (the cookie's allergen text), so the cart and checkout can show them before purchase.
 - `CartView` gained `shippingMethod`; `shipping` is filled in when you ask for a method.
 - Reviews now get a real "Verified buyer" badge (a paid order containing that cookie).
 - `/api/v1/site/info` `stats.customersServed` and `stats.cookiesSold` are now live (paid, unrefunded orders; cookies are counted individually).

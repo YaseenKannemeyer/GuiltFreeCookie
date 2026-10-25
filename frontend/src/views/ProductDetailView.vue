@@ -1,5 +1,6 @@
 <script setup>
-import { catalogApi } from "../api/storeApi";
+import { catalogApi, errorMessage } from "../api/storeApi";
+import { useCart } from "../composables/useCart";
 import cookieApi from "../api/cookieApi";
 import ProductReviews from "../components/engagement/ProductReviews.vue";
 import { ref, watch, computed, onMounted } from "vue";
@@ -30,6 +31,7 @@ const route = useRoute();
 const router = useRouter();
 const { rand } = useFormat();
 const { showToast } = useToast();
+const { add: addPack } = useCart();
 const loadFailed = ref(false);
 const { cookies: catalog } = useCatalog();
 
@@ -76,17 +78,27 @@ const related = computed(() =>
   })),
 );
 
-// Hooks for the cart feature to wire up. Until then, say so instead of
-// silently doing nothing.
-const addToCart = () => {
-  showToast(
-    "The cart is almost ready. You'll be able to order very soon.",
-    "info",
-  );
-};
-const buyNow = () => {
-  addToCart();
-};
+const cartBusy = ref(false);
+async function addToCart() {
+  if (!pack.value) return false;
+  cartBusy.value = true;
+  try {
+    await addPack(pack.value.variantId, quantity.value);
+    return true;
+  } catch (e) {
+    showToast(errorMessage(e), "error", 5000);
+    return false;
+  } finally {
+    cartBusy.value = false;
+  }
+}
+async function addAndConfirm() {
+  if (await addToCart())
+    showToast(`Added ${quantity.value} × ${pack.value.label} to your cart.`, "success");
+}
+async function buyNow() {
+  if (await addToCart()) router.push({ name: "Checkout", params: { step: "you" } });
+}
 
 let requestVersion = 0;
 const fetchCookie = async () => {
@@ -277,8 +289,8 @@ watch(() => route.params.id, fetchCookie);
               <BaseButton
                 size="lg"
                 class="h-14 flex-1 min-w-0"
-                :disabled="!pack?.available"
-                @click="addToCart"
+                :disabled="!pack?.available || cartBusy"
+                @click="addAndConfirm"
               >
                 <ShoppingBagIcon class="h-5 w-5" />
                 Add to cart
@@ -294,7 +306,7 @@ watch(() => route.params.id, fetchCookie);
               size="lg"
               block
               class="mt-3 h-14"
-              :disabled="!pack?.available"
+              :disabled="!pack?.available || cartBusy"
               @click="buyNow"
             >
               Buy now
