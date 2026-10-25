@@ -18,6 +18,7 @@ import {
   EnvelopeIcon,
   PaperAirplaneIcon,
   ChartBarIcon,
+  TicketIcon,
 } from "@heroicons/vue/24/outline";
 import { useAdminAuth } from "../composables/useAdminAuth";
 
@@ -39,6 +40,11 @@ const navLinks = [
     label: "Delivery",
     to: { name: "AdminShipping" },
     icon: TruckIcon,
+  },
+  {
+    label: "Discount codes",
+    to: { name: "AdminDiscounts" },
+    icon: TicketIcon,
   },
   {
     label: "Stock & packs",

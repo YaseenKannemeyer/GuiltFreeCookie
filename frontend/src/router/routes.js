@@ -164,6 +164,7 @@ export const routes = [
       "AdminEmailPreviewsView",
     ],
     ["email-flows", "AdminEmailFlows", "Email flows", "AdminEmailFlowsView"],
+    ["discounts", "AdminDiscounts", "Discount codes", "AdminDiscountsView"],
   ].map(([path, name, title, view]) => ({
     path: `/admindashboard/${path}`,
     name,

@@ -4,6 +4,17 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-10-25 — Admin discount-codes screen (frontend only)
+
+No API change. Admin → **Discount codes** (`/admindashboard/discounts`) uses the existing `/api/v1/admin/discounts` endpoints:
+
+- **Two lists:**
+  - **Shop codes.**
+  - **Personal codes:** ones restricted to an email, mostly issued by the email flows. This list is folded away by default.
+- **Each code shows:** what it gives, when it runs, how many times it's been used, and a status worked out from its dates, uses and on/off switch (Active, Scheduled, Expired, Used up or Off).
+- **Create and edit:** the form offers percent off, rand off or free delivery, optional first and last days, and "More rules" (minimum order, total uses, once per customer, only this email). The last day is inclusive: the screen sends `endsAt` as midnight at the start of the next day. The server's messages, such as a duplicate code, are shown as is.
+- **Switch off:** asks for confirmation on the page first. It deactivates the code, and you can bring it back by editing it.
+
 ## 2026-10-25 — Phase 8: Analytics, health check, first admin, handoff docs
 
 ### Admin analytics (admin token)
