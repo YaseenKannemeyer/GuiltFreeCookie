@@ -11,7 +11,8 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import { cookieDropPinned } from "../composables/cookieDropState";
-import { useToast } from "../composables/useToast";
+import { DEMO_MODE } from "../constants/business";
+import { useCart } from "../composables/useCart";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -26,7 +27,9 @@ const sidebarOpen = ref(false);
 const scrolled = ref(false);
 
 const isHomePage = computed(() => route.name === "Home");
-const overHero = computed(() => isHomePage.value && (!scrolled.value || cookieDropPinned.value));
+const overHero = computed(
+  () => isHomePage.value && (!scrolled.value || cookieDropPinned.value),
+);
 
 let observer = null;
 onMounted(() => {
@@ -53,17 +56,17 @@ const navLinks = [
   { label: "Products", to: { name: "Products" } },
   { label: "About", to: { name: "About" } },
   { label: "Contact", to: { name: "Contact" } },
+  { label: "Account", to: { name: "Account" } },
 ];
 
 const goSearch = () => {
   router.push({ name: "Products", query: { focus: "search" } });
 };
 
-// Same message as "Add to cart" until the cart exists.
-const { showToast } = useToast();
-const openCart = () => {
-  showToast("The cart is almost ready. You'll be able to order very soon.", "info");
-};
+const { itemCount, ready: cartReady, load: loadCart } = useCart();
+onMounted(() => {
+  if (!cartReady.value) loadCart().catch(() => {});
+});
 </script>
 
 <template>
@@ -75,29 +78,37 @@ const openCart = () => {
         : 'bg-background/90 backdrop-blur-xl shadow-[0_1px_0_rgba(46,14,11,0.08),0_10px_30px_-18px_rgba(46,14,11,0.35)]',
     ]"
   >
-    <div class="container-magic flex h-[var(--nav-h)] items-center justify-between gap-6">
+    <p v-if="DEMO_MODE" role="note" class="h-[32px] flex items-center justify-center bg-chocolate text-cream-50 text-sm px-3">
+      Demo shop · Sample products · No real payments
+    </p>
+    <div
+      class="container-magic flex h-[76px] items-center justify-between gap-6"
+    >
       <div class="flex items-center gap-12">
-      <!-- Wordmark -->
-      <RouterLink
-        :to="{ name: 'Home' }"
-        class="wordmark text-chocolate pt-1 shrink-0"
-        aria-label="GuiltFreeCookie home"
-      >
-        GuiltFree<span :class="overHero ? 'sticker sticker-sm' : 'text-primary-600'">Cookie</span>
-      </RouterLink>
-
-      <!-- Desktop nav -->
-      <nav class="hidden lg:flex items-center gap-8" aria-label="Main">
+        <!-- Wordmark -->
         <RouterLink
-          v-for="link in navLinks"
-          :key="link.label"
-          :to="link.to"
-          class="nav-link inline-flex items-center min-h-11 text-base font-semibold text-chocolate"
-          active-class="router-link-active"
+          :to="{ name: 'Home' }"
+          class="wordmark text-chocolate pt-1 shrink-0"
+          aria-label="GuiltFreeCookie home"
         >
-          {{ link.label }}
+          GuiltFree<span
+            :class="overHero ? 'sticker sticker-sm' : 'text-primary-600'"
+            >Cookie</span
+          >
         </RouterLink>
-      </nav>
+
+        <!-- Desktop nav -->
+        <nav class="hidden lg:flex items-center gap-8" aria-label="Main">
+          <RouterLink
+            v-for="link in navLinks"
+            :key="link.label"
+            :to="link.to"
+            class="nav-link inline-flex items-center min-h-11 text-base font-semibold text-chocolate"
+            active-class="router-link-active"
+          >
+            {{ link.label }}
+          </RouterLink>
+        </nav>
       </div>
 
       <!-- Right actions -->
@@ -106,27 +117,33 @@ const openCart = () => {
           type="button"
           :class="[
             'hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-colors',
-            overHero ? 'text-chocolate hover:bg-chocolate/5 lg:text-cream-50 lg:hover:bg-cream-50/10' : 'text-chocolate hover:bg-chocolate/[0.07]',
+            overHero
+              ? 'text-chocolate hover:bg-chocolate/5 lg:text-cream-50 lg:hover:bg-cream-50/10'
+              : 'text-chocolate hover:bg-chocolate/[0.07]',
           ]"
           aria-label="Search cookies"
           @click="goSearch"
         >
           <MagnifyingGlassIcon class="h-[22px] w-[22px]" />
         </button>
-        <!-- Cart (the cart feature replaces openCart) -->
-        <button
-          type="button"
+        <RouterLink
+          :to="{ name: 'Cart' }"
           :class="[
             'relative h-11 w-11 flex items-center justify-center rounded-full transition-all hover:-translate-y-0.5',
             overHero
               ? 'bg-primary text-chocolate hover:bg-primary-300'
               : 'bg-chocolate text-cream-50 hover:bg-chocolate-300',
           ]"
-          aria-label="Open cart"
-          @click="openCart"
+          :aria-label="itemCount ? `Cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : 'Cart'"
         >
           <ShoppingBagIcon class="h-5 w-5" />
-        </button>
+          <span
+            v-if="itemCount"
+            class="absolute -top-1 -right-1 min-w-[2.2rem] h-[2.2rem] px-1 rounded-full bg-primary text-chocolate text-[1.2rem] leading-[2.2rem] font-extrabold text-center tabular ring-2 ring-background"
+            aria-hidden="true"
+            >{{ itemCount > 99 ? "99+" : itemCount }}</span
+          >
+        </RouterLink>
 
         <!-- Hamburger (mobile) -->
         <button
@@ -193,7 +210,10 @@ const openCart = () => {
               <MagnifyingGlassIcon class="h-5 w-5 text-primary" />
               Search cookies
             </button>
-            <RouterLink :to="{ name: 'Products' }" class="btn-secondary btn-block mt-2">
+            <RouterLink
+              :to="{ name: 'Products' }"
+              class="btn-secondary btn-block mt-2"
+            >
               <ShoppingBagIcon class="h-5 w-5" />
               Shop cookies
             </RouterLink>

@@ -3,6 +3,7 @@ package za.ac.cput.guiltfreecookie.util;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -15,7 +16,13 @@ public class Helper {
     // something a person meant to type into a form.
     private static final Pattern CONTROL_CHARS = Pattern.compile("[\\p{Cntrl}&&[^\\t\\n]]");
 
+    private static final Pattern SA_POSTAL_CODE_PATTERN = Pattern.compile("^\\d{4}$");
+    private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+    private static final Pattern NON_SLUG_CHARS = Pattern.compile("[^a-z0-9]+");
+    private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
+
     public static final int MAX_EMAIL_LENGTH = 254;
+    public static final int MAX_SLUG_LENGTH = 80;
     public static final int MIN_PASSWORD_LENGTH = 8;
     // BCrypt only reads the first 72 bytes and Spring Security rejects longer input.
     public static final int MAX_PASSWORD_BYTES = 72;
@@ -67,5 +74,26 @@ public class Helper {
         return password != null
                 && password.length() >= MIN_PASSWORD_LENGTH
                 && password.getBytes(StandardCharsets.UTF_8).length <= MAX_PASSWORD_BYTES;
+    }
+
+    /** "Toasted Almond & Vanilla" becomes "toasted-almond-vanilla". */
+    public static String slugify(String text) {
+        if (text == null) {
+            return "";
+        }
+        String ascii = DIACRITICS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("");
+        String slug = NON_SLUG_CHARS.matcher(ascii.toLowerCase(Locale.ROOT)).replaceAll("-").replaceAll("^-+|-+$", "");
+        if (slug.length() > MAX_SLUG_LENGTH) {
+            slug = slug.substring(0, MAX_SLUG_LENGTH).replaceAll("-+$", "");
+        }
+        return slug;
+    }
+
+    public static boolean isValidSlug(String slug) {
+        return slug != null && slug.length() <= MAX_SLUG_LENGTH && SLUG_PATTERN.matcher(slug).matches();
+    }
+
+    public static boolean isValidPostalCode(String postalCode) {
+        return postalCode != null && SA_POSTAL_CODE_PATTERN.matcher(postalCode.trim()).matches();
     }
 }

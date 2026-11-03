@@ -9,10 +9,19 @@ import { RouterLink } from "vue-router";
 import { ArrowRightIcon } from "@heroicons/vue/20/solid";
 import { ShoppingBagIcon } from "@heroicons/vue/24/outline";
 import BaseButton from "../ui/BaseButton.vue";
-import { useCatalog, cookieImage, cookieName, imageFallback, onePerCategory } from "../../composables/useCatalog";
+import {
+  useCatalog,
+  cookieImage,
+  cookieName,
+  imageFallback,
+  onePerCategory,
+} from "../../composables/useCatalog";
 import { useFormat } from "../../composables/useFormat";
 import { useScrollReveal } from "../../composables/useScrollReveal";
-import { categoryBlurb, formatCategoryLabel } from "../../constants/cookieCategories";
+import {
+  categoryBlurb,
+  formatCategoryLabel,
+} from "../../constants/cookieCategories";
 
 const { cookies: catalog, load } = useCatalog();
 const { rand } = useFormat();
@@ -24,7 +33,8 @@ const signature = [
   {
     key: "sig-1",
     name: "Vanilla White Chocolate",
-    description: "A vanilla-rich cookie with creamy white chocolate chunks, a tender middle and lightly golden edges.",
+    description:
+      "A vanilla-rich cookie with creamy white chocolate chunks, a tender middle and lightly golden edges.",
     image: "/img/cookies/vanilla-white-chocolate.webp",
     label: "Signature",
     price: null,
@@ -33,7 +43,8 @@ const signature = [
   {
     key: "sig-2",
     name: "Peanut Chocolate Ripple",
-    description: "Roasted peanut butter ribbons and dark chocolate chunks in a soft, chewy golden cookie.",
+    description:
+      "Roasted peanut butter ribbons and dark chocolate chunks in a soft, chewy golden cookie.",
     image: "/img/cookies/peanut-chocolate-ripple.webp",
     label: "Signature",
     price: null,
@@ -42,36 +53,54 @@ const signature = [
 ];
 
 const cookies = computed(() => {
-  const all = catalog.value;
+  const all = catalog.value.filter((c) => c.featured);
   if (!all.length) return signature;
   // Skip what CookieShowcase shows (one per range) when there's enough to go round.
-  const shown = new Set(onePerCategory(all).slice(0, 4).map((c) => c.cookieId));
+  const shown = new Set(
+    onePerCategory(all)
+      .slice(0, 4)
+      .map((c) => c.cookieId),
+  );
   const rest = all.filter((c) => !shown.has(c.cookieId));
-  const pool = rest.length >= 2 ? onePerCategory(rest).concat(rest) : [...all].reverse();
+  const pool =
+    rest.length >= 2 ? onePerCategory(rest).concat(rest) : [...all].reverse();
   return [...new Set(pool)].slice(0, 2).map((c) => ({
     key: c.cookieId,
     name: cookieName(c),
-    description: c.longDescription || categoryBlurb(c.category) || c.ingredients,
+    description:
+      c.longDescription || categoryBlurb(c.category) || c.ingredients,
     image: cookieImage(c),
     onError: imageFallback(c),
     label: formatCategoryLabel(c.category),
     price: c.price,
-    to: { name: "ProductDetail", params: { id: c.cookieId } },
+    to: { name: "ProductDetail", params: { id: c.slug || c.cookieId } },
   }));
 });
 </script>
 
 <template>
-  <section class="featured relative isolate overflow-hidden bg-chocolate py-24 md:py-32 hidden md:block" aria-labelledby="featured-title">
+  <section
+    class="featured relative isolate overflow-hidden bg-chocolate py-24 md:py-32 hidden md:block"
+    aria-labelledby="featured-title"
+  >
     <div class="container-magic">
-      <h2 id="featured-title" v-reveal class="font-display text-center text-cream-50 text-display">
+      <h2
+        id="featured-title"
+        v-reveal
+        class="font-display text-center text-cream-50 text-display"
+      >
         Signature <span class="text-primary">crumble drops</span>
       </h2>
-      <p v-reveal class="prose-copy !text-cream-100/80 text-center mx-auto mt-5">
+      <p
+        v-reveal
+        class="prose-copy !text-cream-100/80 text-center mx-auto mt-5"
+      >
         The two we'd put in your hand first.
       </p>
 
-      <div class="mt-28 md:mt-36 grid gap-32 lg:grid-cols-2 lg:gap-10 xl:gap-16">
+      <div
+        class="mt-28 md:mt-36 grid gap-32 lg:grid-cols-2 lg:gap-10 xl:gap-16"
+      >
         <article
           v-for="(cookie, i) in cookies"
           :key="cookie.key"
@@ -92,7 +121,9 @@ const cookies = computed(() => {
           >
             <p class="text-sm font-semibold text-primary">{{ cookie.label }}</p>
             <h3 class="mt-2 text-base text-cream-50">{{ cookie.name }}</h3>
-            <p class="mx-auto mt-4 mb-8 max-w-md text-base leading-relaxed text-cream-100/80">
+            <p
+              class="mx-auto mt-4 mb-8 max-w-md text-base leading-relaxed text-cream-100/80"
+            >
               {{ cookie.description }}
             </p>
 
@@ -100,7 +131,11 @@ const cookies = computed(() => {
               class="mt-auto pt-7 flex flex-wrap items-center gap-4 border-t border-cream-50/10"
               :class="cookie.price ? 'justify-between' : 'justify-center'"
             >
-              <span v-if="cookie.price" class="text-base font-semibold text-cream-50 tabular">{{ rand(cookie.price) }}</span>
+              <span
+                v-if="cookie.price"
+                class="text-base font-semibold text-cream-50 tabular"
+                >{{ rand(cookie.price) }}</span
+              >
               <div class="flex items-center gap-2.5">
                 <BaseButton :to="cookie.to" variant="secondary">
                   View cookie

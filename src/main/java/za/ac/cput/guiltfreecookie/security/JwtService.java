@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import za.ac.cput.guiltfreecookie.domain.Admin;
+import za.ac.cput.guiltfreecookie.domain.Customer;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -18,6 +19,9 @@ public class JwtService {
 
     // The admin's token version when the token was issued (see Admin.tokenVersion).
     public static final String VERSION_CLAIM = "ver";
+    public static final String ROLE_CLAIM = "role";
+    public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_CUSTOMER = "CUSTOMER";
 
     private final SecretKey key;
     private final long expirationMillis;
@@ -42,6 +46,21 @@ public class JwtService {
                 .subject(admin.getAdminId())
                 .claim("email", admin.getEmail())
                 .claim(VERSION_CLAIM, admin.getTokenVersion())
+                .claim(ROLE_CLAIM, ROLE_ADMIN)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
+                .compact();
+    }
+
+    public String generateToken(Customer customer) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMillis);
+
+        return Jwts.builder()
+                .subject(customer.getCustomerEmail())
+                .claim(VERSION_CLAIM, customer.getTokenVersion())
+                .claim(ROLE_CLAIM, ROLE_CUSTOMER)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)

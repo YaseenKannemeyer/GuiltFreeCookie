@@ -10,9 +10,9 @@ const { vReveal } = useScrollReveal();
 
 const features = [
   {
-    title: "Less sugar, same chocolate",
+    title: "Find your flavour",
     description:
-      "Low-GI sweeteners replace added sugar, so you get the full chocolate hit without the crash.",
+      "Explore chocolate, nutty and fruity flavours, with ingredients listed for each cookie.",
     icon: HeartIcon,
   },
   {

@@ -18,7 +18,7 @@ class DeliveryDetailsFactoryTest {
                 "12",
                 "Nombula",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         DeliveryDetails deliveryDetails =
@@ -43,7 +43,7 @@ class DeliveryDetailsFactoryTest {
                 "12",
                 "Nombula",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         DeliveryDetails deliveryDetails =

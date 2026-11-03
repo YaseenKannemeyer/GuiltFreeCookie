@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Fixed-window rate limiting per client IP. Login and newsletter sign-up get
+ * Fixed-window rate limiting per client IP. Login, customer auth and newsletter sign-up get
  * tight limits (brute force and spam); every other API call shares a
  * generous one so a single client can't hammer the server. Uploaded images
  * are exempt: a product page legitimately loads a dozen at once.
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int SWEEP_THRESHOLD = 10_000;
+    private static final UrlPathHelper PATHS = new UrlPathHelper();
 
     record Rule(String name, HttpMethod method, String path, int limit, long windowMillis) {
         boolean matches(HttpMethod requestMethod, String requestPath) {
@@ -65,11 +67,31 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.login.window-seconds}") long loginWindowSeconds,
             @Value("${app.rate-limit.newsletter.requests}") int newsletterRequests,
             @Value("${app.rate-limit.newsletter.window-seconds}") long newsletterWindowSeconds,
+            @Value("${app.rate-limit.customer-auth.requests}") int customerAuthRequests,
+            @Value("${app.rate-limit.customer-auth.window-seconds}") long customerAuthWindowSeconds,
+            @Value("${app.rate-limit.cart-create.requests}") int cartCreateRequests,
+            @Value("${app.rate-limit.cart-create.window-seconds}") long cartCreateWindowSeconds,
+            @Value("${app.rate-limit.contact.requests}") int contactRequests,
+            @Value("${app.rate-limit.contact.window-seconds}") long contactWindowSeconds,
+            @Value("${app.rate-limit.checkout.requests}") int checkoutRequests,
+            @Value("${app.rate-limit.checkout.window-seconds}") long checkoutWindowSeconds,
+            @Value("${app.rate-limit.review-link.requests}") int reviewLinkRequests,
+            @Value("${app.rate-limit.review-link.window-seconds}") long reviewLinkWindowSeconds,
             @Value("${app.rate-limit.api.requests}") int apiRequests,
             @Value("${app.rate-limit.api.window-seconds}") long apiWindowSeconds) {
         this(List.of(
                 new Rule("login", HttpMethod.POST, "/admin/login", loginRequests, loginWindowSeconds * 1000),
                 new Rule("newsletter", HttpMethod.POST, "/newsletter/subscribe", newsletterRequests, newsletterWindowSeconds * 1000),
+                // Same name, so all customer auth endpoints share one counter per client.
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/login", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/register", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/forgot-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("customer-auth", HttpMethod.POST, "/api/v1/auth/reset-password", customerAuthRequests, customerAuthWindowSeconds * 1000),
+                new Rule("cart-create", HttpMethod.POST, "/api/v1/carts", cartCreateRequests, cartCreateWindowSeconds * 1000),
+                new Rule("contact", HttpMethod.POST, "/api/v1/contact", contactRequests, contactWindowSeconds * 1000),
+                new Rule("order-claim", HttpMethod.POST, "/api/v1/me/orders/claim", 3, 3600_000),
+                new Rule("checkout", HttpMethod.POST, "/api/v1/checkout", checkoutRequests, checkoutWindowSeconds * 1000),
+                new Rule("review-link", HttpMethod.POST, "/api/v1/reviews/by-link", reviewLinkRequests, reviewLinkWindowSeconds * 1000),
                 new Rule("api", null, null, apiRequests, apiWindowSeconds * 1000)
         ), Clock.systemUTC());
     }
@@ -81,7 +103,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return HttpMethod.OPTIONS.matches(request.getMethod()) || pathOf(request).startsWith("/uploads/");
+        return HttpMethod.OPTIONS.matches(request.getMethod()) || pathOf(request).startsWith("/uploads/")
+                || pathOf(request).equals("/actuator/health");
     }
 
     @Override
@@ -128,7 +151,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return Math.max(1, (remainingMillis + 999) / 1000);
     }
 
+    // The decoded path Spring routes on, so "/api/v1/auth/logi%6E" can't dodge the login rule.
     private static String pathOf(HttpServletRequest request) {
-        return request.getRequestURI().substring(request.getContextPath().length());
+        return PATHS.getPathWithinApplication(request);
     }
 }

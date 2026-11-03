@@ -17,14 +17,14 @@ class AddressFactoryTest {
                 "15",
                 "Main Road",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         Assertions.assertNotNull(address);
         Assertions.assertEquals("15", address.getStreetNumber());
         Assertions.assertEquals("Main Road", address.getStreetName());
         Assertions.assertEquals("Cape Town", address.getCity());
-        Assertions.assertEquals(8001L, address.getPostalCode());
+        Assertions.assertEquals("8001", address.getPostalCode());
 
         System.out.println(address);
     }
@@ -34,9 +34,9 @@ class AddressFactoryTest {
     void testCreateAddressWithEmptyStreetName() {
         Address address = AddressFactory.createAddress(
                 "15",
-                "Main Road",
+                "",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         Assertions.assertNull(address);
@@ -50,10 +50,20 @@ class AddressFactoryTest {
                 "15",
                 "Main Road",
                 "Cape Town",
-                -1L
+                "800"
         );
 
         Assertions.assertNull(address);
+        Assertions.assertNull(AddressFactory.createAddress("15", "Main Road", "Cape Town", "80O1"));
         System.out.println("Invalid postal code test passed: " + address);
+    }
+
+    @Test
+    @Order(4)
+    void testPostalCodeKeepsItsLeadingZero() {
+        Address address = AddressFactory.createAddress("1", "Church Street", "Pretoria", "0002");
+
+        Assertions.assertNotNull(address);
+        Assertions.assertEquals("0002", address.getPostalCode());
     }
 }

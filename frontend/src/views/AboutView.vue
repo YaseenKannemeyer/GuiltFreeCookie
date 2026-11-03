@@ -46,10 +46,9 @@ const { vReveal } = useScrollReveal();
             to work for the way you eat.
           </p>
           <p class="prose-copy">
-            That means low-GI sweeteners instead of sugar, almond flour instead
-            of refined wheat, and real dark chocolate instead of compound
-            coating. It means ranges for people managing diabetes, people
-            training hard, and people avoiding gluten or dairy.
+            Every flavour has its own recipe. Check the ingredients, allergens and
+            available nutrition on its product page, and ask us if you need more
+            information before choosing.
           </p>
           <p class="prose-copy">
             And it means we taste every batch the same way you will. If it isn't

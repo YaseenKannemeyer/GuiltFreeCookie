@@ -5,8 +5,8 @@
  *   node scripts/import-cookie-catalog.mjs --dry-run
  *   node scripts/import-cookie-catalog.mjs --price=45 --archive-existing
  *
- * Reads docs/cookie-catalog.json, uploads each frontend/public/img/cookies/<slug>.webp
- * and records the returned cookieId/image in docs/cookie-import-results.json so a
+ * Reads scripts/cookie-catalog.json, uploads each frontend/public/img/cookies/<slug>.webp
+ * and records the returned cookieId/image in scripts/cookie-import-results.json so a
  * rerun skips what is already in. --archive-existing archives the products that were
  * active before the import, only once every catalogue cookie went in.
  *
@@ -19,8 +19,8 @@ import path from "node:path";
 import readline from "node:readline";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const CATALOG_PATH = path.join(ROOT, "docs/cookie-catalog.json");
-const RESULTS_PATH = path.join(ROOT, "docs/cookie-import-results.json");
+const CATALOG_PATH = path.join(ROOT, "frontend/scripts/cookie-catalog.json");
+const RESULTS_PATH = path.join(ROOT, "frontend/scripts/cookie-import-results.json");
 const API = process.env.API_BASE || "http://localhost:8080/guiltFreeCookie";
 
 const args = process.argv.slice(2);

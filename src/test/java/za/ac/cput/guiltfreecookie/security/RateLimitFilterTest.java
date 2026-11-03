@@ -105,4 +105,14 @@ class RateLimitFilterTest {
             assertNull(response.getHeader("Retry-After"));
         }
     }
+
+    @Test
+    void anEncodedPathCountsAgainstTheSameRule() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            send("POST", "/admin/login", "203.0.113.9");
+        }
+
+        assertEquals(429, send("POST", "/admin/logi%6E", "203.0.113.9").getStatus());
+        assertEquals(429, send("POST", "/admin/login;jsessionid=x", "203.0.113.9").getStatus());
+    }
 }

@@ -53,4 +53,29 @@ public class CustomerServiceTest {
         assertEquals(testEmail, result.getCustomerEmail());
     }
 
+    @Test
+    void updateChangesTheProfileButKeepsTheAccount() {
+        Customer existing = new Customer.Builder()
+                .setCustomerEmail(testEmail)
+                .setName(name)
+                .setMobileNumber("0821234567")
+                .setPasswordHash("$2a$10$hash")
+                .setTokenVersion(2)
+                .build();
+        Customer changes = new Customer.Builder()
+                .setCustomerEmail(testEmail)
+                .setName(new Name.Builder().setFirstName("Wazeer").setLastName("Gilbert").build())
+                .setMobileNumber("0831234567")
+                .build();
+        when(repository.findById(testEmail)).thenReturn(Optional.of(existing));
+        when(repository.save(org.mockito.ArgumentMatchers.any(Customer.class))).thenAnswer(call -> call.getArgument(0));
+
+        Customer result = service.update(changes);
+
+        assertEquals("Wazeer", result.getName().getFirstName());
+        assertEquals("0831234567", result.getMobileNumber());
+        assertEquals("$2a$10$hash", result.getPasswordHash());
+        assertEquals(2, result.getTokenVersion());
+    }
+
 }

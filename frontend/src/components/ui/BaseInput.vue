@@ -141,7 +141,7 @@ const onInput = (e) => {
       :id="`${fieldId}-help`"
       :class="[
         'mt-2 text-sm',
-        variant === 'dark' ? 'text-cream/50' : 'text-chocolate/50',
+        variant === 'dark' ? 'text-cream/75' : 'text-chocolate/75',
       ]"
     >
       {{ help }}

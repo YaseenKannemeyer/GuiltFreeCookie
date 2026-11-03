@@ -10,25 +10,29 @@
  *   - informationOfficer: by default the owner or head of the business; must
  *     also be registered with the Information Regulator
  */
+const env = import.meta.env || {};
+export const DEMO_MODE = env.VITE_DEMO_MODE !== "false";
+const phone = env.VITE_SHOP_PHONE || "";
 export const BUSINESS = {
   tradingName: "GuiltFreeCookie",
-  legalName: null,
-  registrationNumber: null,
-  vatNumber: null,
-  informationOfficer: null,
-  email: "hello@guiltfreecookie.co.za",
-  phone: "+27 82 851 3174",
-  phoneHref: "tel:+27828513174",
-  address: "41 Caravel Road, Strandfontein, Cape Town, 7798",
+  legalName: env.VITE_BUSINESS_LEGAL_NAME || null,
+  registrationNumber: env.VITE_BUSINESS_REGISTRATION_NUMBER || null,
+  vatRegistered: env.VITE_VAT_REGISTERED === "true",
+  vatNumber: env.VITE_VAT_NUMBER || null,
+  informationOfficer: env.VITE_INFORMATION_OFFICER || null,
+  email: env.VITE_SHOP_EMAIL || "hello@example.test",
+  phone,
+  phoneHref: `tel:${phone.replace(/[^+0-9]/g, "")}`,
+  address: env.VITE_SHOP_ADDRESS || "Cape Town, South Africa (demo location)",
   // The same address split up for structured data (schema.org PostalAddress).
   postalAddress: {
-    streetAddress: "41 Caravel Road, Strandfontein",
+    streetAddress: env.VITE_SHOP_STREET || "",
     addressLocality: "Cape Town",
     addressRegion: "Western Cape",
-    postalCode: "7798",
+    postalCode: env.VITE_SHOP_POSTAL_CODE || "",
     addressCountry: "ZA",
   },
-  mapsUrl: "https://maps.google.com/?q=41+Caravel+Road,+Strandfontein,+Cape+Town,+7798",
+  mapsUrl: "https://maps.google.com/?q=Cape+Town,+South+Africa",
 
   // Full profile URLs. Leave null until the account exists: the footer and
   // structured data only show the ones that are set.
@@ -45,10 +49,10 @@ export const BUSINESS = {
 };
 
 export const LEGAL = {
-  lastUpdated: "12 October 2026",
+  lastUpdated: "3 November 2026",
   // Set to true once an attorney has reviewed the four policies. While false,
   // each policy page shows a short "draft" notice at the top.
-  reviewed: false,
+  reviewed: env.VITE_POLICIES_REVIEWED === "true",
 };
 
 // Footer + "other policies" links, in one place.

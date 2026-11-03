@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/20/solid";
-import { PhotoIcon } from "@heroicons/vue/24/outline";
 import cookieApi from "../../api/cookieApi";
 import { COOKIE_CATEGORIES, formatCategoryLabel } from "../../constants/cookieCategories";
 import BaseModal from "../ui/BaseModal.vue";
 import BaseInput from "../ui/BaseInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import ConfirmModal from "../ui/ConfirmModal.vue";
+import MagneticDropZone from "../ui/MagneticDropZone.vue";
 import { cleanText, cleanList, cleanPrice } from "../../utils/normalize";
 
 const props = defineProps({
@@ -60,8 +60,7 @@ watch(
   { immediate: true },
 );
 
-const onImageChange = (event) => {
-  const file = event.target.files[0];
+const onImageChange = ([file]) => {
   if (!file) return;
   imageFile.value = file;
   imageRemoved.value = false;
@@ -130,17 +129,18 @@ const confirmSubmit = () => {
           </div>
         </div>
 
-        <label
-          v-else
-          class="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cream-400 bg-surface px-6 py-8 text-center cursor-pointer hover:border-chocolate/40 hover:bg-chocolate/[0.04] transition-colors focus-within:ring-2 focus-within:ring-chocolate/25"
-        >
-          <PhotoIcon class="h-8 w-8 text-chocolate/50" />
-          <span class="text-sm font-semibold text-chocolate">Choose a photo</span>
-          <span class="text-sm text-chocolate/65">PNG with a transparent background looks best</span>
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" @change="onImageChange" />
-        </label>
+        <template v-else>
+          <MagneticDropZone
+            :model-value="[]"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            :max-size="10 * 1024 * 1024"
+            label="Drop a photo here"
+            @update:model-value="onImageChange"
+          />
+          <p class="mt-2 text-sm text-chocolate/65">PNG with a transparent background looks best.</p>
+        </template>
 
-        <p v-if="isEditing && imageRemoved" class="mt-2 text-sm text-chocolate/65">
+        <p v-if="isEditing && imageRemoved" class="mt-1 text-sm text-chocolate/65">
           Pick a new photo to replace the current one.
         </p>
       </div>

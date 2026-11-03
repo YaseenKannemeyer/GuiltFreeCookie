@@ -63,10 +63,16 @@ const classes = computed(() => [
   variantClass.value,
   sizeClass.value,
   props.block ? "btn-block" : "",
-  props.disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
+  props.disabled || props.loading ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
 ]);
 
 const hasLoader = computed(() => props.loading || false);
+function preventDisabledClick(event) {
+  if (props.disabled || props.loading) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+}
 </script>
 
 <template>
@@ -74,9 +80,13 @@ const hasLoader = computed(() => props.loading || false);
     :is="to ? RouterLink : href ? 'a' : 'button'"
     v-ripple
     :to="to"
-    :href="href"
+    v-bind="href && !to ? { href } : {}"
     :type="to || href ? null : type"
-    :disabled="to || href ? null : disabled"
+    :disabled="to || href ? null : disabled || loading"
+    :aria-disabled="(to || href) && (disabled || loading) ? 'true' : undefined"
+    :aria-busy="loading ? 'true' : undefined"
+    :tabindex="(to || href) && (disabled || loading) ? -1 : undefined"
+    @click.capture="preventDisabledClick"
     :class="classes"
     class="ripple-container"
   >

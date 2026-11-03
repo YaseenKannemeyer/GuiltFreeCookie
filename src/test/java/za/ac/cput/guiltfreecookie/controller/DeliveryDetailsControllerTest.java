@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import za.ac.cput.guiltfreecookie.domain.Address;
 import za.ac.cput.guiltfreecookie.domain.DeliveryDetails;
@@ -19,6 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +42,7 @@ public class DeliveryDetailsControllerTest {
                 "15",
                 "Main Road",
                 "Cape Town",
-                8001L
+                "8001"
         );
 
         deliveryDetails = DeliveryDetailsFactory.createDeliveryDetails(
@@ -130,5 +132,33 @@ public class DeliveryDetailsControllerTest {
         assertEquals(true, response.getBody());
 
         verify(service).delete("DEL001");
+    }
+
+    @Test
+    void createWithExistingIdReturnsConflict() {
+        when(service.read("DEL001")).thenReturn(deliveryDetails);
+
+        ResponseEntity<DeliveryDetails> response = controller.createDeliveryDetails(deliveryDetails);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        verify(service, never()).create(any(DeliveryDetails.class));
+    }
+
+    @Test
+    void readMissingReturnsNotFound() {
+        when(service.read("MISSING")).thenReturn(null);
+
+        ResponseEntity<DeliveryDetails> response = controller.readDeliveryDetails("MISSING");
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void updateMissingReturnsNotFound() {
+        when(service.update(any(DeliveryDetails.class))).thenReturn(null);
+
+        ResponseEntity<DeliveryDetails> response = controller.updateDeliveryDetails(deliveryDetails);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 }

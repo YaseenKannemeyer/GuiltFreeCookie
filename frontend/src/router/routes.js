@@ -33,7 +33,15 @@ export const routes = [
       description:
         "Every GuiltFreeCookie flavour in one place: diabetic friendly, high protein, gluten free and vegan cookies, with ingredients, allergens and prices.",
       prerender: true,
-      renderQuery: ["category", "q"],
+      renderQuery: [
+        "category",
+        "q",
+        "minPrice",
+        "maxPrice",
+        "sort",
+        "inStock",
+        "page",
+      ],
     },
   },
   {
@@ -49,7 +57,7 @@ export const routes = [
       title: "About us",
       breadcrumb: "About us",
       description:
-        "Why we rebuilt the classic cookie with almond flour, low-GI sweeteners and real dark chocolate, and who we bake for. Small-batch cookies from Cape Town.",
+        "Get to know GuiltFreeCookie, our small-batch bakery in Cape Town. Explore our flavours and find ingredients and allergens for each cookie.",
       prerender: true,
     },
   },
@@ -66,6 +74,115 @@ export const routes = [
       prerender: true,
     },
   },
+
+  ...[
+    ["/login", "CustomerLogin", "login", "Log in"],
+    ["/register", "Register", "register", "Create account"],
+    ["/forgot-password", "ForgotPassword", "forgot", "Forgot password"],
+    ["/reset-password", "ResetPassword", "reset", "Reset password"],
+  ].map(([path, name, authMode, title]) => ({
+    path,
+    name,
+    component: () => import("../views/CustomerAuthView.vue"),
+    meta: { authMode, title, noindex: true },
+  })),
+  {
+    path: "/cart",
+    name: "Cart",
+    component: () => import("../views/CartView.vue"),
+    meta: { title: "Your cart", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/demo-payment",
+    name: "DemoPayment",
+    component: () => import("../views/DemoPaymentView.vue"),
+    meta: { title: "Demo payment", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/checkout/cancelled",
+    name: "PaymentCancelled",
+    component: () => import("../views/PaymentCancelledView.vue"),
+    meta: { title: "Payment cancelled", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/checkout/:step(you|delivery|pay)?",
+    name: "Checkout",
+    component: () => import("../views/CheckoutView.vue"),
+    meta: { title: "Checkout", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/order/:orderNumber",
+    name: "Order",
+    component: () => import("../views/OrderView.vue"),
+    meta: { title: "Your order", noindex: true },
+  },
+  // Landing pages for links in the automated emails.
+  {
+    path: "/cart/recover/:token",
+    name: "CartRecover",
+    component: () => import("../views/CartFromLinkView.vue"),
+    meta: { title: "Your cart", noindex: true },
+  },
+  {
+    path: "/reorder/:orderNumber",
+    name: "Reorder",
+    component: () => import("../views/CartFromLinkView.vue"),
+    meta: { title: "Reorder", noindex: true },
+  },
+  {
+    path: "/review/:orderNumber",
+    name: "OrderReview",
+    component: () => import("../views/OrderReviewView.vue"),
+    meta: { title: "Review your cookies", noindex: true },
+  },
+  {
+    path: "/email/unsubscribe",
+    name: "EmailUnsubscribe",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "Unsubscribe", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/email/resubscribe",
+    name: "EmailResubscribe",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "Sign up again", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/email/subscribed",
+    name: "EmailSubscribed",
+    component: () => import("../views/EmailPreferencesView.vue"),
+    meta: { title: "You're subscribed", noindex: true },
+  },
+  {
+    path: "/account",
+    name: "Account",
+    component: () => import("../views/AccountView.vue"),
+    meta: { title: "My account", requiresCustomer: true, noindex: true },
+  },
+  {
+    path: "/account/claim",
+    name: "ClaimOrders",
+    component: () => import("../views/ClaimOrdersView.vue"),
+    meta: { title: "Add earlier orders", requiresCustomer: true, noindex: true },
+  },
+  ...[
+    ["inventory", "AdminInventory", "Stock & packs", "AdminInventoryView"],
+    ["messages", "AdminMessages", "Inbox", "AdminMessagesView"],
+    ["reviews", "AdminReviews", "Reviews", "AdminReviewsView"],
+    [
+      "email-previews",
+      "AdminEmailPreviews",
+      "Email previews",
+      "AdminEmailPreviewsView",
+    ],
+    ["email-flows", "AdminEmailFlows", "Email flows", "AdminEmailFlowsView"],
+    ["discounts", "AdminDiscounts", "Discount codes", "AdminDiscountsView"],
+  ].map(([path, name, title, view]) => ({
+    path: `/admindashboard/${path}`,
+    name,
+    component: () => import(`../views/${view}.vue`),
+    meta: { title, requiresAdmin: true, noindex: true },
+  })),
 
   // Legal
   legal(
@@ -106,7 +223,13 @@ export const routes = [
   },
   {
     path: "/admindashboard",
-    redirect: "/admindashboard/cookies",
+    redirect: "/admindashboard/overview",
+  },
+  {
+    path: "/admindashboard/overview",
+    name: "AdminOverview",
+    component: () => import("../views/AdminOverviewView.vue"),
+    meta: { title: "Overview · Admin", requiresAdmin: true, noindex: true },
   },
   {
     path: "/admindashboard/cookies",
@@ -125,6 +248,18 @@ export const routes = [
     name: "AdminOrders",
     component: () => import("../views/AdminOrdersView.vue"),
     meta: { title: "Orders · Admin", requiresAdmin: true, noindex: true },
+  },
+  {
+    path: "/admindashboard/orders/:orderNumber",
+    name: "AdminOrderDetail",
+    component: () => import("../views/AdminOrderDetailView.vue"),
+    meta: { title: "Order · Admin", requiresAdmin: true, noindex: true },
+  },
+  {
+    path: "/admindashboard/delivery",
+    name: "AdminShipping",
+    component: () => import("../views/AdminShippingView.vue"),
+    meta: { title: "Delivery · Admin", requiresAdmin: true, noindex: true },
   },
   {
     path: "/admindashboard/profile",

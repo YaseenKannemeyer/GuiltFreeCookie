@@ -8,8 +8,9 @@ import { formatCategoryLabel } from "../constants/cookieCategories";
 import { allergenText, cookieName } from "../composables/useCatalog";
 import { SITE_NAME, SITE_URL, HOME_DESCRIPTION, absoluteUrl } from "./site";
 
-const staticPaths = () => routes.filter((r) => r.meta?.prerender).map((r) => r.path);
-const productPath = (cookie) => `/product/${cookie.cookieId}`;
+const staticPaths = () =>
+  routes.filter((r) => r.meta?.prerender).map((r) => r.path);
+const productPath = (cookie) => `/product/${cookie.slug || cookie.cookieId}`;
 
 /** Every page with real content: what gets prerendered and listed in the sitemap. */
 export function indexablePaths(catalog = []) {
@@ -17,11 +18,18 @@ export function indexablePaths(catalog = []) {
 }
 
 const escapeXml = (value) =>
-  String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 
 export function sitemapXml(catalog = []) {
   const urls = indexablePaths(catalog)
-    .map((path) => `  <url>\n    <loc>${escapeXml(absoluteUrl(path))}</loc>\n  </url>`)
+    .map(
+      (path) =>
+        `  <url>\n    <loc>${escapeXml(absoluteUrl(path))}</loc>\n  </url>`,
+    )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
@@ -42,7 +50,8 @@ const pageTitle = (path) => routes.find((r) => r.path === path)?.meta?.title;
 
 /** A plain-language map of the site for AI assistants (https://llmstxt.org). */
 export function llmsTxt(catalog = []) {
-  const link = (label, path, note) => `- [${label}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
+  const link = (label, path, note) =>
+    `- [${label}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
   const rand = (price) => `R${Number(price || 0).toFixed(2)}`;
 
   const lines = [
@@ -50,16 +59,32 @@ export function llmsTxt(catalog = []) {
     "",
     `> ${HOME_DESCRIPTION} Prices are in South African rand (ZAR).`,
     "",
-    "The ranges: diabetic friendly (sweetened with erythritol and stevia, made with almond flour instead of wheat), high protein, gluten free (made without wheat or other gluten-containing ingredients) and vegan (no dairy, no eggs). Ingredients differ from cookie to cookie, so each product page lists its own ingredients and allergens. Everything is baked in the same kitchen, which handles common allergens, so no cookie can be guaranteed trace-free. The cookies are treats, not medicine: anyone managing diabetes or another condition should check with their doctor or dietitian.",
+    "Ingredients and allergens differ between recipes; check the individual product page before ordering. Nutrition is shown only when available for that recipe. Range names are not medical advice or guarantees about traces of allergens. Contact the bakery for product questions.",
     "",
     "Online checkout is not live yet. For custom and bulk orders, contact us.",
     "",
     "## Pages",
     "",
-    link("Home", "/", "Our ranges, featured cookies and answers to common questions about sweeteners, carbs, allergens and storage"),
-    link("All cookies", "/products", "The full range with prices, filterable by diabetic friendly, high protein, gluten free and vegan"),
-    link(pageTitle("/about") || "About us", "/about", "Why we bake the way we do and who our cookies are for"),
-    link("Contact", "/contact", "Custom orders, bulk boxes for events and questions"),
+    link(
+      "Home",
+      "/",
+      "Our ranges, featured cookies and answers to common questions about sweeteners, carbs, allergens and storage",
+    ),
+    link(
+      "All cookies",
+      "/products",
+      "The full range with prices, filterable by diabetic friendly, high protein, gluten free and vegan",
+    ),
+    link(
+      pageTitle("/about") || "About us",
+      "/about",
+      "Why we bake the way we do and who our cookies are for",
+    ),
+    link(
+      "Contact",
+      "/contact",
+      "Custom orders, bulk boxes for events and questions",
+    ),
   ];
 
   if (catalog.length) {

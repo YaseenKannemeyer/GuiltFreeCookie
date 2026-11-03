@@ -1,4 +1,5 @@
 import { createRouter } from "vue-router";
+import { isCustomerLoggedIn } from "../composables/useCustomerAuth";
 import { routes } from "./routes";
 import { isAdminLoggedIn } from "../composables/useAdminAuth";
 
@@ -18,12 +19,14 @@ export function createAppRouter(history) {
   });
 
   router.beforeEach((to) => {
+    if (to.meta.requiresCustomer && !isCustomerLoggedIn())
+      return { name: "CustomerLogin", query: { redirect: to.fullPath } };
     if (to.meta.requiresAdmin && !isAdminLoggedIn()) {
       return { name: "AdminLogin", query: { redirect: to.fullPath } };
     }
 
     if (to.name === "AdminLogin" && isAdminLoggedIn()) {
-      return { name: "AdminDashboard" };
+      return { name: "AdminOverview" };
     }
   });
 

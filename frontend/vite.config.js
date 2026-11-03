@@ -40,7 +40,7 @@ function contentSecurityPolicy(env) {
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    "form-action 'self' https://www.payfast.co.za https://sandbox.payfast.co.za",
   ].join("; ");
 
   return {

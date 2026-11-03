@@ -29,7 +29,13 @@ public class DeliveryDetailsService implements IService<DeliveryDetails, String>
 
     @Override
     public DeliveryDetails update(DeliveryDetails deliveryDetails) {
-        return repository.save(deliveryDetails);
+        DeliveryDetails existing = deliveryDetails.getDeliveryID() == null ? null
+                : repository.findById(deliveryDetails.getDeliveryID()).orElse(null);
+        if (existing == null) {
+            return null;
+        }
+        // Only the address changes here, so a customer's saved-address fields (owner, label, default) survive.
+        return repository.save(new DeliveryDetails.Builder().copy(existing).setAddress(deliveryDetails.getAddress()).build());
     }
 
     @Override

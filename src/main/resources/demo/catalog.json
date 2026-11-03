@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Toasted Almond & Vanilla",
+    "slug": "toasted-almond-vanilla",
+    "category": "DIABETIC_FRIENDLY",
+    "description": "Golden edges give way to a tender vanilla centre, with toasted almond flakes adding a delicate crunch to every bite.",
+    "proposedIngredients": "Almond flour, butter, eggs, erythritol, stevia, vanilla extract, flaked almonds, baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds), milk, eggs",
+    "price": 25.0
+  },
+  {
+    "name": "Cinnamon Pecan",
+    "slug": "cinnamon-pecan",
+    "category": "DIABETIC_FRIENDLY",
+    "description": "A warmly spiced cookie with a soft middle, gently crisp edges and toasted pecan pieces baked through the dough.",
+    "proposedIngredients": "Almond flour, butter, eggs, erythritol, stevia, pecans, cinnamon, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds, pecans), milk, eggs",
+    "price": 28.0
+  },
+  {
+    "name": "Espresso Dark Chocolate",
+    "slug": "espresso-dark-chocolate",
+    "category": "DIABETIC_FRIENDLY",
+    "description": "Deep espresso notes meet glossy dark chocolate pieces in a richly baked cookie with a soft centre and crisp, cocoa-brown edges.",
+    "proposedIngredients": "Almond flour, butter, eggs, erythritol, stevia, unsweetened dark chocolate, cocoa powder, espresso powder, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds), milk, eggs; verify chocolate supplier allergens",
+    "price": 31.0
+  },
+  {
+    "name": "Double Chocolate Chunk",
+    "slug": "double-chocolate-chunk",
+    "category": "HIGH_PROTEIN",
+    "description": "Deep cocoa dough, generous dark chocolate chunks and a crackled top come together in a thick cookie with crisp edges and a soft chocolate centre.",
+    "proposedIngredients": "Almond flour, whey protein isolate, butter, eggs, dark chocolate, cocoa powder, erythritol, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds), milk, eggs; verify chocolate supplier allergens",
+    "price": 34.0
+  },
+  {
+    "name": "Peanut Butter Crunch",
+    "slug": "peanut-butter-crunch",
+    "category": "HIGH_PROTEIN",
+    "description": "Roasted peanut butter brings a rich, nutty flavour to this soft-baked cookie, finished with crunchy peanut pieces and a pinch of sea salt.",
+    "proposedIngredients": "Almond flour, whey protein isolate, peanut butter, roasted peanuts, butter, eggs, erythritol, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Peanuts, tree nuts (almonds), milk, eggs",
+    "price": 25.0
+  },
+  {
+    "name": "Vanilla White Chocolate",
+    "slug": "vanilla-white-chocolate",
+    "category": "HIGH_PROTEIN",
+    "description": "A vanilla-rich cookie with creamy white chocolate chunks, a tender middle and lightly golden edges.",
+    "proposedIngredients": "Almond flour, whey protein isolate, butter, eggs, white chocolate, erythritol, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds), milk, eggs; verify white chocolate supplier allergens",
+    "price": 28.0
+  },
+  {
+    "name": "Lemon Almond",
+    "slug": "lemon-almond",
+    "category": "GLUTEN_FREE",
+    "description": "Bright lemon zest lifts a tender almond cookie, while toasted almond flakes bring a delicate crunch to its golden top.",
+    "proposedIngredients": "Almond flour, rice flour, butter, eggs, cane sugar, lemon zest, lemon juice, flaked almonds, gluten-free baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds), milk, eggs; cross-contact controls require confirmation",
+    "price": 31.0
+  },
+  {
+    "name": "Salted Chocolate Buckwheat",
+    "slug": "salted-chocolate-buckwheat",
+    "category": "GLUTEN_FREE",
+    "description": "Toasty buckwheat dough and generous dark chocolate chunks make a deeply satisfying pairing, finished with a light touch of flaky sea salt.",
+    "proposedIngredients": "Buckwheat flour, rice flour, butter, eggs, brown sugar, dark chocolate, vanilla extract, gluten-free baking powder, sea salt",
+    "proposedAllergens": "Milk, eggs; verify chocolate supplier allergens and cross-contact controls",
+    "price": 34.0
+  },
+  {
+    "name": "Coconut Macadamia",
+    "slug": "coconut-macadamia",
+    "category": "GLUTEN_FREE",
+    "description": "Toasted coconut and creamy macadamia pieces fill a golden cookie with a soft centre and crisp, fragrant edges.",
+    "proposedIngredients": "Almond flour, rice flour, butter, eggs, cane sugar, desiccated coconut, macadamia nuts, vanilla extract, gluten-free baking powder, sea salt",
+    "proposedAllergens": "Tree nuts (almonds, macadamias), milk, eggs; cross-contact controls require confirmation",
+    "price": 25.0
+  },
+  {
+    "name": "Dark Chocolate Orange",
+    "slug": "dark-chocolate-orange",
+    "category": "VEGAN",
+    "description": "Rich cocoa dough and dark chocolate chunks are lifted by bright orange zest for a fragrant cookie with a fudgy centre.",
+    "proposedIngredients": "Wheat flour, plant-based baking fat, brown sugar, dairy-free dark chocolate, cocoa powder, orange zest, ground flaxseed, water, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Wheat; verify plant-based fat and chocolate supplier allergens and cross-contact controls",
+    "price": 28.0
+  },
+  {
+    "name": "Raspberry Coconut",
+    "slug": "raspberry-coconut",
+    "category": "VEGAN",
+    "description": "Tart raspberry pieces and toasted coconut brighten a soft vanilla cookie, with lightly crisp edges and a generous bakery-style bite.",
+    "proposedIngredients": "Wheat flour, plant-based baking fat, cane sugar, raspberries, desiccated coconut, ground flaxseed, water, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Wheat; verify plant-based fat supplier allergens and cross-contact controls",
+    "price": 31.0
+  },
+  {
+    "name": "Peanut Chocolate Ripple",
+    "slug": "peanut-chocolate-ripple",
+    "category": "VEGAN",
+    "description": "Roasted peanut butter ribbons run through golden dough, with dark chocolate chunks adding rich pockets of flavour to a soft, chewy centre.",
+    "proposedIngredients": "Wheat flour, peanut butter, plant-based baking fat, brown sugar, dairy-free dark chocolate, ground flaxseed, water, vanilla extract, baking powder, sea salt",
+    "proposedAllergens": "Peanuts, wheat; verify plant-based fat and chocolate supplier allergens and cross-contact controls",
+    "price": 34.0
+  }
+]

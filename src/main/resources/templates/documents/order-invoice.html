@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<title th:text="${title + ' ' + orderNumber}">Invoice</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.5; color: #2E0E0B; margin: 0; }
+  .muted { color: #7A4A3F; }
+  .head { width: 100%; border-collapse: collapse; }
+  .head td { vertical-align: top; padding: 0; }
+  .brand { font-size: 22pt; font-weight: bold; letter-spacing: -0.5pt; }
+  .brand span { color: #9A6E45; }
+  .title { text-align: right; font-size: 18pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1pt; }
+  .meta { text-align: right; margin-top: 4pt; }
+  .stamp { display: inline-block; margin-top: 6pt; padding: 2pt 10pt; border-radius: 10pt; background: #C59F71; font-weight: bold; font-size: 9pt; }
+  .stamp-refunded { background: #E2D9C8; }
+  .rule { height: 3pt; background: #C59F71; margin: 14pt 0; }
+  .parties { width: 100%; border-collapse: collapse; }
+  .parties td { width: 50%; vertical-align: top; padding: 0 12pt 0 0; }
+  .label { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8pt; color: #9A6E45; margin: 0 0 3pt; }
+  p { margin: 0; }
+  .pre { white-space: pre-line; }
+  .items { width: 100%; border-collapse: collapse; margin-top: 18pt; }
+  .items th { text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.8pt; color: #9A6E45; padding: 6pt 4pt; border-bottom: 1.5pt solid #2E0E0B; }
+  .items td { padding: 8pt 4pt; border-bottom: 0.5pt solid #D2C5AC; vertical-align: top; }
+  .num, .items th.num { text-align: right; white-space: nowrap; }
+  .totals { width: 46%; margin: 12pt 0 0 auto; border-collapse: collapse; }
+  .totals td { padding: 3pt 4pt; }
+  .totals .grand td { font-size: 12pt; font-weight: bold; border-top: 1.5pt solid #2E0E0B; padding-top: 7pt; }
+  .note { margin-top: 26pt; padding: 10pt 12pt; background: #F5F0E6; border-left: 3pt solid #C59F71; }
+  .footer { margin-top: 28pt; font-size: 8.5pt; text-align: center; }
+</style>
+</head>
+<body>
+  <table class="head">
+    <tr>
+      <td>
+        <p class="brand">GuiltFree<span>Cookie</span></p>
+        <p class="muted" th:text="${site.setting('address')}"></p>
+        <p class="muted" th:text="${site.setting('support-email')}"></p>
+        <p class="muted" th:if="${!site.setting('phone').isEmpty()}" th:text="${site.setting('phone')}"></p>
+        <p class="muted" th:if="${vatNumber != null}" th:text="${'VAT no. ' + vatNumber}"></p>
+      </td>
+      <td>
+        <p class="title" th:text="${title}">Invoice</p>
+        <p class="meta">Invoice no. <strong th:text="${orderNumber}"></strong></p>
+        <p class="meta">Date <strong th:text="${invoiceDate}"></strong></p>
+        <p class="meta">
+          <span th:if="${!refunded}" class="stamp">Paid</span>
+          <span th:if="${refunded}" class="stamp stamp-refunded">Refunded</span>
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <div class="rule"></div>
+
+  <table class="parties">
+    <tr>
+      <td>
+        <p class="label">Billed to</p>
+        <p><strong th:text="${customerName}"></strong></p>
+        <p th:text="${customerEmail}"></p>
+        <p th:if="${customerPhone != null}" th:text="${customerPhone}"></p>
+      </td>
+      <td>
+        <p class="label">Delivery</p>
+        <p class="pre" th:text="${delivery}"></p>
+      </td>
+    </tr>
+  </table>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Cookie</th>
+        <th>Pack</th>
+        <th class="num">Qty</th>
+        <th class="num">Unit price</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="item : ${items}">
+        <td th:text="${item.name}"></td>
+        <td th:text="${item.variant}"></td>
+        <td class="num" th:text="${item.quantity}"></td>
+        <td class="num" th:text="${item.unitPrice}"></td>
+        <td class="num" th:text="${item.lineTotal}"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr>
+      <td>Subtotal</td>
+      <td class="num" th:text="${subtotal}"></td>
+    </tr>
+    <tr th:if="${discount != null}">
+      <td th:text="${discountCode != null ? 'Discount (' + discountCode + ')' : 'Discount'}"></td>
+      <td class="num" th:text="${discount}"></td>
+    </tr>
+    <tr>
+      <td>Delivery</td>
+      <td class="num" th:text="${shipping}"></td>
+    </tr>
+    <tr class="grand">
+      <td>Total</td>
+      <td class="num" th:text="${total}"></td>
+    </tr>
+    <tr th:if="${vat != null}">
+      <td class="muted" th:text="${'Includes VAT (' + vatPercent + '%)'}"></td>
+      <td class="num muted" th:text="${vat}"></td>
+    </tr>
+  </table>
+
+  <div class="note">
+    <p th:if="${!refunded}">Paid in full with PayFast. Thank you for your order!</p>
+    <p th:if="${refunded}">This order was refunded through PayFast. This invoice records the original sale.</p>
+  </div>
+
+  <p class="footer muted">
+    Questions about this invoice? Email <span th:text="${site.setting('support-email')}"></span> and mention
+    <span th:text="${orderNumber}"></span>.
+  </p>
+</body>
+</html>

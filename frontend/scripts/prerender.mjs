@@ -27,10 +27,17 @@ const env = loadEnv("production", root, "");
 const yellow = (text) => `\x1b[33m${text}\x1b[0m`;
 
 const template = await fs.readFile(path.join(dist, "index.html"), "utf8");
-const manifest = JSON.parse(await fs.readFile(path.join(dist, ".vite", "ssr-manifest.json"), "utf8"));
-const server = await import(pathToFileURL(path.join(ssrDist, "entry-server.js")).href);
+const manifest = JSON.parse(
+  await fs.readFile(path.join(dist, ".vite", "ssr-manifest.json"), "utf8"),
+);
+const server = await import(
+  pathToFileURL(path.join(ssrDist, "entry-server.js")).href
+);
 
 const catalog = await fetchCatalog(env.PRERENDER_API_URL);
+if ((process.env.REQUIRE_CATALOG || env.REQUIRE_CATALOG) === "true" && !catalog?.length) {
+  throw new Error("A complete catalogue is required for this build. Start the demo API or configure PRERENDER_API_URL.");
+}
 const pages = [...server.indexablePaths(catalog || []), "/404"];
 
 for (const url of pages) {
@@ -46,21 +53,56 @@ await write("llms.txt", server.llmsTxt(catalog || []));
 await fs.rm(path.join(dist, ".vite"), { recursive: true, force: true });
 await fs.rm(ssrDist, { recursive: true, force: true });
 
-console.log(`Prerendered ${pages.length} pages for ${server.SITE_URL}${catalog ? ` (${catalog.length} cookies)` : ""}.`);
+console.log(
+  `Prerendered ${pages.length} pages for ${server.SITE_URL}${catalog ? ` (${catalog.length} cookies)` : ""}.`,
+);
 
 async function fetchCatalog(apiUrl) {
   if (!apiUrl) {
-    console.warn(yellow("PRERENDER_API_URL is not set: product pages will be rendered in the browser only and left out of the sitemap."));
+    console.warn(
+      yellow(
+        "PRERENDER_API_URL is not set: product pages will be rendered in the browser only and left out of the sitemap.",
+      ),
+    );
     return null;
   }
   try {
-    const response = await fetch(`${apiUrl.replace(/\/+$/, "")}/cookie/getAll`, { signal: AbortSignal.timeout(10_000) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error("unexpected response");
-    return data;
+    const base = apiUrl.replace(/\/+$/, "");
+    const catalog = [];
+    let page = 0;
+    let totalPages = 1;
+    while (page < totalPages) {
+      const response = await fetch(
+        `${base}/api/v1/cookies?page=${page}&size=48`,
+        { signal: AbortSignal.timeout(10_000) },
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data.items)) throw new Error("unexpected response");
+      for (const item of data.items) {
+        const detailResponse = await fetch(
+          `${base}/api/v1/cookies/${encodeURIComponent(item.slug || item.cookieId)}`,
+          { signal: AbortSignal.timeout(10_000) },
+        );
+        if (!detailResponse.ok)
+          throw new Error(`HTTP ${detailResponse.status}`);
+        const detail = await detailResponse.json();
+        catalog.push({
+          ...detail,
+          description: detail.name,
+          price: detail.fromPrice,
+        });
+      }
+      totalPages = data.totalPages;
+      page++;
+    }
+    return catalog;
   } catch (error) {
-    console.warn(yellow(`Couldn't load the catalogue from ${apiUrl} (${error.message}): product pages will be rendered in the browser only.`));
+    console.warn(
+      yellow(
+        `Couldn't load the catalogue from ${apiUrl} (${error.message}): product pages will be rendered in the browser only.`,
+      ),
+    );
     return null;
   }
 }
@@ -68,13 +110,19 @@ async function fetchCatalog(apiUrl) {
 function inject({ html, head, teleports, modules, catalogJson, route }) {
   const extras = [
     preloadLinks(modules),
-    catalogJson ? `<script type="application/json" id="catalog-data">${catalogJson}</script>` : "",
+    catalogJson
+      ? `<script type="application/json" id="catalog-data">${catalogJson}</script>`
+      : "",
   ].filter(Boolean);
 
   // Function replacements: rendered text may contain "$&" and friends.
   return template
     .replace("<!--app-head-->", () => [head, ...extras].join("\n    "))
-    .replace('<div id="app">', () => `<div id="app" data-ssr-path="${route.path}" data-ssr-route="${route.name}">`)
+    .replace(
+      '<div id="app">',
+      () =>
+        `<div id="app" data-ssr-path="${route.path}" data-ssr-route="${route.name}">`,
+    )
     .replace("<!--app-html-->", () => html)
     .replace("<!--app-teleports-->", () => teleports);
 }
@@ -88,8 +136,10 @@ function preloadLinks(modules) {
     for (const file of manifest[id] || []) {
       if (seen.has(file)) continue;
       seen.add(file);
-      if (file.endsWith(".js")) links.push(`<link rel="modulepreload" crossorigin href="${file}">`);
-      else if (file.endsWith(".css")) links.push(`<link rel="stylesheet" crossorigin href="${file}">`);
+      if (file.endsWith(".js"))
+        links.push(`<link rel="modulepreload" crossorigin href="${file}">`);
+      else if (file.endsWith(".css"))
+        links.push(`<link rel="stylesheet" crossorigin href="${file}">`);
     }
   }
   return links.join("\n    ");

@@ -1,0 +1,48 @@
+name: Verify and deploy API
+
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "pom.xml", "frontend/public/img/cookies/**", ".github/workflows/deploy-api.yml"]
+  pull_request:
+    paths: ["src/**", "pom.xml", "frontend/public/img/cookies/**", ".github/workflows/deploy-api.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Test and package
+        run: bash ./mvnw -B verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-jar
+          path: target/guiltFreeCookie-*.jar
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && vars.AZURE_WEBAPP_NAME != ''
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-jar
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: guiltFreeCookie-*.jar

@@ -1,6 +1,9 @@
 package za.ac.cput.guiltfreecookie.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
@@ -21,6 +24,24 @@ public class Cart {
     @Column(name = "status")
     private CartStatus status;
 
+    // True when a signed-in customer owns the cart; a guest who only typed an email doesn't.
+    @Column(name = "account_owned")
+    private boolean accountOwned;
+
+    @Column(name = "discount_code", length = 30)
+    private String discountCode;
+
+    // For the abandoned-cart email link (Phase 7).
+    @JsonIgnore
+    @Column(name = "recovery_token", length = 64, unique = true)
+    private String recoveryToken;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     protected Cart() {
     }
 
@@ -29,6 +50,11 @@ public class Cart {
         this.customerEmail = builder.customerEmail;
         this.totalPrice = builder.totalPrice;
         this.status = builder.status;
+        this.accountOwned = builder.accountOwned;
+        this.discountCode = builder.discountCode;
+        this.recoveryToken = builder.recoveryToken;
+        this.createdAt = builder.createdAt;
+        this.updatedAt = builder.updatedAt;
     }
 
     public String getCartId() {
@@ -45,6 +71,26 @@ public class Cart {
 
     public CartStatus getStatus() {
         return status;
+    }
+
+    public boolean isAccountOwned() {
+        return accountOwned;
+    }
+
+    public String getDiscountCode() {
+        return discountCode;
+    }
+
+    public String getRecoveryToken() {
+        return recoveryToken;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
     @Override
@@ -77,6 +123,11 @@ public class Cart {
         private String customerEmail;
         private double totalPrice;
         private CartStatus status;
+        private boolean accountOwned;
+        private String discountCode;
+        private String recoveryToken;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
 
         public Builder setCartId(String cartId) {
             this.cartId = cartId;
@@ -98,11 +149,41 @@ public class Cart {
             return this;
         }
 
+        public Builder setAccountOwned(boolean accountOwned) {
+            this.accountOwned = accountOwned;
+            return this;
+        }
+
+        public Builder setDiscountCode(String discountCode) {
+            this.discountCode = discountCode;
+            return this;
+        }
+
+        public Builder setRecoveryToken(String recoveryToken) {
+            this.recoveryToken = recoveryToken;
+            return this;
+        }
+
+        public Builder setCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder setUpdatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
         public Builder copy(Cart cart) {
             this.cartId = cart.cartId;
             this.customerEmail = cart.customerEmail;
             this.totalPrice = cart.totalPrice;
             this.status = cart.status;
+            this.accountOwned = cart.accountOwned;
+            this.discountCode = cart.discountCode;
+            this.recoveryToken = cart.recoveryToken;
+            this.createdAt = cart.createdAt;
+            this.updatedAt = cart.updatedAt;
             return this;
         }
 
