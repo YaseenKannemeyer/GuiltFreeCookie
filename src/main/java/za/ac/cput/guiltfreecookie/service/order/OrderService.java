@@ -44,6 +44,7 @@ public class OrderService {
     private final PaymentGateway paymentGateway;
     private final OrderLinks orderLinks;
     private final OrderViews orderViews;
+    private final OrderDocuments orderDocuments;
     private final ApplicationEventPublisher events;
     private final long paymentWindowMinutes;
 
@@ -51,7 +52,7 @@ public class OrderService {
                         OrderStatusEventRepository eventRepository, CartRepository cartRepository,
                         InventoryService inventoryService, DiscountService discountService,
                         PaymentGateway paymentGateway, OrderLinks orderLinks, OrderViews orderViews,
-                        ApplicationEventPublisher events,
+                        OrderDocuments orderDocuments, ApplicationEventPublisher events,
                         @Value("${app.order.payment-window-minutes}") long paymentWindowMinutes) {
         this.orderRepository = orderRepository;
         this.itemRepository = itemRepository;
@@ -62,6 +63,7 @@ public class OrderService {
         this.paymentGateway = paymentGateway;
         this.orderLinks = orderLinks;
         this.orderViews = orderViews;
+        this.orderDocuments = orderDocuments;
         this.events = events;
         this.paymentWindowMinutes = paymentWindowMinutes;
     }
@@ -69,6 +71,15 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderView view(String orderNumber, String token) {
         return orderViews.view(requireWithToken(orderNumber, token));
+    }
+
+    @Transactional(readOnly = true)
+    public Document document(String orderNumber, String token, OrderDocuments.Kind kind) {
+        CustomerOrder order = requireWithToken(orderNumber, token);
+        return new Document(orderDocuments.fileName(order, kind), orderDocuments.pdf(order, kind));
+    }
+
+    public record Document(String fileName, byte[] pdf) {
     }
 
     // "Pay now" again, e.g. after closing the PayFast page, while the stock is still held.
@@ -92,6 +103,26 @@ public class OrderService {
         releaseHold(order);
         CustomerOrder cancelled = changeStatus(order, OrderStatus.CANCELLED, "Cancelled before payment", "customer");
         reopenCart(cancelled);
+        return orderViews.view(cancelled);
+    }
+
+    // Until the bakery accepts the order (PAID -> PROCESSING) the customer can still back out. The cookies go
+    // back on the shelf and the shop is emailed to pay the refund from the PayFast dashboard.
+    @Transactional
+    public OrderView cancelPaid(String orderNumber, String token) {
+        requireWithToken(orderNumber, token);
+        CustomerOrder order = lock(orderNumber);
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new ConflictException("Orders can only be cancelled before we start baking. Contact us and we'll help.");
+        }
+        // A late payment may never have got its cookies back from stock; don't return what wasn't taken.
+        boolean restocked = holdsStock(order);
+        if (restocked) {
+            releaseStock(order, InventoryReason.ORDER_RELEASED);
+        }
+        CustomerOrder cancelled = changeStatus(order, OrderStatus.REFUNDED, "Cancelled by the customer before baking. "
+                + (restocked ? "Cookies returned to stock. " : "") + "Pay the refund in the PayFast dashboard.", "customer");
+        events.publishEvent(new OrderEvents.CancelledByCustomer(orderNumber));
         return orderViews.view(cancelled);
     }
 

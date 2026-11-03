@@ -5,6 +5,7 @@ import { api, errorMessage } from "../api/storeApi";
 import cookieApi from "../api/cookieApi";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseInput from "../components/ui/BaseInput.vue";
+import MagneticDropZone from "../components/ui/MagneticDropZone.vue";
 import LowStockWidget from "../components/admin/LowStockWidget.vue";
 
 const reasonLabels = {
@@ -41,8 +42,7 @@ const stock = reactive({
   }),
   editingPack = ref(""),
   altText = ref(""),
-  file = ref(null),
-  uploadInput = ref(null);
+  file = ref(null);
 const detailFields = [
   ["lowStockThreshold", "Low-stock threshold"],
   ["weightGrams", "Weight (g)"],
@@ -179,7 +179,6 @@ function upload() {
     await api("post", `${base()}/images`, data);
     file.value = null;
     altText.value = "";
-    if (uploadInput.value) uploadInput.value.value = "";
   }, "Photo uploaded.");
 }
 function reorder(index, direction) {
@@ -415,14 +414,16 @@ onMounted(load);
           </li>
         </ol>
         <form class="space-y-4 mt-7" @submit.prevent="upload">
-          <label class="block"
-            >New photo (up to 10 MB)<input
-              ref="uploadInput"
-              type="file"
+          <div>
+            <p class="mb-1.5 text-sm font-semibold text-chocolate/85">New photo</p>
+            <MagneticDropZone
+              :model-value="file ? [file] : []"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              class="block mt-2 max-w-full"
-              @change="file = $event.target.files[0]" /></label
-          ><BaseInput v-model="altText" label="Describe the photo" /><BaseButton
+              :max-size="10 * 1024 * 1024"
+              label="Drop a photo here"
+              @update:model-value="file = $event[0] ?? null"
+            />
+          </div><BaseInput v-model="altText" label="Describe the photo" /><BaseButton
             type="submit"
             :disabled="busy || current.images.length >= 10"
             >Upload photo</BaseButton

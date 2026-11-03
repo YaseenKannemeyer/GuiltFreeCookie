@@ -2,7 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import BaseButton from "../components/ui/BaseButton.vue";
+import HoldToConfirmButton from "../components/ui/HoldToConfirmButton.vue";
+import UndoNotice from "../components/ui/UndoNotice.vue";
 import StepRail from "../components/checkout/StepRail.vue";
+import ReceiptPrinter from "../components/ui/ReceiptPrinter.vue";
+import { ArrowDownTrayIcon } from "@heroicons/vue/24/outline";
+import { XMarkIcon } from "@heroicons/vue/20/solid";
 import { useFormat } from "../composables/useFormat";
 import { useCart } from "../composables/useCart";
 import { errorMessage, orderApi, submitPaymentForm } from "../api/storeApi";
@@ -16,6 +21,7 @@ const loading = ref(true);
 const notFound = ref(false);
 const error = ref("");
 const busy = ref(false);
+const cancelStage = ref("idle"); // idle | undo: the request goes out when the undo runs out
 let timer = null;
 let polls = 0;
 
@@ -86,6 +92,35 @@ const addressLines = computed(() => {
   return [a.complex, `${a.streetNumber} ${a.streetName}`, a.suburb, `${a.city}, ${a.postalCode}`, PROVINCES[a.province]].filter(Boolean);
 });
 
+// The receipt printer sits at the top of the page. It waits while PayFast confirms, prints when the
+// payment lands (or on arriving at a freshly paid order), and is already printed after that.
+const RECEIPT_FEED_MS = 1750;
+const printerStage = ref("processing");
+let printTimer = null;
+const showPrinter = computed(
+  () => order.value && !offTrack.value && (order.value.status !== "PENDING_PAYMENT" || order.value.canPay),
+);
+const awaitingPayment = computed(() => order.value?.status === "PENDING_PAYMENT");
+const documentsReady = computed(() =>
+  ["PAID", "PROCESSING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED", "REFUNDED"].includes(order.value?.status),
+);
+const documentUrl = (kind) => orderApi.documentUrl(order.value.orderNumber, token.value, kind);
+
+watch(
+  () => order.value?.status,
+  (status, previous) => {
+    clearTimeout(printTimer);
+    if (status === "PENDING_PAYMENT") {
+      printerStage.value = "processing";
+    } else if (status === "PAID" || previous === "PENDING_PAYMENT") {
+      printerStage.value = "printing";
+      printTimer = setTimeout(() => (printerStage.value = "complete"), RECEIPT_FEED_MS);
+    } else {
+      printerStage.value = "complete";
+    }
+  },
+);
+
 const time = (value) =>
   new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 
@@ -123,6 +158,22 @@ async function payAgain() {
   }
 }
 
+// Paid but not yet accepted by the bakery: the customer can still back out for a full refund.
+async function cancelPaid() {
+  busy.value = true;
+  try {
+    order.value = await orderApi.cancelPaid(route.params.orderNumber, token.value);
+  } catch (e) {
+    // Most likely the bakery accepted it meanwhile: show the new status, then say why.
+    const message = errorMessage(e);
+    await fetchOrder();
+    error.value = message;
+  } finally {
+    busy.value = false;
+    cancelStage.value = "idle";
+  }
+}
+
 async function cancel() {
   busy.value = true;
   try {
@@ -140,11 +191,32 @@ onMounted(async () => {
   await fetchOrder();
   schedulePoll();
 });
-onBeforeUnmount(() => clearTimeout(timer));
+onBeforeUnmount(() => {
+  clearTimeout(timer);
+  clearTimeout(printTimer);
+});
 </script>
 
 <template>
   <div class="pt-[var(--nav-h)]">
+    <!-- Wider than the page column so the invoice button fits beside the centred pills. -->
+    <div
+      v-if="order && (!offTrack || documentsReady)"
+      class="container-magic grid items-center gap-4 pt-8 xl:grid-cols-[1fr_auto_1fr]"
+    >
+      <div v-if="documentsReady" class="flex justify-end xl:col-start-3 xl:row-start-1">
+        <BaseButton :href="documentUrl('invoice')" variant="outline" size="sm" download>
+          <ArrowDownTrayIcon class="h-5 w-5" aria-hidden="true" />
+          Download invoice (PDF)
+        </BaseButton>
+      </div>
+      <StepRail
+        v-if="!offTrack"
+        :steps="rail"
+        label="Order progress"
+        class="flex min-w-0 justify-center xl:col-start-2 xl:row-start-1"
+      />
+    </div>
     <div class="container-magic max-w-[64rem] pt-8 pb-24">
       <div v-if="loading" aria-label="Loading your order" class="space-y-4">
         <div class="h-9 w-3/4 rounded-full shimmer" />
@@ -165,9 +237,69 @@ onBeforeUnmount(() => clearTimeout(timer));
       </p>
 
       <template v-else-if="order">
-        <StepRail v-if="!offTrack" :steps="rail" label="Order progress" />
+        <ReceiptPrinter v-if="showPrinter" :stage="printerStage" class="mx-auto" label="Order receipt">
+          <template #status="{ stage }">
+            {{
+              stage === "processing"
+                ? "Waiting for PayFast to confirm"
+                : stage === "printing"
+                  ? "Printing your receipt"
+                  : `Paid. Thanks, ${order.firstName}!`
+            }}
+          </template>
 
-        <h1 class="font-display text-display mt-8">{{ headline }}</h1>
+          <p class="font-bold">GuiltFreeCookie</p>
+          <p class="tabular">Order {{ order.orderNumber.split("-").pop() }}</p>
+          <p v-if="order.timeline?.length" class="tabular text-chocolate/70">{{ time(order.timeline[0].at) }}</p>
+
+          <ul class="mt-4 space-y-2 border-t border-dashed border-chocolate/30 pt-4">
+            <li v-for="item in order.items" :key="item.cookieId + item.variantLabel" class="flex justify-between gap-4">
+              <span class="min-w-0">
+                {{ item.name }}
+                <span class="block text-chocolate/70">{{ item.variantLabel }} × {{ item.quantity }}</span>
+              </span>
+              <span class="tabular shrink-0">{{ rand(item.lineTotal) }}</span>
+            </li>
+          </ul>
+
+          <dl class="mt-4 space-y-1 border-t border-dashed border-chocolate/30 pt-4">
+            <div class="flex justify-between gap-4">
+              <dt>Subtotal</dt>
+              <dd class="tabular">{{ rand(order.subtotal) }}</dd>
+            </div>
+            <div v-if="order.discountTotal > 0" class="flex justify-between gap-4">
+              <dt>Discount</dt>
+              <dd class="tabular">−{{ rand(order.discountTotal) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt>Delivery</dt>
+              <dd class="tabular">{{ Number(order.shippingTotal) === 0 ? "Free" : rand(order.shippingTotal) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4 pt-2 font-bold">
+              <dt>Total</dt>
+              <dd class="tabular">{{ rand(order.total) }}</dd>
+            </div>
+            <div v-if="order.vatIncluded" class="flex justify-between gap-4 text-chocolate/70">
+              <dt>Incl. VAT</dt>
+              <dd class="tabular">{{ rand(order.vatIncluded) }}</dd>
+            </div>
+          </dl>
+
+          <p class="mt-6 text-center">Thank you. Enjoy!</p>
+          <div v-if="documentsReady" class="mt-5 flex justify-center">
+            <a
+              :href="documentUrl('receipt')"
+              download
+              class="inline-flex min-h-11 items-center gap-2 rounded-full border border-dashed border-chocolate/40 px-4 text-sm text-chocolate transition-colors hover:border-chocolate hover:bg-chocolate/[0.04]"
+            >
+              <ArrowDownTrayIcon class="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </a>
+          </div>
+        </ReceiptPrinter>
+
+
+        <h1 class="font-display text-display mt-8 text-center">{{ headline }}</h1>
 
         <div class="mt-6 rounded-2xl bg-cream-100/70 border border-cream-500 overflow-hidden">
           <dl class="grid grid-cols-2 sm:grid-cols-3 border-b border-dashed border-cream-500">
@@ -236,7 +368,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           <p class="text-chocolate/80">{{ addressLines.join(", ") }}</p>
         </section>
 
-        <section class="mt-10" aria-labelledby="items-heading">
+        <section v-if="!showPrinter || awaitingPayment" class="mt-10" aria-labelledby="items-heading">
           <h2 id="items-heading" class="font-bold">Your cookies</h2>
           <ul class="mt-2 divide-y divide-chocolate/[0.1] border-y border-chocolate/[0.1]">
             <li v-for="item in order.items" :key="item.cookieId + item.variantLabel" class="py-3 flex justify-between gap-4">
@@ -293,6 +425,23 @@ onBeforeUnmount(() => clearTimeout(timer));
           <RouterLink :to="{ name: 'Contact' }" class="font-bold underline">Contact us</RouterLink>
           and mention {{ order.orderNumber }}.
         </p>
+        <div v-if="order.status === 'PAID'" class="mt-10 border-t border-chocolate/[0.12] pt-6">
+          <p class="text-sm text-chocolate/75">
+            Changed your mind? You can cancel until we start baking, and {{ rand(order.total) }} comes back to you
+            through PayFast.
+          </p>
+          <UndoNotice
+            v-if="cancelStage === 'undo'"
+            class="mt-3"
+            message="Your order will be cancelled"
+            @undo="cancelStage = 'idle'"
+            @expire="cancelPaid"
+          />
+          <HoldToConfirmButton v-else class="mt-3" :reset-after="0" :disabled="busy" @confirm="cancelStage = 'undo'">
+            <XMarkIcon class="h-4 w-4" aria-hidden="true" />
+            Hold to cancel order
+          </HoldToConfirmButton>
+        </div>
       </template>
     </div>
   </div>

@@ -1,5 +1,8 @@
 package za.ac.cput.guiltfreecookie.service.order;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +37,7 @@ import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
 import za.ac.cput.guiltfreecookie.service.engagement.PurchaseVerifier;
 import za.ac.cput.guiltfreecookie.service.engagement.SiteInfoService;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -252,6 +256,50 @@ class OrderLifecycleTest {
 
         assertThrows(ConflictException.class, () -> adminOrderService.ship(placed.orderNumber(),
                 new TrackingRequest("Courier", "T1", null), "AD001"));
+    }
+
+    @Test
+    void aPaidOrderCanBeCancelledUntilTheBakeryAcceptsIt() {
+        Placed cancelled = place(ShippingMethod.PUDO);
+        Placed accepted = place(ShippingMethod.PUDO);
+        assertThrows(ConflictException.class, () -> orderService.cancelPaid(cancelled.orderNumber(), cancelled.token()));
+
+        orderService.markPaid(cancelled.orderNumber(), "payfast", "Paid");
+        orderService.markPaid(accepted.orderNumber(), "payfast", "Paid");
+        adminOrderService.changeStatus(accepted.orderNumber(), new StatusChangeRequest(OrderStatus.PROCESSING, null), "AD001");
+        int before = stock();
+
+        OrderView view = orderService.cancelPaid(cancelled.orderNumber(), cancelled.token());
+
+        assertEquals(OrderStatus.REFUNDED, view.status());
+        assertEquals(before + 6, stock());
+        assertEquals(List.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID, OrderStatus.REFUNDED), timeline(cancelled));
+        assertThrows(ConflictException.class, () -> orderService.cancelPaid(cancelled.orderNumber(), cancelled.token()));
+        assertThrows(ConflictException.class, () -> orderService.cancelPaid(accepted.orderNumber(), accepted.token()));
+        assertThrows(NotFoundException.class, () -> orderService.cancelPaid(accepted.orderNumber(), "wrong"));
+        assertEquals(OrderStatus.PROCESSING, order(accepted).getStatus());
+    }
+
+    @Test
+    void theInvoiceAndReceiptArePdfsOnceTheOrderIsPaid() throws IOException {
+        Placed placed = place(ShippingMethod.PUDO);
+        assertThrows(ConflictException.class,
+                () -> orderService.document(placed.orderNumber(), placed.token(), OrderDocuments.Kind.INVOICE));
+        assertThrows(NotFoundException.class,
+                () -> orderService.document(placed.orderNumber(), "wrong", OrderDocuments.Kind.RECEIPT));
+
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid");
+
+        for (OrderDocuments.Kind kind : OrderDocuments.Kind.values()) {
+            OrderService.Document document = orderService.document(placed.orderNumber(), placed.token(), kind);
+            assertTrue(document.fileName().endsWith("-" + placed.orderNumber() + ".pdf"));
+            try (PDDocument pdf = Loader.loadPDF(document.pdf())) {
+                String text = new PDFTextStripper().getText(pdf);
+                assertTrue(text.contains(placed.orderNumber()));
+                assertTrue(text.contains("Thandi Mokoena"));
+                assertTrue(text.toUpperCase().contains("PAID"));
+            }
+        }
     }
 
     @Test

@@ -104,7 +104,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/carts", "/api/v1/carts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/payment", "/api/v1/orders/*/cancel",
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/payment", "/api/v1/orders/*/cancel", "/api/v1/orders/*/cancel-paid",
                                 "/api/v1/orders/*/reorder").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/payfast/notify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()

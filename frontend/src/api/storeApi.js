@@ -39,10 +39,17 @@ export const checkoutApi = {
   placeOrder: (body) => api("post", "/checkout", body),
 };
 export const orderApi = {
+  // kind: "invoice" | "receipt"
+  documentUrl: (orderNumber, token, kind) =>
+    `${API_BASE}/api/v1/orders/${encodeURIComponent(orderNumber)}/${kind}?token=${encodeURIComponent(token)}`,
   get: (orderNumber, token) =>
     api("get", `/orders/${orderNumber}`, undefined, { params: { token } }),
   payAgain: (orderNumber, token) =>
     api("post", `/orders/${orderNumber}/payment`, undefined, {
+      params: { token },
+    }),
+  cancelPaid: (orderNumber, token) =>
+    api("post", `/orders/${orderNumber}/cancel-paid`, undefined, {
       params: { token },
     }),
   cancel: (orderNumber, token) =>

@@ -31,7 +31,7 @@ const PAID = ["PAID", "PROCESSING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"];
 // The one move the team usually makes next, matching what the server allows.
 const nextMove = computed(() => {
   const s = order.value?.status;
-  if (s === "PAID") return { status: "PROCESSING", label: "Start baking", hint: "Marks it as baking. The customer sees this on their order page." };
+  if (s === "PAID") return { status: "PROCESSING", label: "Start baking", hint: "Accepts the order: the customer sees it as baking and can no longer cancel it." };
   if (s === "PROCESSING" && pickup.value)
     return { status: "READY_FOR_PICKUP", label: "Ready to collect", hint: "Emails the customer that it's ready, with the pickup details." };
   if (s === "READY_FOR_PICKUP") return { status: "DELIVERED", label: "Mark collected", hint: "" };

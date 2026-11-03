@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<title th:text="${'Receipt ' + orderNumber}">Receipt</title>
+<style th:inline="css">
+  @page { size: 80mm [[${receiptHeightMm}]]mm; margin: 7mm 6mm; }
+  body { font-family: Courier, monospace; font-size: 8.5pt; line-height: 1.45; color: #2E0E0B; margin: 0; }
+  p { margin: 0; }
+  .center { text-align: center; }
+  .brand { font-family: Helvetica, Arial, sans-serif; font-size: 14pt; font-weight: bold; }
+  .muted { color: #7A4A3F; }
+  .cut { border-top: 1pt dashed #9A6E45; margin: 8pt 0; }
+  .lines { width: 100%; border-collapse: collapse; }
+  .lines td { padding: 1.5pt 0; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; padding-left: 6pt; }
+  .total td { font-weight: bold; font-size: 10pt; padding-top: 4pt; }
+  .stamp { display: inline-block; border: 1.2pt solid #2E0E0B; padding: 1pt 8pt; font-weight: bold; letter-spacing: 1pt; }
+</style>
+</head>
+<body>
+  <p class="center brand">GuiltFreeCookie</p>
+  <p class="center muted" th:text="${site.setting('address')}"></p>
+  <p class="center muted" th:text="${site.setting('support-email')}"></p>
+  <p class="center muted" th:if="${vatNumber != null}" th:text="${'VAT no. ' + vatNumber}"></p>
+
+  <div class="cut"></div>
+
+  <p>Receipt for order <strong th:text="${orderNumber}"></strong></p>
+  <p th:text="${paidAt}"></p>
+  <p th:text="${customerName}"></p>
+
+  <div class="cut"></div>
+
+  <table class="lines">
+    <tr th:each="item : ${items}">
+      <td>
+        <span th:text="${item.name}"></span><br />
+        <span class="muted" th:text="${item.variant + ' x ' + item.quantity}"></span>
+      </td>
+      <td class="num" th:text="${item.lineTotal}"></td>
+    </tr>
+  </table>
+
+  <div class="cut"></div>
+
+  <table class="lines">
+    <tr>
+      <td>Subtotal</td>
+      <td class="num" th:text="${subtotal}"></td>
+    </tr>
+    <tr th:if="${discount != null}">
+      <td th:text="${discountCode != null ? 'Discount ' + discountCode : 'Discount'}"></td>
+      <td class="num" th:text="${discount}"></td>
+    </tr>
+    <tr>
+      <td>Delivery</td>
+      <td class="num" th:text="${shipping}"></td>
+    </tr>
+    <tr class="total">
+      <td>TOTAL</td>
+      <td class="num" th:text="${total}"></td>
+    </tr>
+    <tr th:if="${vat != null}">
+      <td class="muted" th:text="${'Incl. VAT ' + vatPercent + '%'}"></td>
+      <td class="num muted" th:text="${vat}"></td>
+    </tr>
+  </table>
+
+  <div class="cut"></div>
+
+  <p class="center"><span class="stamp" th:text="${refunded ? 'REFUNDED' : 'PAID'}">PAID</span></p>
+  <p class="center muted" style="margin-top: 4pt">Paid with PayFast</p>
+  <p class="center" style="margin-top: 10pt">Thank you. Enjoy!</p>
+</body>
+</html>

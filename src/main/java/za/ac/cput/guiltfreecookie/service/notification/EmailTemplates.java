@@ -34,6 +34,8 @@ public class EmailTemplates {
             "order-confirmation",
             "order-shipped",
             "order-ready-for-pickup",
+            "order-cancelled",
+            "order-cancelled-to-shop",
             "claim-orders",
             "resubscribe-confirm"), FlowCatalog.previewNames().stream()).toList();
 
@@ -107,6 +109,14 @@ public class EmailTemplates {
         model.put("shipping", "R 60.00");
         model.put("vat", "R 28.96");
         model.put("total", "R 222.00");
+        model.put("customerName", "Sam Example");
+        if (template.equals("order-cancelled-to-shop")) {
+            model.put("actionUrl", frontendBase + "/admindashboard/orders/GFC-PREVIEW");
+            model.put("actionLabel", "Open the order");
+        }
+        if (template.equals("order-confirmation")) {
+            model.put("invoiceUrl", publicBase + "/api/v1/orders/GFC-PREVIEW/invoice?token=preview");
+        }
         model.put("items", List.of(Map.of(
                 "name", "Double Chocolate Chunk",
                 "variant", "Box of 6",

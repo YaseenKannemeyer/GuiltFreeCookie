@@ -17,4 +17,7 @@ public final class OrderEvents {
 
     public record Delivered(String orderNumber) {
     }
+
+    public record CancelledByCustomer(String orderNumber) {
+    }
 }
