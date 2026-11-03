@@ -71,7 +71,8 @@ Run with `SPRING_PROFILES_ACTIVE=prod`. The prod profile has no fallbacks for se
 | `SITE_ADDRESS` | Full physical address (shown before payment, and in every email footer) |
 | `SITE_INSTAGRAM`, `SITE_FACEBOOK`, `SITE_TIKTOK` | Full URLs |
 | `SITE_FOUNDER_NAME`, `SITE_FOUNDER_MESSAGE`, `SITE_FOUNDER_PHOTO_URL` | The founder note in order and welcome emails |
-| `VAT_REGISTERED` | `true` shows the VAT portion on receipts |
+| `VAT_REGISTERED` | `true` shows the VAT portion on receipts and titles invoices "Tax invoice" |
+| `VAT_NUMBER` | Printed on tax invoices once VAT-registered |
 | `SHIPPING_COURIER_RATE`, `SHIPPING_PUDO_RATE`, `SHIPPING_FREE_THRESHOLD`, `SHIPPING_PICKUP_ADDRESS`, `SHIPPING_PICKUP_INSTRUCTIONS` | Only the first-run defaults. After that, admins change them at Admin → Delivery |
 
 **Optional link secrets.** Each defaults to `JWT_SECRET`. Set one only to rotate that kind of link on its own:

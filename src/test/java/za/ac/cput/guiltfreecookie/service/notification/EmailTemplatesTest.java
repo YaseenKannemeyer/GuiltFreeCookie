@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.MailSendException;
+import org.mockito.ArgumentCaptor;
+import java.time.LocalDateTime;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +24,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.*;
 
 @SpringBootTest
 class EmailTemplatesTest {
@@ -55,7 +60,7 @@ class EmailTemplatesTest {
         JavaMailSender sender = mock(JavaMailSender.class);
         MimeMessage message = new MimeMessage((Session) null);
         when(sender.createMimeMessage()).thenReturn(message);
-        EmailService service = new EmailService(sender, true, "bakery@example.com", templates);
+        EmailService service = new EmailService(sender, true, "bakery@example.com", templates, mock(EmailOutbox.class), false);
         Map<String, Object> model = templates.sample("password-reset");
         model.put("unsubscribeUrl", "https://example.com/unsubscribe/token");
 
@@ -75,12 +80,43 @@ class EmailTemplatesTest {
     @Test
     void marketingNeedsASafeUnsubscribeLinkAndDisabledMailSendsNothing() {
         JavaMailSender sender = mock(JavaMailSender.class);
-        EmailService service = new EmailService(sender, false, "bakery@example.com", templates);
+        EmailService service = new EmailService(sender, false, "bakery@example.com", templates, mock(EmailOutbox.class), false);
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.sendTemplate("sam@example.com", "Hi", "password-reset", templates.sample("password-reset"), true));
         service.sendTemplate("sam@example.com", "Hi", "password-reset", templates.sample("password-reset"), false);
 
         verifyNoInteractions(sender);
+    }
+
+    @Test
+    void transactionalTemplatesArePersistedWithTheirLinkExpiry() {
+        JavaMailSender sender = mock(JavaMailSender.class);
+        MimeMessage message = new MimeMessage((Session) null);
+        when(sender.createMimeMessage()).thenReturn(message);
+        EmailOutbox queue = mock(EmailOutbox.class);
+        EmailService service = new EmailService(sender, true, "bakery@example.com", templates, queue, false);
+        var model = templates.sample("password-reset");
+        model.put("resetMinutes", 10L);
+        var before = LocalDateTime.now().plusMinutes(10);
+        service.sendTemplate("sam@example.com", "Reset", "password-reset", model, false);
+        var expiry = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(queue).enqueue(eq("sam@example.com"), eq("Reset"), eq(message), expiry.capture());
+        assertTrue(!expiry.getValue().isBefore(before));
+        assertTrue(expiry.getValue().isBefore(before.plusSeconds(5)));
+        verify(sender, org.mockito.Mockito.never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void failedMarketingTransportPropagatesToTheFlowRetryHandler() {
+        JavaMailSender sender = mock(JavaMailSender.class);
+        MimeMessage message = new MimeMessage((Session) null);
+        when(sender.createMimeMessage()).thenReturn(message);
+        doThrow(new MailSendException("SMTP unavailable")).when(sender).send(message);
+        EmailService service = new EmailService(sender, true, "bakery@example.com", templates, mock(EmailOutbox.class), false);
+        var model = templates.sample("password-reset");
+        model.put("unsubscribeUrl", "https://example.com/unsubscribe");
+        assertThrows(MailSendException.class,
+                () -> service.sendTemplate("sam@example.com", "Offer", "password-reset", model, true));
     }
 }

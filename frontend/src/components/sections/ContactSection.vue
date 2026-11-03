@@ -46,7 +46,7 @@ const contactCards = computed(() =>
           label: "Phone",
           value: info.value.phone,
           sub: info.value.hours,
-          href: `tel:${info.value.phone.replace(/[^+0-9]/g, "")}`,
+          href: `tel:${(info.value.phone || "").replace(/[^+0-9]/g, "")}`,
         },
         {
           icon: EnvelopeIcon,

@@ -4,6 +4,32 @@ Base URL: `http://localhost:8080/guiltFreeCookie`. Swagger UI: `/swagger-ui.html
 
 Auth: admin endpoints need `Authorization: Bearer <token>` from `POST /admin/login` (`{admin, token}`). Anything not listed as public in `SecurityConfig` requires an admin.
 
+## 2026-11-03 — Demo checkout, durable email and hosting readiness
+
+- **Demo only:** `POST /api/v1/orders/{orderNumber}/demo-payment?token=` completes a simulated payment. Requires the private order token; wrong tokens return `404`, expired or cancelled holds return `409`, and repeated successful requests are idempotent. The route and `DEMO` payment gateway exist only under the local `demo` or hosted `showcase` profile. Normal PayFast behavior is unchanged outside those profiles. `PaymentRedirect.gateway` can now be `DEMO`, with `actionUrl=/demo-payment` and fields `{order,token}`.
+- **Admin:** `GET /api/v1/admin/email-deliveries` returns the newest 50 transactional deliveries: `id`, `recipient`, `subject`, `status` (`PENDING`, `SENT`, `FAILED`, `EXPIRED`), `attempts`, `createdAt`, `sentAt`, `canRetry`. No message bodies or tokens are included. `POST /api/v1/admin/email-deliveries/{id}/retry` queues a failed, unexpired message; disabled delivery or ineligible messages return `409`.
+- **Demo admin only:** `GET /api/v1/admin/email-deliveries/{id}/preview` returns captured HTML for the sandboxed email-studio iframe. The route is absent outside demo/showcase. Cleared or expired content returns `404`.
+- **Email:** transactional messages are persisted and retried; message bodies are cleared after delivery or expiry. Marketing SMTP failures propagate to the existing flow retry handler. Demo/showcase captures messages without SMTP. See [DEMO.md](DEMO.md) for retention and delivery semantics.
+- **Health:** `/actuator/health/**` is public with internal details hidden. Readiness includes the database; dependencies includes the outbox and SMTP when enabled. Outbox failure does not fail readiness.
+- **Action required when upgrading:** create the new `email_deliveries` table before restarting with `ddl-auto=validate`. Back up the database, run once with `JPA_DDL_AUTO=update`, then remove that override. Local demo storage is separate under `target/demo/`.
+
+## 2026-11-02 — Customers can cancel a paid order before baking
+
+- **New:** `POST /api/v1/orders/{orderNumber}/cancel-paid?token=` (public, order-page token). Only while the order is `PAID`; once an admin moves it to `PROCESSING` ("Start baking") it answers `409`. Wrong token: `404`.
+  - The order becomes `REFUNDED`, its cookies go back to stock (`ORDER_RELEASED`), and the timeline says it was cancelled by the customer.
+  - The refund is still paid by hand in the PayFast dashboard: the shop gets an `order-cancelled-to-shop` email saying so, and the customer gets `order-cancelled`.
+  - Kept apart from `/cancel` (unpaid orders, called from PayFast's cancel page) so that page can never refund a paid order.
+- **Frontend:** "Hold to cancel order" at the bottom of the order page while it's paid, then a 5-second Undo before the request is sent; the admin's "Start baking" hint says it closes that window.
+
+## 2026-11-02 — Invoice and receipt PDFs
+
+- **New:** `GET /api/v1/orders/{orderNumber}/invoice?token=` (A4 invoice) and `GET /api/v1/orders/{orderNumber}/receipt?token=` (80 mm till-slip receipt). Public, same token as the order page. Both return a PDF download (`Content-Disposition: attachment`, `Cache-Control: no-store`).
+  - Available once the order is paid, and still after a refund (they record the original sale). Before payment they answer `409`; a wrong token or unknown order answers `404`.
+  - Rendered from `templates/documents/order-{invoice,receipt}.html` by `service/order/OrderDocuments` (openhtmltopdf).
+  - The invoice is titled "Tax invoice" with the VAT portion when `VAT_REGISTERED=true`; new optional `VAT_NUMBER` is printed on both.
+- **Email:** the `order-confirmation` model has a new `invoiceUrl`, shown as a "Download your invoice (PDF)" link under the order table. It points at `PUBLIC_BASE_URL`, so that must be the API's public address.
+- **Frontend:** the order page has "Download invoice (PDF)" beside the progress pills and "Download receipt" on the printed receipt, once the order is paid (`orderApi.documentUrl`).
+
 ## 2026-10-25 — Pre-launch review fixes
 
 A security review and a cross-phase correctness review, plus a full browser run on a phone, led to these changes. Each has a test.

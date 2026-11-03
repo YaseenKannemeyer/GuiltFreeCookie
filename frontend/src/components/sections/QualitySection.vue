@@ -34,18 +34,16 @@ const cookies = [
           <h2
             class="font-display text-display"
           >
-            Wholesome Ingredients
-            <span class="text-primary-700">Crafted for Better Living</span>
+            Know Your Cookie
+            <span class="text-primary-700">Before Your First Bite</span>
           </h2>
 
           <p
             class="hidden lg:block lg:mt-6 text-chocolate text-base max-w-[62ch]"
           >
-            Every cookie is thoughtfully baked using premium, health-conscious
-            ingredients with less sugar, more nutrition, and great taste.
-            Whether you're managing diabetes, maintaining a healthy lifestyle,
-            or looking for a high-protein snack, our recipes are made to satisfy
-            your cravings without compromising your wellness goals.
+            Explore the flavours, then check the ingredients and allergens on each
+            product page. Recipes vary, so choose the cookie that works for you.
+            If you need more detail about an ingredient, ask us before ordering.
           </p>
         </div>
       </div>

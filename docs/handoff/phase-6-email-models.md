@@ -29,7 +29,7 @@ Wired in Phase 4: `service/order/OrderEmailListener` sends `order-confirmation` 
 | `password-reset` | `actionUrl`, `actionLabel`, `resetMinutes` (number). The existing password-reset service is wired. |
 | `contact-auto-reply` | `name`, `subject`, `message`. Response time and founder note come from `app.site.*`. |
 | `contact-to-shop` | `name`, `email`, `phone` (empty string if absent), `subject`, `message`, `messageId`. |
-| `order-confirmation` | `name`, `orderNumber`, `items`, `subtotal`, `discount`, `shipping`, `total`, `actionUrl`, `actionLabel`; optional nullable `vat`, `deliveryDetails`, `pickupDetails`. Supply the applicable delivery/collection text. |
+| `order-confirmation` | `name`, `orderNumber`, `items`, `subtotal`, `discount`, `shipping`, `total`, `actionUrl`, `actionLabel`; optional nullable `vat`, `deliveryDetails`, `pickupDetails`, `invoiceUrl` (the PDF invoice link). Supply the applicable delivery/collection text. |
 | `order-shipped` | `name`, `orderNumber`, `courierName`, `trackingNumber`, `deliveryDetails`, `actionUrl`, `actionLabel`. |
 | `order-ready-for-pickup` | `name`, `orderNumber`, `pickupDetails`, `actionUrl`, `actionLabel`. |
 

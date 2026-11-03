@@ -1,7 +1,7 @@
 import axios from "axios";
 import { API_BASE } from "./http";
 export const api = async (method, path, data, config = {}) =>
-  (await axios({ method, url: `${API_BASE}/api/v1${path}`, data, ...config }))
+  (await axios({ method, url: `${API_BASE}/api/v1${path}`, data, timeout: 15000, ...config }))
     .data;
 export const errorMessage = (e) =>
   e.response?.status === 429
@@ -70,18 +70,4 @@ export const adminOrderApi = {
   saveShippingSettings: (body) => api("put", "/admin/shipping-settings", body),
 };
 
-// PayFast takes the shopper by form POST: build the form from the API's fields, in order, and submit it.
-export function submitPaymentForm({ actionUrl, fields }) {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = actionUrl;
-  for (const [name, value] of Object.entries(fields)) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    form.append(input);
-  }
-  document.body.append(form);
-  form.submit();
-}
+export { submitPaymentForm } from "./payment";

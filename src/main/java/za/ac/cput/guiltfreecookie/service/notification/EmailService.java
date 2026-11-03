@@ -5,11 +5,10 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,40 +24,41 @@ public class EmailService {
     private final boolean enabled;
     private final String from;
     private final EmailTemplates templates;
+    private final EmailOutbox outbox;
+    private final boolean capture;
 
     public EmailService(
             JavaMailSender mailSender,
             @Value("${app.mail.enabled}") boolean enabled,
             @Value("${app.mail.from}") String from,
-            EmailTemplates templates) {
+            EmailTemplates templates, EmailOutbox outbox,
+            @Value("${app.demo.enabled:false}") boolean capture) {
         this.mailSender = mailSender;
         this.enabled = enabled;
         this.from = from;
         this.templates = templates;
+        this.outbox = outbox;
+        this.capture = capture;
     }
 
-    @Async
     public void send(String to, String subject, String body) {
-        if (!enabled) {
-            log.info("Email disabled (MAIL_ENABLED=false). Would send '{}' to {}", subject, to);
-            return;
-        }
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
+        if (!enabled && !capture) return;
         try {
-            mailSender.send(message);
-        } catch (MailException e) {
-            log.error("Failed to send email '{}' to {}", subject, to, e);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body);
+            outbox.enqueue(to, subject, message, LocalDateTime.now().plusHours(24));
+        } catch (MessagingException e) {
+            throw new IllegalStateException("Could not prepare email", e);
         }
     }
 
     // Branded HTML plus a plain-text alternative. Marketing email must carry an HTTPS unsubscribe link (plain
     // HTTP only on localhost); oneClickUnsubscribeUrl, when given, goes in the List-Unsubscribe header so mail
     // apps can unsubscribe in one tap (RFC 8058). Bodies are never logged (they can hold reset links).
-    @Async
     public void sendTemplate(String to, String subject, String template, Map<String, Object> model, boolean marketing) {
         Map<String, Object> values = new HashMap<>(model);
         values.put("marketing", marketing);
@@ -68,7 +68,7 @@ public class EmailService {
             throw new IllegalArgumentException("Marketing email needs an HTTPS unsubscribeUrl");
         }
         String html = templates.render(template, values);
-        if (!enabled) {
+        if (!enabled && !capture) {
             log.info("Email disabled (MAIL_ENABLED=false). Rendered '{}' for {} ({} characters)", template, to, html.length());
             return;
         }
@@ -86,9 +86,17 @@ public class EmailService {
                     message.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
                 }
             }
-            mailSender.send(message);
-        } catch (MessagingException | MailException e) {
-            log.error("Failed to send email template '{}' to {}", template, to, e);
+            if (marketing && !capture) {
+                // FlowRunner owns marketing retries and consent checks. Propagate SMTP errors
+                // so it does not advance a failed flow step or count it as sent.
+                mailSender.send(message);
+            } else {
+                long validityMinutes = template.equals("password-reset")
+                        ? ((Number) model.getOrDefault("resetMinutes", 60)).longValue() : 1440;
+                outbox.enqueue(to, subject, message, LocalDateTime.now().plusMinutes(validityMinutes));
+            }
+        } catch (MessagingException e) {
+            throw new IllegalStateException("Could not prepare email", e);
         }
     }
 

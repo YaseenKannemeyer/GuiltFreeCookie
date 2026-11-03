@@ -20,6 +20,7 @@ import {
   imageFallback,
 } from "../composables/useCatalog";
 import { useFormat } from "../composables/useFormat";
+import { DEMO_MODE } from "../constants/business";
 import { useToast } from "../composables/useToast";
 import {
   formatCategoryLabel,
@@ -244,6 +245,7 @@ watch(() => route.params.id, fetchCookie);
             </RouterLink>
 
             <h1 class="font-display mt-4 text-display">{{ name }}</h1>
+            <p v-if="DEMO_MODE" class="mt-3 text-sm font-semibold">Sample product. Recipe, allergens, price and stock are illustrative; no goods are sold.</p>
             <p v-if="blurb" class="mt-3 text-base text-chocolate/80">
               {{ blurb }}
             </p>

@@ -11,6 +11,7 @@ import { XMarkIcon } from "@heroicons/vue/20/solid";
 import { useFormat } from "../composables/useFormat";
 import { useCart } from "../composables/useCart";
 import { errorMessage, orderApi, submitPaymentForm } from "../api/storeApi";
+import { DEMO_MODE } from "../constants/business";
 
 const route = useRoute();
 const { rand } = useFormat();
@@ -71,6 +72,17 @@ const headline = computed(() => {
 const statusLine = computed(() => {
   const o = order.value;
   if (!o) return "";
+  if (DEMO_MODE) return {
+    PENDING_PAYMENT: o.canPay ? "Your sample order is waiting for a simulated payment." : "The demo payment window expired. Nothing was charged.",
+    PAID: "Demo payment complete. Your confirmation is in the admin demo inbox.",
+    PROCESSING: "Demo order marked as baking.",
+    READY_FOR_PICKUP: "Demo order marked ready for collection. No collection takes place.",
+    SHIPPED: "Demo order marked as shipped. No parcel is sent.",
+    DELIVERED: "Demo order completed.",
+    PAYMENT_FAILED: "Demo payment failed. Nothing was charged.",
+    CANCELLED: "Demo order cancelled. Nothing was charged.",
+    REFUNDED: "Demo refund recorded. No money was moved.",
+  }[o.status];
   return {
     PENDING_PAYMENT: o.canPay
       ? "We're waiting for PayFast to confirm your payment. This page updates by itself."
@@ -241,7 +253,7 @@ onBeforeUnmount(() => {
           <template #status="{ stage }">
             {{
               stage === "processing"
-                ? "Waiting for PayFast to confirm"
+                ? (DEMO_MODE ? "Waiting for a demo payment" : "Waiting for PayFast to confirm")
                 : stage === "printing"
                   ? "Printing your receipt"
                   : `Paid. Thanks, ${order.firstName}!`
@@ -420,15 +432,15 @@ onBeforeUnmount(() => {
         </section>
 
         <p class="mt-10 text-sm text-chocolate/75">
-          <template v-if="order.status !== 'PENDING_PAYMENT'">We've emailed updates to {{ order.email }}. </template>
+          <template v-if="order.status !== 'PENDING_PAYMENT'">{{ DEMO_MODE ? 'Updates are captured in the admin demo inbox.' : `Updates are queued for ${order.email}.` }} </template>
           Questions about this order?
           <RouterLink :to="{ name: 'Contact' }" class="font-bold underline">Contact us</RouterLink>
           and mention {{ order.orderNumber }}.
         </p>
         <div v-if="order.status === 'PAID'" class="mt-10 border-t border-chocolate/[0.12] pt-6">
           <p class="text-sm text-chocolate/75">
-            Changed your mind? You can cancel until we start baking, and {{ rand(order.total) }} comes back to you
-            through PayFast.
+            <template v-if="DEMO_MODE">Try cancelling this sample order before it is marked as baking. The demo stock is restored and a simulated refund is recorded.</template>
+            <template v-else>Changed your mind? You can cancel until we start baking, and {{ rand(order.total) }} comes back to you through PayFast.</template>
           </p>
           <UndoNotice
             v-if="cancelStage === 'undo'"

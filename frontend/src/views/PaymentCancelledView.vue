@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import BaseButton from "../components/ui/BaseButton.vue";
 import { useCart } from "../composables/useCart";
 import { errorMessage, orderApi } from "../api/storeApi";
+import { DEMO_MODE } from "../constants/business";
 
 const route = useRoute();
 const router = useRouter();
@@ -51,7 +52,7 @@ onMounted(async () => {
       <section v-else>
         <h1 class="font-display text-display">Payment not completed</h1>
         <p class="mt-4 text-chocolate/80 max-w-[44ch]">
-          {{ error || "We couldn't tell which order this was." }} Nothing is charged until PayFast confirms a payment.
+          {{ error || "We couldn't tell which order this was." }} {{ DEMO_MODE ? 'No money is charged in this demo.' : 'Nothing is charged until PayFast confirms a payment.' }}
         </p>
         <div class="mt-8 flex flex-wrap gap-3">
           <BaseButton :to="{ name: 'Cart' }" size="lg">Go to my cart</BaseButton>

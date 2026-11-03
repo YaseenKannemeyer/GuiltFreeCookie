@@ -12,10 +12,10 @@ import { useScrollReveal } from "../../composables/useScrollReveal";
 const { vReveal } = useScrollReveal();
 
 const ingredients = [
-  { name: "Almond flour", note: "Grain-free nut flour instead of refined wheat" },
-  { name: "Stevia and erythritol", note: "Low-GI sweeteners, no added sugar" },
-  { name: "100% cocoa dark chocolate", note: "The real thing, nothing compound" },
-  { name: "Grass-fed butter or coconut oil", note: "Cold-pressed coconut oil in our vegan bakes" },
+  { name: "Ingredients", note: "Listed for each recipe" },
+  { name: "Allergens", note: "Check before ordering" },
+  { name: "Pack sizes", note: "Choose how many you would like" },
+  { name: "Questions", note: "Ask us about your chosen flavour" },
 ];
 </script>
 
@@ -46,8 +46,8 @@ const ingredients = [
               <SparklesIcon class="h-5 w-5" />
             </span>
             <div>
-              <p class="font-semibold leading-tight">No added sugar</p>
-              <p class="text-sm text-chocolate/70">Still properly sweet</p>
+              <p class="font-semibold leading-tight">Know what’s inside</p>
+              <p class="text-sm text-chocolate/70">Check each recipe</p>
             </div>
           </div>
           <p class="mt-3 text-sm leading-relaxed text-chocolate/80">
@@ -63,10 +63,9 @@ const ingredients = [
           <span class="text-primary-700">our crumble</span>
         </h2>
         <p class="prose-copy mt-6">
-          We don't cut corners on taste. Each cookie starts with a nut-flour
-          dough, folded with real dark chocolate and sweetened without sugar.
-          Nothing artificial, nothing to hide. Just honest cookies that taste
-          like they came from someone who loves you.
+          Pick a flavour you love, then take a look at its ingredients and allergens.
+          Every recipe is different. We keep the details with each cookie so you
+          can make your choice, and we are here if you need a little more information.
         </p>
 
         <ul class="mt-9 grid sm:grid-cols-2 gap-x-8 gap-y-6">

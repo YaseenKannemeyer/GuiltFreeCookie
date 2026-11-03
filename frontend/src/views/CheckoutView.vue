@@ -13,6 +13,7 @@ import { useCheckoutAddresses } from "../composables/useCheckoutAddresses";
 import { useCustomerAuth } from "../composables/useCustomerAuth";
 import { useSiteInfo } from "../composables/useSiteInfo";
 import { useFormat } from "../composables/useFormat";
+import { DEMO_MODE } from "../constants/business";
 import { cartApi, checkoutApi, errorMessage, submitPaymentForm } from "../api/storeApi";
 
 const STEPS = ["you", "delivery", "pay"];
@@ -199,6 +200,7 @@ function continueFromDelivery() {
 
 // Step 4: place the order, then hand over to PayFast.
 async function pay() {
+  if (busy.value) return;
   clearErrors();
   busy.value = true;
   try {
@@ -487,10 +489,12 @@ onMounted(async () => {
         </dl>
 
         <div class="mt-8 rounded-2xl bg-cream-100/60 border border-cream-500 p-5 text-sm space-y-2">
-          <p>You'll pay on PayFast's secure page: card, Instant EFT, SnapScan and other options. We never see your card details.</p>
-          <p>Every order is baked fresh, so delivery times are estimates.</p>
-          <p v-if="site?.address">Sold by GuiltFreeCookie, {{ site.address }}.</p>
-          <p>
+          <p v-if="DEMO_MODE">Next is a simulated payment. No card details, money, delivery or collection are involved. Use sample contact details.</p>
+          <p v-else>You'll pay on PayFast's secure page: card, Instant EFT, SnapScan and other options. We never see your card details.</p>
+          <p v-if="!DEMO_MODE">Every order is baked fresh, so delivery times are estimates.</p>
+          <p v-if="!DEMO_MODE && site?.address">Sold by GuiltFreeCookie, {{ site.address }}.</p>
+          <p v-if="DEMO_MODE">Read about sample data and simulated orders in our <RouterLink :to="{ name: 'Terms' }" class="font-bold underline">demo terms</RouterLink>.</p>
+          <p v-else>
             By paying you agree to our
             <RouterLink :to="{ name: 'Terms' }" class="font-bold underline">terms</RouterLink> and
             <RouterLink :to="{ name: 'RefundPolicy' }" class="font-bold underline">refund policy</RouterLink>.
@@ -502,7 +506,7 @@ onMounted(async () => {
 
         <StickyTotalBar label="Total to pay" :amount="summary.total">
           <BaseButton size="lg" block class="h-14" :disabled="busy || !summary.canCheckout" :loading="busy" @click="pay">
-            {{ busy ? "Taking you to PayFast…" : `Pay ${rand(summary.total)}` }}
+            {{ busy ? "Opening payment…" : DEMO_MODE ? `Try payment · ${rand(summary.total)}` : `Pay ${rand(summary.total)}` }}
           </BaseButton>
         </StickyTotalBar>
       </section>

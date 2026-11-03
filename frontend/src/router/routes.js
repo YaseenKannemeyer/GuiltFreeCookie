@@ -57,7 +57,7 @@ export const routes = [
       title: "About us",
       breadcrumb: "About us",
       description:
-        "Why we rebuilt the classic cookie with almond flour, low-GI sweeteners and real dark chocolate, and who we bake for. Small-batch cookies from Cape Town.",
+        "Get to know GuiltFreeCookie, our small-batch bakery in Cape Town. Explore our flavours and find ingredients and allergens for each cookie.",
       prerender: true,
     },
   },
@@ -91,6 +91,12 @@ export const routes = [
     name: "Cart",
     component: () => import("../views/CartView.vue"),
     meta: { title: "Your cart", noindex: true, hideFooter: true },
+  },
+  {
+    path: "/demo-payment",
+    name: "DemoPayment",
+    component: () => import("../views/DemoPaymentView.vue"),
+    meta: { title: "Demo payment", noindex: true, hideFooter: true },
   },
   {
     path: "/checkout/cancelled",

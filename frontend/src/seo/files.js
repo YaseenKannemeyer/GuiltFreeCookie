@@ -59,7 +59,7 @@ export function llmsTxt(catalog = []) {
     "",
     `> ${HOME_DESCRIPTION} Prices are in South African rand (ZAR).`,
     "",
-    "The ranges: diabetic friendly (sweetened with erythritol and stevia, made with almond flour instead of wheat), high protein, gluten free (made without wheat or other gluten-containing ingredients) and vegan (no dairy, no eggs). Ingredients differ from cookie to cookie, so each product page lists its own ingredients and allergens. Everything is baked in the same kitchen, which handles common allergens, so no cookie can be guaranteed trace-free. The cookies are treats, not medicine: anyone managing diabetes or another condition should check with their doctor or dietitian.",
+    "Ingredients and allergens differ between recipes; check the individual product page before ordering. Nutrition is shown only when available for that recipe. Range names are not medical advice or guarantees about traces of allergens. Contact the bakery for product questions.",
     "",
     "Online checkout is not live yet. For custom and bulk orders, contact us.",
     "",

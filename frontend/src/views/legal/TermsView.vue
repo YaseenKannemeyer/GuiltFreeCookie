@@ -64,8 +64,10 @@ const allergenList = BUSINESS.kitchenAllergens.join(", ").replace(/, ([^,]*)$/, 
         <dd><FillIn :value="BUSINESS.legalName" label="registered company name" /></dd>
         <dt class="font-bold text-chocolate">Registration number</dt>
         <dd><FillIn :value="BUSINESS.registrationNumber" label="CIPC registration number" /></dd>
-        <dt class="font-bold text-chocolate">VAT number</dt>
-        <dd><FillIn :value="BUSINESS.vatNumber" label="VAT number, or remove if not VAT registered" /></dd>
+        <template v-if="BUSINESS.vatRegistered">
+          <dt class="font-bold text-chocolate">VAT number</dt>
+          <dd><FillIn :value="BUSINESS.vatNumber" label="VAT number" /></dd>
+        </template>
         <dt class="font-bold text-chocolate">Physical address</dt>
         <dd>{{ BUSINESS.address }} (also our address for legal notices)</dd>
         <dt class="font-bold text-chocolate">Phone</dt>
@@ -151,9 +153,9 @@ const allergenList = BUSINESS.kitchenAllergens.join(", ").replace(/, ([^,]*)$/, 
 
     <LegalSection id="storage" :number="9" title="Freshness and storage">
       <p>
-        We bake without artificial preservatives. Kept in an airtight container, our cookies stay fresh for
-        10 to 14 days, and they can be frozen for up to 3 months. Please follow any storage instructions on
-        the packaging.
+        Follow the storage instructions and best-before date on your packaging.
+        Storage life depends on the recipe and storage conditions. Please contact us if
+        the instructions are missing or you need more information.
       </p>
     </LegalSection>
 

@@ -8,7 +8,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { ChevronDownIcon, ArrowRightIcon } from "@heroicons/vue/20/solid";
 import { ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
-import { BUSINESS, LEGAL, LEGAL_PAGES } from "../../constants/business";
+import { BUSINESS, DEMO_MODE, LEGAL, LEGAL_PAGES } from "../../constants/business";
 import Breadcrumb from "../ui/Breadcrumb.vue";
 import { breadcrumbsFor } from "../../seo/breadcrumbs";
 
@@ -55,9 +55,9 @@ onUnmounted(() => observer?.disconnect());
       </div>
     </section>
 
-    <div class="container-magic py-14 lg:py-20 grid lg:grid-cols-[25.6rem_1fr] gap-x-16 gap-y-8">
+    <div class="container-magic py-14 lg:py-20 grid gap-x-16 gap-y-8" :class="{ 'lg:grid-cols-[25.6rem_1fr]': !DEMO_MODE }">
       <!-- Contents: sticky list on desktop, collapsible on mobile -->
-      <aside class="lg:sticky lg:top-[calc(var(--nav-h)+3.2rem)] self-start">
+      <aside v-if="!DEMO_MODE" class="lg:sticky lg:top-[calc(var(--nav-h)+3.2rem)] self-start">
         <nav aria-label="On this page" class="hidden lg:block">
           <p class="text-sm font-bold text-chocolate/75">On this page</p>
           <ol class="mt-3 border-l border-chocolate/15">
@@ -96,7 +96,7 @@ onUnmounted(() => observer?.disconnect());
       <article class="min-w-0 max-w-[76.8rem]">
         <!-- Draft notice until an attorney has reviewed the policies -->
         <div
-          v-if="!LEGAL.reviewed"
+          v-if="!DEMO_MODE && !LEGAL.reviewed"
           class="mb-8 flex gap-3 rounded-2xl border border-primary-700/30 bg-primary/20 p-5"
           role="note"
         >
@@ -109,7 +109,14 @@ onUnmounted(() => observer?.disconnect());
         </div>
 
         <!-- The short version -->
-        <div v-if="summary.length" class="rounded-2xl bg-surface border border-chocolate/10 p-6 sm:p-8">
+        <section v-if="DEMO_MODE" class="space-y-5" aria-labelledby="demo-policy-title">
+          <h2 id="demo-policy-title" class="font-bold text-base">About this demo</h2>
+          <p>This is a software demonstration of an online cookie shop. It is not an operating business. The products, prices, stock, dietary categories and delivery estimates are illustrative.</p>
+          <p>No goods are sold or shipped, and the demo payment screen does not charge money. Order cancellations and refunds only change the sample order record.</p>
+          <p>Use made-up details when testing. Account, checkout and contact entries are stored in the demo database and browser storage. Demo administrators can view orders, messages and captured emails. Emails stay in the demo inbox instead of being sent to an external mailbox.</p>
+          <p>The example business policies are not reviewed terms for a real shop. Real trading details, verified product information and appropriate policy review are needed before converting this project into a live business.</p>
+        </section>
+        <div v-else-if="summary.length" class="rounded-2xl bg-surface border border-chocolate/10 p-6 sm:p-8">
           <h2 class="text-base font-bold">The short version</h2>
           <ul class="mt-4 space-y-3">
             <li v-for="point in summary" :key="point" class="flex gap-3 text-chocolate/85">
@@ -119,7 +126,7 @@ onUnmounted(() => observer?.disconnect());
           </ul>
         </div>
 
-        <div class="mt-12">
+        <div v-if="!DEMO_MODE" class="mt-12">
           <slot />
         </div>
 

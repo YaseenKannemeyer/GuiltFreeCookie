@@ -2,6 +2,21 @@
 import { ref, onMounted, watch } from "vue";
 import { api, errorMessage } from "../api/storeApi";
 import BaseButton from "../components/ui/BaseButton.vue";
+import { DEMO_MODE } from "../constants/business";
+const deliveries = ref([]), deliveryError = ref("");
+async function loadDeliveries() {
+  deliveryError.value = "";
+  try { deliveries.value = await api("get", "/admin/email-deliveries"); }
+  catch (e) { deliveryError.value = errorMessage(e); }
+}
+async function retryDelivery(id) {
+  try { await api("post", `/admin/email-deliveries/${id}/retry`); await loadDeliveries(); }
+  catch (e) { deliveryError.value = errorMessage(e); }
+}
+async function openDelivery(id) {
+  try { html.value = await api("get", `/admin/email-deliveries/${id}/preview`); }
+  catch (e) { deliveryError.value = errorMessage(e); }
+}
 const templates = ref([]),
   selected = ref(""),
   html = ref(""),
@@ -39,8 +54,8 @@ async function send() {
   error.value = "";
   try {
     await api("post", `/admin/email-previews/${selected.value}/send-test`);
-    notice.value =
-      "Test email queued for your admin email. Delivery is disabled when MAIL_ENABLED is false.";
+    notice.value = DEMO_MODE ? "Sample captured in the demo inbox below. No email was sent." : "Test email queued for delivery to your admin email.";
+    await loadDeliveries();
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -48,6 +63,7 @@ async function send() {
   }
 }
 onMounted(load);
+onMounted(loadDeliveries);
 watch(selected, preview);
 </script>
 <template>
@@ -75,6 +91,25 @@ watch(selected, preview);
       </button>
     </p>
     <p v-if="busy" role="status" class="mt-5">Preparing email…</p>
+    <section class="mt-10 border-t border-chocolate/15 pt-7" aria-labelledby="delivery-title">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="delivery-title" class="font-bold">{{ DEMO_MODE ? 'Demo inbox' : 'Recent email deliveries' }}</h2>
+        <BaseButton variant="outline" size="sm" @click="loadDeliveries">Refresh inbox</BaseButton>
+      </div>
+      <p class="mt-3 text-sm">{{ DEMO_MODE ? 'Emails are captured here for testing. They are never sent to external mailboxes.' : 'Failed emails retry automatically up to five times. Expired links require a new email.' }}</p>
+      <p v-if="deliveryError" role="alert" class="mt-4 text-red-800">{{ deliveryError }}</p>
+      <p v-if="!deliveries.length" class="mt-5">No messages yet. Send yourself a sample or complete a demo order.</p>
+      <ul class="mt-5 divide-y divide-chocolate/15">
+        <li v-for="delivery in deliveries" :key="delivery.id" class="py-4 flex flex-wrap justify-between gap-4">
+          <div class="min-w-0">
+            <p class="font-semibold break-words">{{ delivery.subject }}</p>
+            <p class="text-sm break-all">{{ delivery.recipient }} · {{ DEMO_MODE && delivery.status === 'PENDING' ? 'Captured' : delivery.status }} · {{ delivery.attempts }} attempts</p>
+          </div>
+          <BaseButton v-if="DEMO_MODE && delivery.status === 'PENDING'" size="sm" variant="outline" @click="openDelivery(delivery.id)">Read email</BaseButton>
+          <BaseButton v-if="delivery.canRetry" size="sm" variant="outline" @click="retryDelivery(delivery.id)">Retry delivery</BaseButton>
+        </li>
+      </ul>
+    </section>
     <iframe
       v-if="html"
       :srcdoc="html"

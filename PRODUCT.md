@@ -1,5 +1,7 @@
 # Product
 
+Current delivery scope (3 November 2026): this is a demo project, not an operating business. Local `demo` and hosted `prod,showcase` modes use clearly labelled sample products, simulated payments and a captured email inbox. The business requirements below describe the intended real-shop behavior; they do not verify recipes, nutrition, trading details or policies. See `docs/DEMO.md` for the runnable demo and hosting setup.
+
 <!-- impeccable:product-schema 1 -->
 
 ## Platform

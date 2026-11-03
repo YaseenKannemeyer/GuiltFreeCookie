@@ -18,7 +18,7 @@ export const CATEGORY_META = {
   },
   DIABETIC_FRIENDLY: {
     short: "Diabetic friendly",
-    blurb: "Sweetened to go easy on your blood sugar.",
+    blurb: "Check the recipe, ingredients and nutrition for your choice.",
     tint: "#D9C3A5",
   },
   HIGH_PROTEIN: {

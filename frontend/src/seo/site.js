@@ -3,7 +3,7 @@
  * page falls back to. VITE_SITE_URL is the domain the site is served from;
  * canonical links, the sitemap and share previews are all built on it.
  */
-export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://guiltfreecookie.co.za").replace(/\/+$/, "");
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || (import.meta.env.VITE_DEMO_MODE !== "false" ? "http://127.0.0.1:5173" : "https://guiltfreecookie.co.za")).replace(/\/+$/, "");
 export const SITE_NAME = "GuiltFreeCookie";
 export const SITE_LOCALE = "en_ZA";
 export const SITE_LANGUAGE = "en-ZA";

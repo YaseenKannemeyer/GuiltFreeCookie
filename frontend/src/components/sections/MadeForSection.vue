@@ -12,8 +12,8 @@ const { vReveal } = useScrollReveal();
 
 const rows = [
   {
-    title: "Watching your blood sugar",
-    body: "Low-GI sweeteners and almond flour, so a cookie can fit the plan.",
+    title: "Choosing your sweeteners",
+    body: "Read each recipe’s ingredients and nutrition before choosing.",
     category: "DIABETIC_FRIENDLY",
     cta: "Shop diabetic friendly",
     img: "/img/cookies/cinnamon-pecan.webp",

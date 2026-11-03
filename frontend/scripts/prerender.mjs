@@ -35,6 +35,9 @@ const server = await import(
 );
 
 const catalog = await fetchCatalog(env.PRERENDER_API_URL);
+if ((process.env.REQUIRE_CATALOG || env.REQUIRE_CATALOG) === "true" && !catalog?.length) {
+  throw new Error("A complete catalogue is required for this build. Start the demo API or configure PRERENDER_API_URL.");
+}
 const pages = [...server.indexablePaths(catalog || []), "/404"];
 
 for (const url of pages) {

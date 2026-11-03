@@ -6,7 +6,9 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
-**GuiltFreeCookie** is a premium, high-performance e-commerce platform for diet-conscious cookie enthusiasts. Built with a "Glassmorphism" aesthetic, it combines a sleek **Vue 3** frontend with a secure **Spring Boot 3** backend to deliver a seamless shopping experience.
+**GuiltFreeCookie** is a demo ecommerce platform with a **Vue 3** storefront and a **Spring Boot 4** backend running on **Java 25**.
+
+This repository is currently a **demo project**, not an operating bakery. Run `bash scripts/run-demo.sh` for a local shop with 12 sample products, an isolated database, simulated payments and a captured email inbox. See [docs/DEMO.md](docs/DEMO.md) for the demo login, checks and the Vercel/Azure hosting setup.
 
 ---
 

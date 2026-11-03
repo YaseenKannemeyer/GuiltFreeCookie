@@ -27,7 +27,7 @@ Checkout     ─ PUT /carts/{id}/email (guests)        ──► abandoned-cart 
 Browser      ─ auto-submits the form to PayFast's hosted page (card details never touch us)
 PayFast      ─ POST /payments/payfast/notify (ITN) ──► signature, source IP, amount and server checks ──► PAID
              ─ emails go out after the transaction commits: confirmation now, flows later
-Shopper      ─ returns to /order/{n}?token=  (the page polls until PAID)
+Shopper      ─ returns to /order/{n}?token=  (the page polls until PAID; the receipt prints; invoice and receipt PDFs unlock)
 Admin        ─ PROCESSING ─► SHIPPED (tracking emailed) or READY_FOR_PICKUP ─► DELIVERED (starts post-purchase emails)
 ```
 
@@ -65,7 +65,7 @@ New endpoints answer errors as JSON:
 | Shop, search | `/cookies?q=&category=&sort=&page=`, `/cookies/categories` |
 | Product | `/cookies/{slug}`, `/cookies/{id}/reviews`, `/events/product-view` |
 | Cart, checkout | `/carts/*`, `/checkout`, `/me/addresses` (signed in) |
-| Order and tracking | `/orders/{n}?token=`, `/orders/{n}/payment`, `/orders/{n}/cancel` |
+| Order and tracking | `/orders/{n}?token=`, `/orders/{n}/payment`, `/orders/{n}/cancel`, `/orders/{n}/cancel-paid`, `/orders/{n}/invoice?token=`, `/orders/{n}/receipt?token=` |
 | Account | `/auth/*`, `/me`, `/me/orders`, `/me/addresses`, `/me/orders/claim*` |
 | Email links | `/carts/recover/{token}`, `/orders/{n}/reorder`, `/reviews/by-link`, `/email/*` |
 | Contact | `/contact`, `/site/info` |

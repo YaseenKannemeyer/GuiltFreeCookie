@@ -12,6 +12,7 @@ import { EnvelopeIcon } from "@heroicons/vue/24/outline";
 import { ArrowRightIcon, CheckIcon } from "@heroicons/vue/20/solid";
 import { cleanEmail, isEmail } from "../../utils/normalize";
 import newsletterApi from "../../api/newsletterApi";
+import { DEMO_MODE } from "../../constants/business";
 
 const props = defineProps({
   tone: { type: String, default: "light" }, // light | dark
@@ -74,8 +75,8 @@ const subscribe = async () => {
           Join in and get <span :class="dark ? 'text-primary' : 'sticker'">10% off</span>
         </h2>
         <p :class="['mt-4 max-w-md text-base leading-relaxed', dark ? 'text-cream-100/75' : 'text-chocolate/80']">
-          Subscribe and we'll send a 10% code for your next order, plus first
-          word on restocks and new flavours.
+          <template v-if="DEMO_MODE">Try the demo sign-up with a sample email. Use DEMO10 at checkout for 10% off your sample order.</template>
+          <template v-else>Subscribe and we'll send a 10% code for your next order, plus first word on restocks and new flavours.</template>
         </p>
       </div>
 
@@ -90,7 +91,7 @@ const subscribe = async () => {
           <span class="h-8 w-8 shrink-0 rounded-full bg-primary text-chocolate flex items-center justify-center">
             <CheckIcon class="h-5 w-5" />
           </span>
-          You're on the list. We'll email your 10% code.
+          {{ DEMO_MODE ? "Demo sign-up saved. Try DEMO10 at checkout." : "You're on the list. We'll email your 10% code." }}
         </p>
 
         <form v-else class="w-full" novalidate @submit.prevent="subscribe">
