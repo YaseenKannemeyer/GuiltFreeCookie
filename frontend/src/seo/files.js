@@ -3,7 +3,7 @@
  * sitemap.xml, robots.txt and llms.txt, plus the list of pages to prerender.
  */
 import { routes } from "../router/routes";
-import { BUSINESS, LEGAL_PAGES } from "../constants/business";
+import { BUSINESS, LEGAL_PAGES, STAGING } from "../constants/business";
 import { formatCategoryLabel } from "../constants/cookieCategories";
 import { allergenText, cookieName } from "../composables/useCatalog";
 import { SITE_NAME, SITE_URL, HOME_DESCRIPTION, absoluteUrl } from "./site";
@@ -35,6 +35,7 @@ export function sitemapXml(catalog = []) {
 }
 
 export function robotsTxt() {
+  if (STAGING) return "User-agent: *\nDisallow: /\n";
   return [
     "User-agent: *",
     "Allow: /",

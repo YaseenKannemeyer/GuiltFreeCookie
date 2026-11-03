@@ -8,7 +8,7 @@
     </RouterView>
   </AdminShell>
 
-  <div v-else class="min-h-[100dvh] flex flex-col bg-background" :class="{ 'demo-mode': DEMO_MODE }">
+  <div v-else class="min-h-[100dvh] flex flex-col bg-background" :class="{ 'demo-mode': DEMO_MODE || STAGING }">
     <!-- Sentinel the navbar watches to know when the page has scrolled -->
     <div id="top-sentinel" class="absolute top-0 left-0 h-6 w-px" aria-hidden="true" />
 
@@ -34,7 +34,7 @@ import { RouterView, useRoute } from "vue-router";
 import TheNavbar from "./layout/TheNavbar.vue";
 import TheFooter from "./layout/TheFooter.vue";
 import ToastContainer from "./components/ui/ToastContainer.vue";
-import { DEMO_MODE } from "./constants/business";
+import { DEMO_MODE, STAGING } from "./constants/business";
 
 // Only staff ever see the admin shell, so shoppers never download it.
 const AdminShell = defineAsyncComponent(() => import("./layout/AdminShell.vue"));

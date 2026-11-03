@@ -20,11 +20,12 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { COOKIE_DROP_VIDEO as CLIP, HERO_ARTWORK as ART } from "../constants/cookieDrop";
 import { cookieDropPinned } from "./cookieDropState";
+import { createVideoScrubber } from "./videoScrubber";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const SPLIT = CLIP.splitX / CLIP.width; // 0.8, same as the CSS split
-const SCROLL_LENGTH = 4.2; // pinned distance, in stage heights
+const SCROLL_LENGTH = 3.2; // pinned distance, in stage heights
 const TOTAL = 10;
 
 // Per cookie, by lineup index: launch order out of the splash, how far it
@@ -43,64 +44,6 @@ const FLIGHTS = [
 
 
 const pct = (n) => `${+(n * 100).toFixed(2)}%`;
-
-/**
- * Seeks the clip to the latest requested time, one seek at a time: a new
- * seek starts once the previous one lands, so fast scrolling never queues
- * up a backlog of stale frames.
- */
-function createScrubber(video) {
-  const last = CLIP.duration - 1 / CLIP.fps;
-  let target = 0;
-  let busy = false;
-  let startedAt = 0;
-
-  const go = () => {
-    if (video.readyState < 1) return; // no metadata yet; loadedmetadata retries
-    if (Math.abs(video.currentTime - target) < 0.5 / CLIP.fps) {
-      busy = false;
-      return;
-    }
-    busy = true;
-    startedAt = performance.now();
-    video.currentTime = target;
-  };
-  const onSeeked = () => {
-    busy = false;
-    go();
-  };
-  // iPadOS only paints seeked frames after the video has played once.
-  // Muted inline playback needs no gesture.
-  const onMetadata = () => {
-    if (matchMedia("(pointer: coarse)").matches) {
-      video
-        .play()
-        ?.then(() => {
-          video.pause();
-          go();
-        })
-        .catch(() => {});
-    }
-    go();
-  };
-
-  video.muted = true;
-  video.addEventListener("seeked", onSeeked);
-  video.addEventListener("loadedmetadata", onMetadata);
-  if (video.readyState >= 1) onMetadata();
-
-  return {
-    set(t) {
-      target = Math.min(Math.max(t, 0), last);
-      // A seek that never reports back must not stall scrubbing.
-      if (!busy || performance.now() - startedAt > 250) go();
-    },
-    destroy() {
-      video.removeEventListener("seeked", onSeeked);
-      video.removeEventListener("loadedmetadata", onMetadata);
-    },
-  };
-}
 
 export function createCookieDrop(stage) {
   const one = (name) => stage.querySelector(`[data-drop="${name}"]`);
@@ -180,7 +123,11 @@ export function createCookieDrop(stage) {
     stale = false;
   }
 
-  const scrubber = createScrubber(video);
+  const scrubber = createVideoScrubber(video, {
+    fps: CLIP.fps,
+    duration: CLIP.duration,
+    prime: matchMedia("(pointer: coarse)").matches,
+  });
   const clip = { t: 0 };
   const T = CLIP.times;
   // Timeline position of the 3.3 s reveal inside the impact-to-crown stretch.
@@ -204,7 +151,7 @@ export function createCookieDrop(stage) {
         start: "top top",
         end: () => `+=${Math.round(stage.clientHeight * SCROLL_LENGTH)}`,
         pin: true,
-        scrub: 0.5,
+        scrub: 0.3,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         onRefresh: () => tl && sync(),
@@ -264,7 +211,7 @@ export function createCookieDrop(stage) {
         one("tagline"),
         { autoAlpha: 0, y: 30 },
         { autoAlpha: 1, y: 0, duration: 0.7, ease: "power2.out" },
-        3.7,
+        1.9,
       )
       .fromTo(
         one("tagline"),
@@ -351,12 +298,14 @@ export function createCookieDrop(stage) {
   let alive = true;
   const refresh = () => alive && ScrollTrigger.refresh();
   document.fonts?.ready.then(refresh);
-  stage.closest(".page-enter-active")?.addEventListener("transitionend", refresh, { once: true });
+  const enteringPage = stage.closest(".page-enter-active");
+  enteringPage?.addEventListener("transitionend", refresh, { once: true });
 
   return {
     destroy() {
       alive = false;
       stage.removeEventListener("focusin", onFocusIn);
+      enteringPage?.removeEventListener("transitionend", refresh);
       ScrollTrigger.removeEventListener("refreshInit", markStale);
       scrubber.destroy();
       ctx.revert();

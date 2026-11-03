@@ -14,8 +14,9 @@ import BaseButton from "../ui/BaseButton.vue";
 import CookieLineup from "./CookieLineup.vue";
 import { COOKIE_DROP_VIDEO as CLIP, HERO_ARTWORK as ART } from "../../constants/cookieDrop";
 
-// lg, where the split turns vertical. No mobile framing of the clip exists.
-const CINEMATIC_QUERY = "(min-width: 1024px) and (prefers-reduced-motion: no-preference)";
+// The landscape clip and two-row finale need width and headroom. Phones
+// and short landscape windows keep the complete, unpinned static layout.
+const CINEMATIC_QUERY = "(min-width: 1024px) and (min-height: 640px) and (prefers-reduced-motion: no-preference)";
 
 // Starts false everywhere, including the prerendered HTML, and switches on
 // once mounted: the server can't know the visitor's screen.
@@ -26,13 +27,20 @@ const stage = ref(null);
 let cinematicQuery = null;
 let drop = null;
 let unmounted = false;
+let generation = 0;
 
 // GSAP and the timeline are only downloaded where the sequence plays.
 async function startDrop() {
   if (!cinematic.value || !stage.value || drop) return;
-  const { createCookieDrop } = await import("../../composables/useCookieDropScroll");
-  if (unmounted || !cinematic.value || drop) return;
-  drop = createCookieDrop(stage.value);
+  const current = generation;
+  try {
+    const { createCookieDrop } = await import("../../composables/useCookieDropScroll");
+    if (unmounted || current !== generation || !cinematic.value || drop) return;
+    drop = createCookieDrop(stage.value);
+  } catch {
+    // A failed lazy chunk should leave the complete, usable static hero.
+    if (!unmounted && current === generation) setCinematic(false);
+  }
 }
 function stopDrop() {
   drop?.destroy();
@@ -41,8 +49,10 @@ function stopDrop() {
 
 // Unpin before Vue re-renders: the pin wraps the stage in a spacer element.
 async function setCinematic(matches) {
+  generation += 1;
   stopDrop();
   videoReady.value = false;
+  videoFailed.value = false;
   cinematic.value = matches;
   await nextTick();
   startDrop();
@@ -66,7 +76,7 @@ onBeforeUnmount(() => {
     <div
       ref="stage"
       class="relative isolate overflow-hidden bg-tan flex"
-      :class="cinematic ? 'h-screen' : 'min-h-[100dvh] lg:min-h-[min(100dvh,920px)]'"
+      :class="cinematic ? 'h-screen' : 'min-h-[100svh] lg:min-h-[min(100svh,920px)]'"
     >
       <!-- Chocolate block: bottom band on mobile, right 20% on desktop -->
       <div

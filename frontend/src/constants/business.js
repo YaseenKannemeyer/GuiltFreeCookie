@@ -12,6 +12,8 @@
  */
 const env = import.meta.env || {};
 export const DEMO_MODE = env.VITE_DEMO_MODE !== "false";
+// Staging builds are labelled and kept out of search engines.
+export const STAGING = env.VITE_STAGING === "true";
 const phone = env.VITE_SHOP_PHONE || "";
 export const BUSINESS = {
   tradingName: "GuiltFreeCookie",
