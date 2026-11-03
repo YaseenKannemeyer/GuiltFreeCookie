@@ -11,7 +11,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import { cookieDropPinned } from "../composables/cookieDropState";
-import { DEMO_MODE } from "../constants/business";
+import { DEMO_MODE, STAGING } from "../constants/business";
 import { useCart } from "../composables/useCart";
 import {
   Bars3Icon,
@@ -78,8 +78,8 @@ onMounted(() => {
         : 'bg-background/90 backdrop-blur-xl shadow-[0_1px_0_rgba(46,14,11,0.08),0_10px_30px_-18px_rgba(46,14,11,0.35)]',
     ]"
   >
-    <p v-if="DEMO_MODE" role="note" class="h-[32px] flex items-center justify-center bg-chocolate text-cream-50 text-sm px-3">
-      Demo shop · Sample products · No real payments
+    <p v-if="DEMO_MODE || STAGING" role="note" class="h-[32px] flex items-center justify-center bg-chocolate text-cream-50 text-sm px-3">
+      <template v-if="STAGING">Staging · </template>{{ DEMO_MODE ? "Demo shop · Sample products · No real payments" : "Not the live shop" }}
     </p>
     <div
       class="container-magic flex h-[76px] items-center justify-between gap-6"

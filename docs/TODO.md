@@ -38,8 +38,8 @@ JPA_DDL_AUTO=update
 
 ### GitHub
 - [ ] App Service → Overview → **Download publish profile**. If it's greyed out, turn on **SCM Basic Auth Publishing Credentials**.
-- [ ] Repo → Settings → Secrets and variables → Actions: secret `AZURE_WEBAPP_PUBLISH_PROFILE`, variable `AZURE_WEBAPP_NAME`.
-- [ ] Merge to `main`, then Actions → **Verify and deploy API** → **Run workflow**. Deploys only run by hand.
+- [ ] Repo → Settings → Environments → **production**: secret `AZURE_WEBAPP_PUBLISH_PROFILE`, variable `AZURE_WEBAPP_NAME`. Under deployment branches, allow `main` only. Put these on the environment, not at repository level, or staging deploys would fall back to the production app.
+- [ ] Merge to `main`, then Actions → **Verify and deploy API** → **Run workflow** → environment `production`. Production deploys only run by hand.
 
 ### Vercel (deploy the API first, because the build reads the catalogue)
 - [ ] Import the repo, Root Directory `frontend`.
@@ -61,6 +61,46 @@ Both API URLs must point straight at Azure, not through a Vercel rewrite. Behind
 - [ ] Run a demo order end to end: pay, see it in the demo inbox, check that stock goes down.
 - [ ] Upload a cookie photo, restart the App Service, and check that the photo still shows.
 - [ ] Azure cost alert at $15/month (Cost Management → Budgets).
+
+### Staging
+
+A copy of production for trying changes before they go live. It costs nothing extra: the API shares production's App Service plan and MySQL server, and the storefront is a Vercel preview. Deployment slots would be neater but need the Standard tier (about $70/month).
+
+Flow: merge or push to the `staging` branch → the API deploys to staging automatically and Vercel builds the staging storefront. Once it looks right, merge `staging` into `main` and run the production deploy by hand.
+
+- [ ] Create a `staging` branch from `main` and push it.
+- [ ] MySQL: on the same server, create database `guiltfreecookie_staging` and a separate user with rights on that schema only.
+- [ ] App Service: create a second Web App (for example `<app>-staging`) on the **same App Service plan**, with the same runtime, Always On and health check path. Two JVMs share the B1's 1.75 GB, so set `JAVA_OPTS=-Xmx512m` on both apps.
+- [ ] Application settings: the same as production, except:
+
+```
+SPRING_PROFILES_ACTIVE=prod,showcase
+DB_URL=jdbc:mysql://<server>.mysql.database.azure.com:3306/guiltfreecookie_staging?sslMode=REQUIRED&serverTimezone=Africa/Johannesburg
+DB_USERNAME=<staging user>
+DB_PASSWORD=<staging password>
+JWT_SECRET=<a different openssl rand -base64 32>
+CORS_ALLOWED_ORIGINS=https://<project>-git-staging-<team>.vercel.app
+FRONTEND_BASE_URL=https://<project>-git-staging-<team>.vercel.app
+PUBLIC_BASE_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
+API_DOCS_ENABLED=true
+PAYFAST_SANDBOX=true
+```
+
+  Staging stays on the PayFast sandbox and the captured inbox even after production goes live. Never give it live PayFast or Brevo credentials. Every secret is its own, so a staging token never works on production.
+- [ ] GitHub → Environments → **staging**: secret `AZURE_WEBAPP_PUBLISH_PROFILE` (the staging app's publish profile) and variable `AZURE_WEBAPP_NAME=<app>-staging`. Allow the `staging` branch.
+- [ ] Vercel → Settings → Environment Variables: add these for **Preview**, limited to the branch `staging`:
+
+```
+VITE_STAGING=true
+VITE_DEMO_MODE=true
+VITE_SITE_URL=https://<project>-git-staging-<team>.vercel.app
+VITE_API_BASE_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
+PRERENDER_API_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
+```
+
+  `VITE_STAGING` shows a staging banner, marks every page `noindex` and makes robots.txt block everything. The branch URL stays the same between deploys, which is why CORS can point at it. Vercel Deployment Protection keeps previews behind a Vercel login by default; leave it on unless someone outside the team needs to look.
+- [ ] Push to `staging`, then repeat the "After the first start" checks against the staging URLs.
+- [ ] When an entity changes, set `JPA_DDL_AUTO=update` on staging first, check it starts, then do the same on production.
 
 ## 2. Monitoring
 
@@ -106,4 +146,5 @@ Delivery is currently flat-rate and simulated. When it's wanted:
 
 ## 6. Smaller loose ends
 
-- [ ] Test the cinematic hero video's scroll performance on a real phone. Its browser integration was never checked on mobile.
+- [x] Check the shipped mobile hero on a real iPhone / Safari: user reported smooth scrolling with nothing cut off (3 November 2026). Phones currently use the static hero.
+- [ ] Finish the standalone iPhone video decoder check (`/tests/hero-video.html` → Run video check). Desktop video integration passes; iPhone initially failed startup, then failed the rapid-seek case. v2 seeks complete but Safari supplies no post-seek frame callback. Independent decoded-image diagnostic v3 prepared; phone result pending. See [hero scroll validation](hero-scroll-validation.md).

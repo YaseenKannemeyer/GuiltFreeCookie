@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hero video integration check</title></head>
+<body>
+  <h1>Hero video integration check</h1>
+  <p>Check version: safari-calibrated-frames-v3</p>
+  <p>Records reference images during playback, then checks paused seeking against those exact images. PIXELS_PASS verifies the images only; this does not measure on-screen scroll smoothness or FPS.</p>
+  <button id="run">Run video check</button>
+  <video muted playsinline preload="auto" width="320" src="/video/cookie-drop/cookie-drop-scroll.mp4"></video>
+  <pre style="white-space: pre-wrap; overflow-wrap: anywhere" id="result" aria-live="polite">Ready</pre>
+  <script type="module" src="./hero-video-check.js"></script>
+</body>
+</html>

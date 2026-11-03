@@ -123,7 +123,6 @@ const cookies = computed(() => {
 .lineup-flier {
   width: 100%;
   height: 100%;
-  will-change: transform, opacity;
 }
 .lineup-img {
   display: block;
@@ -149,12 +148,42 @@ const cookies = computed(() => {
   padding: calc(var(--nav-h) + 2.4rem) 4rem 2.4rem max(4.8rem, calc((100% - 128rem) / 2 + 4.8rem));
   pointer-events: none;
 }
+/* Promote only the animated version, not all eight static mobile images. */
+.lineup--stage .lineup-flier {
+  will-change: transform, opacity;
+}
 /* Set by the timeline once the cookies have landed. */
 .lineup--stage.is-settled {
   pointer-events: auto;
 }
+.lineup--stage > div {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.lineup--stage .lineup-grid {
+  min-height: 0;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  margin-top: 2.4rem;
+}
+.lineup--stage .lineup-link {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 8.8rem;
+}
 .lineup--stage .lineup-slot {
-  max-width: min(26rem, calc((100vh - 39rem) / 2.21));
+  min-height: 0;
+  height: 100%;
+  max-width: 26rem;
+  aspect-ratio: auto;
+}
+@media (max-width: 1279px), (max-height: 740px) {
+  .lineup--stage [data-drop="lineup-heading"] {
+    font-size: 3.6rem;
+  }
+  .lineup--stage .lineup-grid {
+    gap: 1.6rem;
+  }
 }
 /* Hidden until the timeline brings them in (it sets visibility inline). */
 .lineup--stage [data-drop="lineup-heading"],

@@ -2,11 +2,17 @@ name: Verify and deploy API
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths: ["src/**", "pom.xml", "frontend/public/img/cookies/**", ".github/workflows/deploy-api.yml"]
   pull_request:
     paths: ["src/**", "pom.xml", "frontend/public/img/cookies/**", ".github/workflows/deploy-api.yml"]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
 
 permissions:
   contents: read
@@ -32,16 +38,38 @@ jobs:
           name: api-jar
           path: target/guiltFreeCookie-*.jar
 
+  # Pushes to the staging branch deploy to staging. Production only deploys by hand, from main.
   deploy:
-    if: github.event_name == 'workflow_dispatch' && vars.AZURE_WEBAPP_NAME != ''
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/staging') ||
+      github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    concurrency:
+      group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      cancel-in-progress: false
     steps:
+      - name: Production deploys only from main
+        if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production deploys must run from main, not ${{ github.ref_name }}"
+          exit 1
+      - name: Skip when the environment isn't configured
+        id: configured
+        run: |
+          if [ -z "${{ vars.AZURE_WEBAPP_NAME }}" ]; then
+            echo "::warning::AZURE_WEBAPP_NAME isn't set for this environment, so nothing was deployed"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.configured.outputs.ok == 'true'
         with:
           name: api-jar
       - uses: azure/webapps-deploy@v3
+        if: steps.configured.outputs.ok == 'true'
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

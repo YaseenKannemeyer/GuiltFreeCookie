@@ -15,6 +15,7 @@ import {
   categoryBlurb,
 } from "../constants/cookieCategories";
 import { cookieImage, cookieName } from "../composables/useCatalog";
+import { STAGING } from "../constants/business";
 import { breadcrumbsFor } from "./breadcrumbs";
 import { structuredData } from "./schema";
 import {
@@ -51,7 +52,7 @@ function pageHead({
     title: fullTitle,
     description,
     canonical: url,
-    robots: null,
+    robots: STAGING ? NOINDEX : null,
     og: {
       type,
       url,
