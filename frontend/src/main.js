@@ -5,6 +5,7 @@ import { createGfcApp } from "./app";
 import { createAppRouter } from "./router";
 import { useCatalog } from "./composables/useCatalog";
 import { applyHead, headForRoute } from "./seo/head";
+import { startErrorReporting } from "./monitoring";
 import "./assets/main.css";
 
 const router = createAppRouter(createWebHistory());
@@ -35,6 +36,7 @@ if (!hydrate) {
 }
 
 const app = createGfcApp({ router, hydrate, catalog });
+startErrorReporting(app);
 router.isReady().then(() => app.mount(root));
 
 function canHydrate(el, route) {

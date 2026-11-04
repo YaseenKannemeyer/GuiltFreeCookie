@@ -19,6 +19,15 @@ function apiOrigin(env) {
   }
 }
 
+// The Sentry DSN's host is where error reports are sent.
+function originOf(url) {
+  try {
+    return url ? new URL(url).origin : "";
+  } catch {
+    return "";
+  }
+}
+
 /**
  * Production pages get a Content-Security-Policy: scripts only from this
  * site, so injected markup can't run code. Development is left alone (Vite's
@@ -30,13 +39,14 @@ function apiOrigin(env) {
  */
 function contentSecurityPolicy(env) {
   const api = apiOrigin(env);
+  const sentry = originOf(env.VITE_SENTRY_DSN);
   const policy = [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob:${api ? ` ${api}` : ""}`,
     "font-src 'self'",
-    `connect-src 'self'${api ? ` ${api}` : ""}`,
+    `connect-src 'self'${api ? ` ${api}` : ""}${sentry ? ` ${sentry}` : ""}`,
     "media-src 'self'",
     "manifest-src 'self'",
     "object-src 'none'",
