@@ -23,6 +23,9 @@ public class PayFastVerifier {
     // PayFast's documented notification sources.
     static final List<String> PAYFAST_HOSTS = List.of(
             "www.payfast.co.za", "sandbox.payfast.co.za", "w1w.payfast.co.za", "w2w.payfast.co.za");
+    // PayFast's published ITN source ranges. The sandbox sends from 144.126.193.139, which none of the hosts resolve to.
+    static final List<String> PAYFAST_RANGES = List.of(
+            "197.97.145.144/28", "41.74.179.192/27", "102.216.36.0/28", "102.216.36.128/28", "144.126.193.139/32");
 
     private final PayFastGateway gateway;
     private final boolean verifySourceIp;
@@ -42,6 +45,9 @@ public class PayFastVerifier {
         if (!verifySourceIp) {
             return true;
         }
+        if (inPublishedRange(remoteAddress)) {
+            return true;
+        }
         for (String host : PAYFAST_HOSTS) {
             try {
                 for (InetAddress address : InetAddress.getAllByName(host)) {
@@ -54,6 +60,50 @@ public class PayFastVerifier {
             }
         }
         return false;
+    }
+
+    static boolean inPublishedRange(String remoteAddress) {
+        byte[] address = ipv4(remoteAddress);
+        if (address == null) {
+            return false;
+        }
+        for (String range : PAYFAST_RANGES) {
+            int slash = range.indexOf('/');
+            byte[] network = ipv4(range.substring(0, slash));
+            int prefix = Integer.parseInt(range.substring(slash + 1));
+            int mask = prefix == 0 ? 0 : -1 << (32 - prefix);
+            if ((toInt(address) & mask) == (toInt(network) & mask)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Parses dotted IPv4 only, without any DNS lookup.
+    private static byte[] ipv4(String value) {
+        if (value == null) {
+            return null;
+        }
+        String[] parts = value.trim().split("\\.", -1);
+        if (parts.length != 4) {
+            return null;
+        }
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            if (parts[i].isEmpty() || parts[i].length() > 3 || !parts[i].chars().allMatch(Character::isDigit)) {
+                return null;
+            }
+            int octet = Integer.parseInt(parts[i]);
+            if (octet > 255) {
+                return null;
+            }
+            bytes[i] = (byte) octet;
+        }
+        return bytes;
+    }
+
+    private static int toInt(byte[] b) {
+        return (b[0] & 0xff) << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8 | (b[3] & 0xff);
     }
 
     // Sends the notification back to PayFast, which answers VALID if it really sent it.

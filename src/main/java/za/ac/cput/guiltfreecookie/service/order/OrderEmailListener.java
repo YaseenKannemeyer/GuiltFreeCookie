@@ -107,6 +107,19 @@ public class OrderEmailListener {
         });
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onPaidAfterCancellation(OrderEvents.PaidAfterCancellation event) {
+        orderRepository.findByOrderNumber(event.orderNumber()).ifPresent(order -> {
+            Map<String, Object> shop = base(order, "Open the order", frontendBase + "/admindashboard/orders/" + order.getOrderNumber());
+            shop.put("customerName", order.getFirstName() + " " + order.getLastName());
+            shop.put("email", order.getCustomerEmail());
+            shop.put("total", rand(order.getTotal()));
+            emailService.sendTemplate(siteInfoService.setting("support-email"),
+                    "Refund needed: " + order.getOrderNumber() + " was paid after it was cancelled",
+                    "order-paid-after-cancel-to-shop", shop, false);
+        });
+    }
+
     // HashMap rather than Map.of: delivery and pickup details are null for the other kind of order.
     private Map<String, Object> base(CustomerOrder order, String actionLabel, String actionUrl) {
         Map<String, Object> model = new HashMap<>();

@@ -36,6 +36,7 @@ public class EmailTemplates {
             "order-ready-for-pickup",
             "order-cancelled",
             "order-cancelled-to-shop",
+            "order-paid-after-cancel-to-shop",
             "claim-orders",
             "resubscribe-confirm"), FlowCatalog.previewNames().stream()).toList();
 
@@ -110,7 +111,7 @@ public class EmailTemplates {
         model.put("vat", "R 28.96");
         model.put("total", "R 222.00");
         model.put("customerName", "Sam Example");
-        if (template.equals("order-cancelled-to-shop")) {
+        if (template.endsWith("-to-shop") && template.startsWith("order-")) {
             model.put("actionUrl", frontendBase + "/admindashboard/orders/GFC-PREVIEW");
             model.put("actionLabel", "Open the order");
         }

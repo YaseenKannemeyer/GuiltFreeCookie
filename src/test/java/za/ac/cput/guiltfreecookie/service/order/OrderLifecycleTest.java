@@ -195,6 +195,33 @@ class OrderLifecycleTest {
     }
 
     @Test
+    void aPaymentAfterTheCustomerCancelledLeavesTheOrderCancelledAndFlagsARefundOnce() {
+        Placed placed = place(ShippingMethod.PICKUP);
+        orderService.cancelUnpaid(placed.orderNumber(), placed.token());
+
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid with PayFast (ref 1)");
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid with PayFast (ref 1)");
+
+        assertEquals(OrderStatus.CANCELLED, order(placed).getStatus());
+        assertEquals(12, stock());
+        assertEquals(CartStatus.ACTIVE, cartRepository.findById(placed.cartId()).orElseThrow().getStatus());
+        assertEquals(1, eventRepository.findByOrderIdOrderByCreatedAtAsc(order(placed).getOrderId()).stream()
+                .filter(event -> event.getNote() != null && event.getNote().startsWith(OrderService.PAID_AFTER_CANCEL))
+                .count());
+    }
+
+    @Test
+    void aPaymentAfterAnAdminCancelledDoesntReopenTheOrder() {
+        Placed placed = place(ShippingMethod.PICKUP);
+        adminOrderService.changeStatus(placed.orderNumber(), new StatusChangeRequest(OrderStatus.CANCELLED, null), "AD001");
+
+        orderService.markPaid(placed.orderNumber(), "payfast", "Paid late");
+
+        assertEquals(OrderStatus.CANCELLED, order(placed).getStatus());
+        assertEquals(12, stock());
+    }
+
+    @Test
     void aFailedPaymentFreesTheStock() {
         Placed placed = place(ShippingMethod.PICKUP);
 
