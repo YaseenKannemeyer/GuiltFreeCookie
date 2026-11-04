@@ -6,101 +6,80 @@ Hosted target: **Vercel** for the storefront and **Azure for Students** for the 
 
 ## 1. Hosting
 
-### Azure MySQL
-- [ ] Create an **Azure Database for MySQL Flexible Server**: Burstable B1MS, MySQL 8, 32 GB, in the same region as the App Service.
-- [ ] Networking: public access, tick **Allow public access from any Azure service**.
-- [ ] Create database `guiltfreecookie` and a user with rights on that schema only (not `root`).
-- [ ] Set server parameter `time_zone` to `+02:00`.
-- [ ] Turn on automated backups.
+Set up on 3 November 2026. Storefront on **Vercel**, API and MySQL on **Azure for Students** (South Africa North). Both environments run `prod,showcase`.
 
-### Azure App Service
-- [ ] Create a Web App: Code, **Java 25 (Java SE)**, Linux, **Basic B1** (not F1, which sleeps and stops the scheduled jobs). If Java 25 isn't listed, check `az webapp list-runtimes --os linux`.
-- [ ] General settings: **Always On** on.
-- [ ] Health check path: `/guiltFreeCookie/actuator/health/readiness`.
-- [ ] Application settings:
+| | Staging | Production |
+|---|---|---|
+| Storefront | `guilt-free-cooki-git-7d1aa2-mogamat-yaseen-kannemeyers-projects.vercel.app` (Vercel shortened the branch URL; it stays fixed) | `guilt-free-cookie.vercel.app` |
+| API (App Service) | `guiltfreecookie-api-staging.azurewebsites.net/guiltFreeCookie` | `guiltfreecookie-api.azurewebsites.net/guiltFreeCookie` |
+| Database | `guiltfreecookie_staging`, user `gfc_staging` | `guiltfreecookie`, user `gfc_app` |
+| Deploys | Every push to `staging` | By hand from `main` (Actions → Verify and deploy API → `production`) |
+
+Shared: resource group `rg-guiltfreecookie`, MySQL Flexible Server `gfc-mysql` (Burstable B1ms, 32 GiB, 396 IOPS, `time_zone=+02:00`, 7-day backups), App Service plan `asp-guiltfreecookie` (Linux B1), Vercel project `guilt-free-cookie`, budget `gfc-monthly-15` ($15/month alerts). Database passwords are kept by the owner, not in the repo. The MySQL firewall only allows Azure services; add your own IP temporarily to connect from a laptop.
+
+Staging holds a copy of the local development database (test orders included). Production holds only the catalogue: 20 cookies, their variants, the 3 admins, shipping and email-flow settings, and the `DEMO10` and `12R12` codes.
+
+### Blocking: PayFast payment notifications are rejected
+
+The checkout reaches the PayFast sandbox and the payment completes, but the order never becomes Paid. PayFast's dashboard shows `Pending QUEUE · cURL Error`. The notification does reach the API, which answers 400:
+
+```
+PayFast notification rejected: 144.126.193.139:46794 isn't a PayFast address
+```
+
+- [x] **Strip the port from the client address.** `ClientAddressFilter` runs before everything else and turns `ip:port` (and `[ipv6]:port`) into the bare address, so the PayFast check and `RateLimitFilter` both see the real client.
+- [x] **Check the notification IP against PayFast's published ranges** as well as the IPs its hostnames resolve to: `197.97.145.144/28`, `41.74.179.192/27`, `102.216.36.0/28`, `102.216.36.128/28`, `144.126.193.139` (`PayFastVerifier.PAYFAST_RANGES`). Compare against [PayFast's list](https://developers.payfast.co.za/docs#ports-ips) now and then.
+- [x] Tests: `ClientAddressFilterTest`, `PayFastVerifierTest`.
+- [ ] Deploy to staging and run a sandbox payment: the order should turn Paid, stock should go down and the confirmation should appear in the demo inbox.
+- [x] **Late payment for a cancelled order.** If the customer or an admin cancelled it, the order now stays Cancelled with no stock taken. A history note is added and the shop gets one "Refund needed" email (`order-paid-after-cancel-to-shop`), even when PayFast repeats the notification. Orders cancelled only because the payment window ran out are still honoured as Paid, as before.
+- [ ] After deploying, check the two queued sandbox notifications (`GFC-261103-VC2D` and the 21:28 order): both should stay Cancelled with a refund note, and the shop inbox should have one refund email each.
+
+Already found and fixed on the way:
+- PayFast's public sandbox merchant `10000100` rejects every signature, with or without its documented passphrase. Both apps use the owner's own sandbox account instead (`PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`). `showcase` keeps sandbox mode forced on.
+- `DEMO_SIMULATED_PAYMENTS=false` (set on both apps) sends demo checkouts to the PayFast sandbox instead of the simulated payment page. Without it, `showcase` uses the simulated page.
+
+### Still to do
+- [ ] **Stock:** only Cinnamon Pecan has stock, so the other 11 visible cookies show as unavailable. Set stock in admin on staging and production.
+- [x] **GitHub `production` environment:** secret `AZURE_WEBAPP_PUBLISH_PROFILE` and variable `AZURE_WEBAPP_NAME=guiltfreecookie-api` are saved, with deployments limited to `main` (checked 4 November 2026; the variable had a stray line break, now fixed).
+- [ ] Merge `staging` into `main`, then run **Verify and deploy API** → `production`. The production app is configured and its photos are in `/home/uploads`, but no code has been deployed to it yet.
+- [ ] Redeploy the Vercel production build once the production API answers. The production variables are already set, and the build fails without the API because it loads the catalogue.
+- [ ] Production checks: health `UP`, admin sign-in, storefront headers on securityheaders.com (the API's headers already pass), a sandbox payment end to end.
+- [ ] Rotate the `gfc_staging` database password and update `DB_PASSWORD` on the staging app. (`gfcadmin` and `gfc_app` were rotated on 3 November.)
+- [ ] Optional: turn staging's container logging off again once PayFast works (`az webapp log config --docker-container-logging off`). It was turned on to debug the notifications.
+
+### Done
+- [x] MySQL server, both databases and users, `time_zone`, backups.
+- [x] Both App Services: Java 25, Always On, HTTPS only, TLS 1.2, FTP off, health check `/guiltFreeCookie/actuator/health/readiness`, `JAVA_OPTS=-Xmx512m`.
+- [x] GitHub `staging` environment and the first staging deploy.
+- [x] Vercel project with Preview variables for the `staging` branch and Production variables.
+- [x] Staging: health `UP`, admin sign-in, `JPA_DDL_AUTO` removed (starts with `validate`), photos survive a restart, API security headers, cost alert.
+
+### Reference: app settings
+
+Production (staging differs only where noted):
 
 ```
 SPRING_PROFILES_ACTIVE=prod,showcase
-DB_URL=jdbc:mysql://<server>.mysql.database.azure.com:3306/guiltfreecookie?sslMode=REQUIRED&serverTimezone=Africa/Johannesburg
-DB_USERNAME=<user>
+DB_URL=jdbc:mysql://gfc-mysql.mysql.database.azure.com:3306/guiltfreecookie?sslMode=REQUIRED&serverTimezone=Africa/Johannesburg   # staging: guiltfreecookie_staging
+DB_USERNAME=gfc_app                       # staging: gfc_staging
 DB_PASSWORD=<password>
-JWT_SECRET=<openssl rand -base64 32>
-CORS_ALLOWED_ORIGINS=https://<project>.vercel.app
-FRONTEND_BASE_URL=https://<project>.vercel.app
-PUBLIC_BASE_URL=https://<app>.azurewebsites.net/guiltFreeCookie
+JWT_SECRET=<openssl rand -base64 32>      # different on each app
+CORS_ALLOWED_ORIGINS=https://guilt-free-cookie.vercel.app      # staging: the staging storefront URL
+FRONTEND_BASE_URL=https://guilt-free-cookie.vercel.app         # staging: the staging storefront URL
+PUBLIC_BASE_URL=https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie
 UPLOAD_DIR=/home/uploads
-ADMIN_BOOTSTRAP_EMAIL=<first admin email>
-ADMIN_BOOTSTRAP_PASSWORD=<12+ characters>
-JPA_DDL_AUTO=update
-```
-
-`showcase` keeps the sample products, simulated payments and captured email inbox. Never combine `prod` with the local `demo` profile; startup refuses it. Azure sets `SERVER_PORT` itself, so `PORT` isn't needed.
-
-### GitHub
-- [ ] App Service → Overview → **Download publish profile**. If it's greyed out, turn on **SCM Basic Auth Publishing Credentials**.
-- [ ] Repo → Settings → Environments → **production**: secret `AZURE_WEBAPP_PUBLISH_PROFILE`, variable `AZURE_WEBAPP_NAME`. Under deployment branches, allow `main` only. Put these on the environment, not at repository level, or staging deploys would fall back to the production app.
-- [ ] Merge to `main`, then Actions → **Verify and deploy API** → **Run workflow** → environment `production`. Production deploys only run by hand.
-
-### Vercel (deploy the API first, because the build reads the catalogue)
-- [ ] Import the repo, Root Directory `frontend`.
-- [ ] Environment variables:
-
-```
-VITE_DEMO_MODE=true
-VITE_SITE_URL=https://<project>.vercel.app
-VITE_API_BASE_URL=https://<app>.azurewebsites.net/guiltFreeCookie
-PRERENDER_API_URL=https://<app>.azurewebsites.net/guiltFreeCookie
-```
-
-Both API URLs must point straight at Azure, not through a Vercel rewrite. Behind a proxy, PayFast notifications fail the IP check and every visitor shares one rate limit.
-
-### After the first start
-- [ ] `/guiltFreeCookie/actuator/health` returns `{"status":"UP"}`.
-- [ ] Sign in at `/admin`, change the password, then remove `JPA_DDL_AUTO` and both `ADMIN_BOOTSTRAP_*` settings and restart.
-- [ ] Check the headers on [securityheaders.com](https://securityheaders.com).
-- [ ] Run a demo order end to end: pay, see it in the demo inbox, check that stock goes down.
-- [ ] Upload a cookie photo, restart the App Service, and check that the photo still shows.
-- [ ] Azure cost alert at $15/month (Cost Management → Budgets).
-
-### Staging
-
-A copy of production for trying changes before they go live. It costs nothing extra: the API shares production's App Service plan and MySQL server, and the storefront is a Vercel preview. Deployment slots would be neater but need the Standard tier (about $70/month).
-
-Flow: merge or push to the `staging` branch → the API deploys to staging automatically and Vercel builds the staging storefront. Once it looks right, merge `staging` into `main` and run the production deploy by hand.
-
-- [ ] Create a `staging` branch from `main` and push it.
-- [ ] MySQL: on the same server, create database `guiltfreecookie_staging` and a separate user with rights on that schema only.
-- [ ] App Service: create a second Web App (for example `<app>-staging`) on the **same App Service plan**, with the same runtime, Always On and health check path. Two JVMs share the B1's 1.75 GB, so set `JAVA_OPTS=-Xmx512m` on both apps.
-- [ ] Application settings: the same as production, except:
-
-```
-SPRING_PROFILES_ACTIVE=prod,showcase
-DB_URL=jdbc:mysql://<server>.mysql.database.azure.com:3306/guiltfreecookie_staging?sslMode=REQUIRED&serverTimezone=Africa/Johannesburg
-DB_USERNAME=<staging user>
-DB_PASSWORD=<staging password>
-JWT_SECRET=<a different openssl rand -base64 32>
-CORS_ALLOWED_ORIGINS=https://<project>-git-staging-<team>.vercel.app
-FRONTEND_BASE_URL=https://<project>-git-staging-<team>.vercel.app
-PUBLIC_BASE_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
-API_DOCS_ENABLED=true
+JAVA_OPTS=-Xmx512m
+DEMO_SIMULATED_PAYMENTS=false
 PAYFAST_SANDBOX=true
+PAYFAST_MERCHANT_ID=<own sandbox account>
+PAYFAST_MERCHANT_KEY=<own sandbox account>
+PAYFAST_PASSPHRASE=<own sandbox account>
+API_DOCS_ENABLED=true                     # staging only
 ```
 
-  Staging stays on the PayFast sandbox and the captured inbox even after production goes live. Never give it live PayFast or Brevo credentials. Every secret is its own, so a staging token never works on production.
-- [ ] GitHub → Environments → **staging**: secret `AZURE_WEBAPP_PUBLISH_PROFILE` (the staging app's publish profile) and variable `AZURE_WEBAPP_NAME=<app>-staging`. Allow the `staging` branch.
-- [ ] Vercel → Settings → Environment Variables: add these for **Preview**, limited to the branch `staging`:
+Vercel, Production: `VITE_DEMO_MODE=true`, `VITE_SITE_URL`, `VITE_API_BASE_URL`, `PRERENDER_API_URL`. Preview limited to branch `staging`: the same four plus `VITE_STAGING=true`. Both API URLs must point straight at Azure, not through a Vercel rewrite.
 
-```
-VITE_STAGING=true
-VITE_DEMO_MODE=true
-VITE_SITE_URL=https://<project>-git-staging-<team>.vercel.app
-VITE_API_BASE_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
-PRERENDER_API_URL=https://<app>-staging.azurewebsites.net/guiltFreeCookie
-```
-
-  `VITE_STAGING` shows a staging banner, marks every page `noindex` and makes robots.txt block everything. The branch URL stays the same between deploys, which is why CORS can point at it. Vercel Deployment Protection keeps previews behind a Vercel login by default; leave it on unless someone outside the team needs to look.
-- [ ] Push to `staging`, then repeat the "After the first start" checks against the staging URLs.
-- [ ] When an entity changes, set `JPA_DDL_AUTO=update` on staging first, check it starts, then do the same on production.
+Never combine `prod` with the local `demo` profile; startup refuses it. Staging stays on the PayFast sandbox and the captured inbox even after production goes live. When an entity changes, set `JPA_DDL_AUTO=update` on staging first, check it starts, remove it, then do the same on production. A cold start takes about 4 minutes on B1.
 
 ## 2. Monitoring
 
@@ -147,4 +126,4 @@ Delivery is currently flat-rate and simulated. When it's wanted:
 ## 6. Smaller loose ends
 
 - [x] Check the shipped mobile hero on a real iPhone / Safari: user reported smooth scrolling with nothing cut off (3 November 2026). Phones currently use the static hero.
-- [ ] Finish the standalone iPhone video decoder check (`/tests/hero-video.html` → Run video check). Desktop video integration passes; iPhone initially failed startup, then failed the rapid-seek case. v2 seeks complete but Safari supplies no post-seek frame callback. Independent decoded-image diagnostic v3 prepared; phone result pending. See [hero scroll validation](hero-scroll-validation.md).
+- [x] Complete the standalone iPhone / Safari decoder check (4 November 2026, `safari-seek-check-v4`): all eight decoded-image checks passed, including rapid/reverse seeks, at 29–35ms. One compositor callback was absent despite matching pixels (`PIXELS_PASS`); this is decoder validation, not phone cinematic-scroll FPS certification. See [hero scroll validation](hero-scroll-validation.md).

@@ -1,0 +1,68 @@
+{
+  "checkedOn": "2026-11-04",
+  "provenance": "User ran the check on a physical iPhone in Safari and supplied this result in the task conversation.",
+  "status": "PIXELS_PASS",
+  "revision": "safari-seek-check-v4",
+  "visibleThroughout": true,
+  "message": "Decoded images match the reference frames. Some compositor callbacks were missing; on-screen smoothness still needs visual confirmation.",
+  "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1 Mobile/15E148 Safari/604.1",
+  "samples": [
+    {
+      "milestone": 1.2,
+      "expected": 1.2,
+      "decoded": 1.2,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 35
+    },
+    {
+      "milestone": 2.7,
+      "expected": 2.7,
+      "decoded": 2.7,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 33
+    },
+    {
+      "milestone": 3.3,
+      "expected": 3.3,
+      "decoded": 3.3,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 31
+    },
+    {
+      "milestone": 3.9,
+      "expected": 3.9,
+      "decoded": 3.9,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 30
+    },
+    {
+      "milestone": 2.1,
+      "expected": 2.1,
+      "decoded": 2.1,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 32
+    },
+    {
+      "milestone": 0,
+      "expected": 0,
+      "decoded": 0,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 29
+    },
+    {
+      "milestone": 0.7,
+      "expected": 0.7,
+      "decoded": null,
+      "pixelDifference": 0.952,
+      "pixelLatencyMs": 29
+    },
+    {
+      "milestone": 2.7,
+      "expected": 2.7,
+      "decoded": 2.7,
+      "pixelDifference": 0,
+      "pixelLatencyMs": 32
+    }
+  ],
+  "pausedAfterCleanup": true
+}

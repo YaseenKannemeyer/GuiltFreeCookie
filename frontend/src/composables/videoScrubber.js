@@ -1,20 +1,19 @@
 /** Latest-frame-wins seeking. No render loop and no queue of stale scroll frames. */
 export function createVideoScrubber(video, { fps, duration, prime = false }) {
-  let target = 0;
+  let target = Number.isFinite(video.currentTime) ? video.currentTime : 0;
   let busy = false;
   let alive = true;
   let priming = false;
   let primed = false;
   let cancelWarmup = () => {};
   let watchdog;
-  let nextFrame;
-  const view = video.ownerDocument?.defaultView;
+  let nextSeek;
   let retries = 0;
 
   function seek(force = false) {
     if (!alive || priming || video.readyState < 1 || video.error) return;
     if ((busy || video.seeking) && !force) return;
-    const end = Math.max(0, Math.min(duration, Number.isFinite(video.duration) ? video.duration : duration) - 1 / fps);
+    const end = Math.max(0, Math.min(duration, Number.isFinite(video.duration) ? video.duration : duration) - 0.5 / fps);
     const time = Math.min(target, end);
     // currentTime changes as soon as a seek is requested, before it is painted.
     if (!video.seeking && Math.abs(video.currentTime - time) < 0.5 / fps) return;
@@ -38,18 +37,15 @@ export function createVideoScrubber(video, { fps, duration, prime = false }) {
   function onSeeked() {
     clearTimeout(watchdog);
     retries = 0;
-    // Let the browser finish presenting this seek before requesting the
-    // next one. Reentrant seeks inside seeked can skip frame delivery.
+    // Yield out of the media event without depending on animation frames:
+    // Safari may suspend those while a tab/window is obscured.
     busy = true;
-    const advance = () => {
-      nextFrame = undefined;
+    clearTimeout(nextSeek);
+    nextSeek = setTimeout(() => {
+      nextSeek = undefined;
       busy = false;
       seek();
-    };
-    if (view?.requestAnimationFrame) {
-      view.cancelAnimationFrame(nextFrame);
-      nextFrame = view.requestAnimationFrame(advance);
-    } else advance();
+    }, 0);
   }
 
   function firstPaint() {
@@ -103,7 +99,9 @@ export function createVideoScrubber(video, { fps, duration, prime = false }) {
     ready,
     set(time) {
       if (!alive || !Number.isFinite(time)) return;
-      const next = Math.round(Math.max(0, time) * fps) / fps;
+      // Seek inside the selected frame. At an exact fractional boundary,
+      // Safari can round down and decode the preceding frame on reversal.
+      const next = (Math.round(Math.max(0, time) * fps) + 0.5) / fps;
       if (target !== next) retries = 0;
       target = next;
       seek();
@@ -112,7 +110,7 @@ export function createVideoScrubber(video, { fps, duration, prime = false }) {
       alive = false;
       cancelWarmup();
       clearTimeout(watchdog);
-      if (nextFrame !== undefined) view?.cancelAnimationFrame(nextFrame);
+      clearTimeout(nextSeek);
       video.pause();
       video.removeEventListener("seeked", onSeeked);
       video.removeEventListener("loadedmetadata", onReady);
