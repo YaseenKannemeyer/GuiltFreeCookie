@@ -25,7 +25,8 @@ function apiOrigin(env) {
  * dev server injects styles and HMR code). Inline styles stay allowed: Vue
  * renders style bindings into the prerendered HTML as style attributes.
  * Headers a <meta> tag can't set (frame-ancestors, HSTS) belong on the host;
- * see the README.
+ * see the README. vercel.json also sends this policy as a header, allowing both
+ * API origins; browsers enforce both, so keep the two in step.
  */
 function contentSecurityPolicy(env) {
   const api = apiOrigin(env);
