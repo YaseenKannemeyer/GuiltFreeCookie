@@ -34,6 +34,7 @@ import java.util.Map;
 public class OrderService {
 
     static final String NOT_FOUND = "Order not found";
+    static final String PAID_AFTER_CANCEL = "Payment received after cancelling:";
 
     private final CustomerOrderRepository orderRepository;
     private final OrderItemRepository itemRepository;
@@ -133,6 +134,15 @@ public class OrderService {
         if (order.getStatus().isPaid() || order.getStatus() == OrderStatus.REFUNDED) {
             return;
         }
+        // Someone chose to cancel it (and may have ordered again from the reopened cart), so don't revive it.
+        if (order.getStatus() == OrderStatus.CANCELLED && cancelledOnPurpose(order)) {
+            if (!alreadyFlaggedLatePayment(order)) {
+                addEvent(order, OrderStatus.CANCELLED, PAID_AFTER_CANCEL + " " + note
+                        + ". The order stays cancelled: refund it in the PayFast dashboard.", actor);
+                events.publishEvent(new OrderEvents.PaidAfterCancellation(orderNumber));
+            }
+            return;
+        }
         List<String> notes = new ArrayList<>(List.of(note));
         // The code's use was taken at checkout; a late payment on a released order has to take it again.
         if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.PAYMENT_FAILED) {
@@ -193,6 +203,22 @@ public class OrderService {
                 .build());
         addEvent(saved, status, note, actor);
         return saved;
+    }
+
+    // Only the payment-window expiry cancels as "system"; the customer and admins cancel on purpose.
+    private boolean cancelledOnPurpose(CustomerOrder order) {
+        List<OrderStatusEvent> history = eventRepository.findByOrderIdOrderByCreatedAtAsc(order.getOrderId());
+        for (int i = history.size() - 1; i >= 0; i--) {
+            if (history.get(i).getStatus() == OrderStatus.CANCELLED) {
+                return !"system".equals(history.get(i).getActor());
+            }
+        }
+        return false;
+    }
+
+    private boolean alreadyFlaggedLatePayment(CustomerOrder order) {
+        return eventRepository.findByOrderIdOrderByCreatedAtAsc(order.getOrderId()).stream()
+                .anyMatch(event -> event.getNote() != null && event.getNote().startsWith(PAID_AFTER_CANCEL));
     }
 
     void addEvent(CustomerOrder order, OrderStatus status, String note, String actor) {

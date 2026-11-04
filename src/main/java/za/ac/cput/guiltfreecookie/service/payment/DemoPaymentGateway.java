@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.payment;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import java.util.Map;
 @Service
 @Primary
 @Profile("(demo & !prod) | showcase")
+@ConditionalOnProperty(name = "app.demo.simulated-payments", havingValue = "true", matchIfMissing = true)
 public class DemoPaymentGateway implements PaymentGateway {
     private final OrderLinks links;
     public DemoPaymentGateway(OrderLinks links) { this.links = links; }

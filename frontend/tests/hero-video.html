@@ -1,13 +1,27 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hero video integration check</title></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hero video integration check</title>
+  <style>
+    body { margin: 0 auto; padding: 20px; max-width: 720px; font: 16px/1.5 system-ui, sans-serif; background: #f5f0e6; color: #2e0e0b; }
+    h1 { font-size: 24px; line-height: 1.2; }
+    button { font: inherit; min-height: 44px; padding: 8px 18px; color: #f5f0e6; background: #2e0e0b; border: 0; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    video { display: block; width: 100%; max-width: 480px; margin-top: 16px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+  </style>
+</head>
 <body>
-  <h1>Hero video integration check</h1>
-  <p>Check version: safari-calibrated-frames-v3</p>
-  <p>Records reference images during playback, then checks paused seeking against those exact images. PIXELS_PASS verifies the images only; this does not measure on-screen scroll smoothness or FPS.</p>
+  <h1>Hero video check</h1>
+  <p>Version: <strong>safari-seek-check-v4</strong></p>
+  <p>Tap Run and keep this page open. The check records the clip’s frames, then verifies forward, backward and rapid seeks. Allow about 10 seconds.</p>
   <button id="run">Run video check</button>
   <video muted playsinline preload="auto" width="320" src="/video/cookie-drop/cookie-drop-scroll.mp4"></video>
-  <pre style="white-space: pre-wrap; overflow-wrap: anywhere" id="result" aria-live="polite">Ready</pre>
+  <pre id="result" aria-live="polite">Ready</pre>
+  <details><summary>Media events</summary><ul id="event-log"></ul></details>
+  <p>PASS verifies decoded images and frame callbacks. PIXELS_PASS verifies decoded images with missing callbacks; it does not certify on-screen smoothness. INCOMPLETE means the page was hidden during the check. This development check does not measure scroll FPS.</p>
   <script type="module" src="./hero-video-check.js"></script>
 </body>
 </html>

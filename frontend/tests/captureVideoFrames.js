@@ -20,6 +20,12 @@ export function captureVideoFrames(video) {
     const timeout = setTimeout(() => finish(new Error('Reference playback did not finish within 12s')), 12000);
     const capture = (_, metadata) => {
       try {
+        // A restart can deliver a queued callback for the previous position.
+        // Wait for the reset seek and a frame from the current playback.
+        if (video.seeking || Math.abs(video.currentTime - metadata.mediaTime) > 0.2) {
+          callback = video.requestVideoFrameCallback(capture);
+          return;
+        }
         const milestone = milestones[frames.length];
         if (metadata.mediaTime >= milestone - 0.001) {
           if (metadata.mediaTime > milestone + 0.2) throw new Error(`Reference playback skipped the ${milestone}s checkpoint`);

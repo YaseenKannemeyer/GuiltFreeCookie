@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.controller;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import za.ac.cput.guiltfreecookie.exception.NotFoundException;
 /** No mapping exists outside the demo profile. Every action requires the private order token. */
 @RestController
 @Profile("(demo & !prod) | showcase")
+@ConditionalOnProperty(name = "app.demo.simulated-payments", havingValue = "true", matchIfMissing = true)
 @RequestMapping("/api/v1/orders/{orderNumber}/demo-payment")
 public class DemoPaymentController {
     private final OrderService orders;

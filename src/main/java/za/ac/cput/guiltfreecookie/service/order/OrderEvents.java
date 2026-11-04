@@ -20,4 +20,7 @@ public final class OrderEvents {
 
     public record CancelledByCustomer(String orderNumber) {
     }
+
+    public record PaidAfterCancellation(String orderNumber) {
+    }
 }

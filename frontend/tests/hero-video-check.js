@@ -5,9 +5,9 @@ import { createVideoScrubber } from '../src/composables/videoScrubber.js';
 const video = document.querySelector('video');
 const result = document.querySelector('#result');
 const button = document.querySelector('#run');
-const revision = 'safari-calibrated-frames-v3';
+const revision = 'safari-seek-check-v4';
 const mediaState = () => ({
-  time: video.currentTime, readyState: video.readyState, networkState: video.networkState,
+  visibility: document.visibilityState, focused: document.hasFocus(), time: video.currentTime, readyState: video.readyState, networkState: video.networkState,
   seeking: video.seeking, paused: video.paused,
   error: video.error && { code: video.error.code, message: video.error.message },
   buffered: Array.from({ length: video.buffered.length }, (_, i) => [video.buffered.start(i), video.buffered.end(i)]),
@@ -25,10 +25,14 @@ button.addEventListener('click', async () => {
   eventNames.forEach(name => video.addEventListener(name, record));
   let scrubber;
   const samples = [];
+  let visibleThroughout = document.visibilityState === "visible";
+  const onVisibility = () => { if (document.visibilityState !== "visible") visibleThroughout = false; };
+  document.addEventListener("visibilitychange", onVisibility);
   let references = [];
   let lastDecoded = null;
   let lastPixelDifference = null;
   try {
+    if (document.visibilityState !== 'visible') throw new Error('Bring this Safari tab to the foreground, then run the check again');
     references = await captureVideoFrames(video);
     // Playback already proved this decoder can present frames. Now test
     // paused seeking independently of the production warmup path.
@@ -51,7 +55,7 @@ button.addEventListener('click', async () => {
         const cleanup = () => {
           clearTimeout(timeout);
           if (callback !== undefined) video.cancelVideoFrameCallback(callback);
-          cancelAnimationFrame(animation);
+          clearTimeout(animation);
         };
         const timeout = setTimeout(() => {
           cleanup();
@@ -82,11 +86,11 @@ button.addEventListener('click', async () => {
             reject(error);
             return;
           }
-          animation = requestAnimationFrame(compare);
+          animation = setTimeout(compare, 16);
         };
         if (video.requestVideoFrameCallback) callback = video.requestVideoFrameCallback(inspect);
         for (const target of targets) scrubber.set(target);
-        animation = requestAnimationFrame(compare);
+        animation = setTimeout(compare, 16);
       });
       samples.push(sample);
     }
@@ -94,18 +98,26 @@ button.addEventListener('click', async () => {
     if (!video.paused) throw new Error('Video still playing after cleanup');
     const missingCallbacks = samples.some(sample => sample.decoded === null);
     result.textContent = JSON.stringify({
-      status: missingCallbacks ? 'PIXELS_PASS' : 'PASS', revision,
-      message: missingCallbacks
+      status: !visibleThroughout ? 'INCOMPLETE' : missingCallbacks ? 'PIXELS_PASS' : 'PASS', revision, visibleThroughout,
+      message: !visibleThroughout
+        ? 'The page was hidden during the check. Keep Safari visible and run again.'
+        : missingCallbacks
         ? 'Decoded images match the reference frames. Some compositor callbacks were missing; on-screen smoothness still needs visual confirmation.'
         : 'Decoded images and compositor timestamps verified.',
       userAgent: navigator.userAgent, samples, pausedAfterCleanup: video.paused,
     }, null, 2);
   } catch (error) {
-    result.textContent = JSON.stringify({ status: 'FAIL', revision, message: error.message, userAgent: navigator.userAgent, media: mediaState(), lastDecoded, lastPixelDifference, samples, events }, null, 2);
+    result.textContent = JSON.stringify({ status: visibleThroughout ? 'FAIL' : 'INCOMPLETE', revision, message: error.message, userAgent: navigator.userAgent, media: mediaState(), lastDecoded, lastPixelDifference, samples, events }, null, 2);
   } finally {
+    document.removeEventListener("visibilitychange", onVisibility);
     eventNames.forEach(name => video.removeEventListener(name, record));
     scrubber?.destroy();
     video.pause();
+    document.querySelector('#event-log').replaceChildren(...events.map(event => {
+      const item = document.createElement('li');
+      item.textContent = `${event.event} at ${event.ms}ms: time=${event.time}, seeking=${event.seeking}, paused=${event.paused}`;
+      return item;
+    }));
     button.disabled = false;
   }
 });
