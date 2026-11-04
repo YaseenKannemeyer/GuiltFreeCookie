@@ -16,6 +16,7 @@ import za.ac.cput.guiltfreecookie.repository.CartItemRepository;
 import za.ac.cput.guiltfreecookie.repository.CartRepository;
 import za.ac.cput.guiltfreecookie.repository.CustomerOrderRepository;
 import za.ac.cput.guiltfreecookie.repository.NewsletterSubscriberRepository;
+import za.ac.cput.guiltfreecookie.service.monitoring.Heartbeat;
 import za.ac.cput.guiltfreecookie.service.order.OrderEvents;
 
 import java.time.Duration;
@@ -40,10 +41,12 @@ public class FlowTriggers {
     private final CartItemRepository cartItemRepository;
     private final CustomerOrderRepository orderRepository;
     private final NewsletterSubscriberRepository subscriberRepository;
+    private final Heartbeat heartbeat;
 
     public FlowTriggers(FlowEnrollmentService enrollments, FlowRunner runner, EmailFlowSettingsService settingsService,
                         CartRepository cartRepository, CartItemRepository cartItemRepository,
-                        CustomerOrderRepository orderRepository, NewsletterSubscriberRepository subscriberRepository) {
+                        CustomerOrderRepository orderRepository, NewsletterSubscriberRepository subscriberRepository,
+                        Heartbeat heartbeat) {
         this.enrollments = enrollments;
         this.runner = runner;
         this.settingsService = settingsService;
@@ -51,6 +54,7 @@ public class FlowTriggers {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
         this.subscriberRepository = subscriberRepository;
+        this.heartbeat = heartbeat;
     }
 
     @Scheduled(fixedDelayString = "${app.flows.run-ms}", initialDelayString = "${app.flows.run-ms}")
@@ -83,6 +87,7 @@ public class FlowTriggers {
         for (NewsletterSubscriber subscriber : subscriberRepository.findDisengaged(quietSince)) {
             enrollments.sunset(subscriber.getEmail(), LocalDateTime.ofInstant(quietSince, ZoneId.systemDefault()));
         }
+        heartbeat.ping(Heartbeat.Job.DAILY_FLOWS);
     }
 
     // After the order's own transaction has committed, so these writes need a fresh one.

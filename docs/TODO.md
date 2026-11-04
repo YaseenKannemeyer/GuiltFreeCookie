@@ -43,7 +43,7 @@ Already found and fixed on the way:
 - [x] **GitHub `production` environment:** secret `AZURE_WEBAPP_PUBLISH_PROFILE` and variable `AZURE_WEBAPP_NAME=guiltfreecookie-api` are saved, with deployments limited to `main` (checked 4 November 2026; the variable had a stray line break, now fixed).
 - [x] Merged `staging` into `main` (PR #43) and deployed the API to production (4 November 2026). Health, readiness and dependencies are `UP`.
 - [x] Redeployed Vercel production once the API answered: `guilt-free-cookie.vercel.app` serves the prerendered catalogue (20 sitemap entries) against the production API, with security headers and a CSP meta tag in place.
-- [x] Storefront headers on securityheaders.com: **A** (4 November 2026). It only missed CSP because the policy was a `<meta>` tag; `vercel.json` now also sends it as a header, plus `frame-ancestors 'none'` and `Cross-Origin-Opener-Policy`. Rescan after the next production deploy (expect A+).
+- [x] Storefront headers on securityheaders.com: **A** (4 November 2026). It only missed CSP because the policy was a `<meta>` tag; `vercel.json` now also sends it as a header, plus `frame-ancestors 'none'` and `Cross-Origin-Opener-Policy`. Rescanned after deploying: **A+** (4 November 2026).
 - [x] Production: admin sign-in and a sandbox payment end to end, checked by the owner (4 November 2026).
 - [ ] Rotate the `gfc_staging` database password and update `DB_PASSWORD` on the staging app. (`gfcadmin` and `gfc_app` were rotated on 3 November.)
 - [x] Staging's container logging turned off again (4 November 2026) now that PayFast works.
@@ -84,15 +84,21 @@ Never combine `prod` with the local `demo` profile; startup refuses it. Staging 
 
 ## 2. Monitoring
 
+The code is in (4 November 2026); everything is off until the settings below are filled in.
+
+- [x] **Heartbeats built.** `Heartbeat` GETs a URL in the background (3 s timeout, logs failures, never throws, does nothing when the URL is blank). Pinged at the end of `ReservationReleaseJob` (every 5 minutes) and of the daily 09:00 cron in `FlowTriggers`. A job that throws doesn't ping.
+- [x] **Sentry built** (errors only, no personal data, replays or tracing).
+  - Backend: `sentry-spring-boot-4-starter` 8.61.0, configured by `SENTRY_DSN`, `SENTRY_ENVIRONMENT` and `SENTRY_SEND_DEFAULT_PII` (default `false`). A blank DSN turns it off.
+  - Frontend: `@sentry/vue` 11.8.0 in `src/monitoring.js`, loaded as a separate chunk only when `VITE_SENTRY_DSN` is set (builds without it ship no Sentry code). The DSN's host is added to `connect-src` in the `<meta>` policy; the `vercel.json` header allows Sentry's ingest hosts.
 - [ ] **Better Stack** (free): three uptime monitors at 3-minute intervals
-  - Storefront: `https://<project>.vercel.app/`
-  - API: `…/guiltFreeCookie/actuator/health`
+  - Storefront: `https://guilt-free-cookie.vercel.app/`
+  - API: `https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie/actuator/health`
   - Dependencies: `…/guiltFreeCookie/actuator/health/dependencies` (mail and outbox)
+- [ ] Better Stack heartbeats: create two, "Reservations" (expected every 5 minutes, grace 10) and "Daily flows" (every 24 hours, grace 1 hour). Put their URLs in `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL` on the production App Service.
 - [ ] Optional status page, plus email and push alerts in the Better Stack app.
-- [ ] **Not built: heartbeats.** Add a small `Heartbeat` component that GETs a URL (3 s timeout, logs on failure, does nothing when the URL is blank). Ping it as the last line of `ReservationReleaseJob` and of the daily cron in `FlowTriggers`. Settings: `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL`.
-- [ ] **Not built: Sentry** (free Developer plan).
-  - Backend: add the Sentry starter for **Spring Boot 4** and set `SENTRY_DSN`, `SENTRY_ENVIRONMENT=production` and `SENTRY_SEND_DEFAULT_PII=false`.
-  - Frontend: add `@sentry/vue`, initialise it in `main.js` only when `VITE_SENTRY_DSN` is set, and add Sentry's ingest origin to `connect-src` in `vite.config.js`.
+- [ ] **Sentry account** (free Developer plan): create a Spring Boot project and a Vue project.
+  - Azure (production app): `SENTRY_DSN=<Spring Boot DSN>`, `SENTRY_ENVIRONMENT=production`. Staging too if wanted, with `SENTRY_ENVIRONMENT=staging`.
+  - Vercel (Production; Preview for `staging` if wanted): `VITE_SENTRY_DSN=<Vue DSN>`, `VITE_SENTRY_ENVIRONMENT=production`, then redeploy.
   - Keep PII off (POPIA).
 
 ## 3. Real email (only needed when leaving the captured demo inbox)
