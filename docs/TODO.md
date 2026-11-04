@@ -19,9 +19,9 @@ Shared: resource group `rg-guiltfreecookie`, MySQL Flexible Server `gfc-mysql` (
 
 Staging holds a copy of the local development database (test orders included). Production holds only the catalogue: 20 cookies, their variants, the 3 admins, shipping and email-flow settings, and the `DEMO10` and `12R12` codes.
 
-### Blocking: PayFast payment notifications are rejected
+### Fixed: PayFast payment notifications were rejected
 
-The checkout reaches the PayFast sandbox and the payment completes, but the order never becomes Paid. PayFast's dashboard shows `Pending QUEUE · cURL Error`. The notification does reach the API, which answers 400:
+Resolved on staging on 4 November 2026: a sandbox payment turned the order Paid, and PayFast logged the notification (`2027707`, 07:19:39) as `Completed · Success`. Before the fix, the order never became Paid, PayFast showed `Pending QUEUE · cURL Error`, and the API answered 400:
 
 ```
 PayFast notification rejected: 144.126.193.139:46794 isn't a PayFast address
@@ -30,9 +30,9 @@ PayFast notification rejected: 144.126.193.139:46794 isn't a PayFast address
 - [x] **Strip the port from the client address.** `ClientAddressFilter` runs before everything else and turns `ip:port` (and `[ipv6]:port`) into the bare address, so the PayFast check and `RateLimitFilter` both see the real client.
 - [x] **Check the notification IP against PayFast's published ranges** as well as the IPs its hostnames resolve to: `197.97.145.144/28`, `41.74.179.192/27`, `102.216.36.0/28`, `102.216.36.128/28`, `144.126.193.139` (`PayFastVerifier.PAYFAST_RANGES`). Compare against [PayFast's list](https://developers.payfast.co.za/docs#ports-ips) now and then.
 - [x] Tests: `ClientAddressFilterTest`, `PayFastVerifierTest`.
-- [ ] Deploy to staging and run a sandbox payment: the order should turn Paid, stock should go down and the confirmation should appear in the demo inbox.
+- [x] Deployed to staging (`4b8d8ff`) and ran a sandbox payment end to end: redirect, payment, notification and Paid status all work.
 - [x] **Late payment for a cancelled order.** If the customer or an admin cancelled it, the order now stays Cancelled with no stock taken. A history note is added and the shop gets one "Refund needed" email (`order-paid-after-cancel-to-shop`), even when PayFast repeats the notification. Orders cancelled only because the payment window ran out are still honoured as Paid, as before.
-- [ ] After deploying, check the two queued sandbox notifications (`GFC-261103-VC2D` and the 21:28 order): both should stay Cancelled with a refund note, and the shop inbox should have one refund email each.
+- [x] The two old queued sandbox notifications (`GFC-261103-VC2D` and the 21:28 order) were cancelled by the owner, so they won't arrive. The late-payment behaviour is covered by `OrderLifecycleTest`.
 
 Already found and fixed on the way:
 - PayFast's public sandbox merchant `10000100` rejects every signature, with or without its documented passphrase. Both apps use the owner's own sandbox account instead (`PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`). `showcase` keeps sandbox mode forced on.
@@ -45,7 +45,7 @@ Already found and fixed on the way:
 - [ ] Redeploy the Vercel production build once the production API answers. The production variables are already set, and the build fails without the API because it loads the catalogue.
 - [ ] Production checks: health `UP`, admin sign-in, storefront headers on securityheaders.com (the API's headers already pass), a sandbox payment end to end.
 - [ ] Rotate the `gfc_staging` database password and update `DB_PASSWORD` on the staging app. (`gfcadmin` and `gfc_app` were rotated on 3 November.)
-- [ ] Optional: turn staging's container logging off again once PayFast works (`az webapp log config --docker-container-logging off`). It was turned on to debug the notifications.
+- [x] Staging's container logging turned off again (4 November 2026) now that PayFast works.
 
 ### Done
 - [x] MySQL server, both databases and users, `time_zone`, backups.
