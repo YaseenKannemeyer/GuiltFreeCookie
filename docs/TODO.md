@@ -39,11 +39,12 @@ Already found and fixed on the way:
 - `DEMO_SIMULATED_PAYMENTS=false` (set on both apps) sends demo checkouts to the PayFast sandbox instead of the simulated payment page. Without it, `showcase` uses the simulated page.
 
 ### Still to do
-- [ ] **Stock:** only Cinnamon Pecan has stock, so the other 11 visible cookies show as unavailable. Set stock in admin on staging and production.
+- [x] **Stock:** all 12 visible cookies restocked to 50 on staging and production with `scripts/restock.sh` (4 November 2026).
 - [x] **GitHub `production` environment:** secret `AZURE_WEBAPP_PUBLISH_PROFILE` and variable `AZURE_WEBAPP_NAME=guiltfreecookie-api` are saved, with deployments limited to `main` (checked 4 November 2026; the variable had a stray line break, now fixed).
-- [ ] Merge `staging` into `main`, then run **Verify and deploy API** → `production`. The production app is configured and its photos are in `/home/uploads`, but no code has been deployed to it yet.
-- [ ] Redeploy the Vercel production build once the production API answers. The production variables are already set, and the build fails without the API because it loads the catalogue.
-- [ ] Production checks: health `UP`, admin sign-in, storefront headers on securityheaders.com (the API's headers already pass), a sandbox payment end to end.
+- [x] Merged `staging` into `main` (PR #43) and deployed the API to production (4 November 2026). Health, readiness and dependencies are `UP`.
+- [x] Redeployed Vercel production once the API answered: `guilt-free-cookie.vercel.app` serves the prerendered catalogue (20 sitemap entries) against the production API, with security headers and a CSP meta tag in place.
+- [x] Storefront headers on securityheaders.com: **A** (4 November 2026). It only missed CSP because the policy was a `<meta>` tag; `vercel.json` now also sends it as a header, plus `frame-ancestors 'none'` and `Cross-Origin-Opener-Policy`. Rescan after the next production deploy (expect A+).
+- [x] Production: admin sign-in and a sandbox payment end to end, checked by the owner (4 November 2026).
 - [ ] Rotate the `gfc_staging` database password and update `DB_PASSWORD` on the staging app. (`gfcadmin` and `gfc_app` were rotated on 3 November.)
 - [x] Staging's container logging turned off again (4 November 2026) now that PayFast works.
 
