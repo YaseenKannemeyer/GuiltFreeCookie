@@ -20,6 +20,8 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
 
     Optional<CustomerOrder> findByOrderNumber(String orderNumber);
 
+    List<CustomerOrder> findByStatusAndCourierName(OrderStatus status, String courierName);
+
     boolean existsByOrderNumber(String orderNumber);
 
     // Serialises status changes on one order (e.g. a payment notification racing the expiry job).

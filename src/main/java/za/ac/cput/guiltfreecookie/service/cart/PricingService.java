@@ -43,17 +43,20 @@ public class PricingService {
     private final ShippingRateProvider shippingRateProvider;
     private final boolean vatRegistered;
     private final BigDecimal vatRate;
+    private final BigDecimal minimumOrder;
 
     public PricingService(CookieRepository cookieRepository, CookieVariantRepository variantRepository,
                           DiscountService discountService, ShippingRateProvider shippingRateProvider,
                           @Value("${app.vat.registered}") boolean vatRegistered,
-                          @Value("${app.vat.rate}") BigDecimal vatRate) {
+                          @Value("${app.vat.rate}") BigDecimal vatRate,
+                          @Value("${app.order.minimum-subtotal:0}") BigDecimal minimumOrder) {
         this.cookieRepository = cookieRepository;
         this.variantRepository = variantRepository;
         this.discountService = discountService;
         this.shippingRateProvider = shippingRateProvider;
         this.vatRegistered = vatRegistered;
         this.vatRate = vatRate;
+        this.minimumOrder = minimumOrder == null || minimumOrder.signum() <= 0 ? null : minimumOrder.setScale(2, RoundingMode.HALF_UP);
     }
 
     public CartView price(Cart cart, List<CartItem> items) {
@@ -127,10 +130,11 @@ public class PricingService {
             shipping = quote(request, shippingMethod).cost();
         }
         BigDecimal total = shipping == null ? merchandiseTotal : merchandiseTotal.add(shipping);
-        boolean canCheckout = !lines.isEmpty() && lines.stream().allMatch(line -> line.issue() == null);
+        boolean belowMinimum = minimumOrder != null && subtotal.compareTo(minimumOrder) < 0;
+        boolean canCheckout = !lines.isEmpty() && !belowMinimum && lines.stream().allMatch(line -> line.issue() == null);
         return new CartView(cart.getCartId(), cart.getStatus(), cart.getCustomerEmail(), cart.isAccountOwned(), lines,
                 itemCount, cookieCount, subtotal, discount, discountTotal, shippingMethod, shipping, vatIncluded(total),
-                total, CURRENCY, canCheckout);
+                total, CURRENCY, canCheckout, minimumOrder, belowMinimum);
     }
 
     public List<ShippingQuote> shippingOptions(CartView cart, DeliveryArea area) {

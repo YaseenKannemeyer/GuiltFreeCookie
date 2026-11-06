@@ -14,8 +14,10 @@ import za.ac.cput.guiltfreecookie.dto.order.OrderSummary;
 import za.ac.cput.guiltfreecookie.dto.order.StatusChangeRequest;
 import za.ac.cput.guiltfreecookie.dto.order.TrackingRequest;
 import za.ac.cput.guiltfreecookie.service.order.AdminOrderService;
+import za.ac.cput.guiltfreecookie.service.order.CourierBookingService;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/orders")
@@ -23,9 +25,11 @@ import java.time.LocalDate;
 public class AdminOrderController {
 
     private final AdminOrderService adminOrderService;
+    private final CourierBookingService courierBookingService;
 
-    public AdminOrderController(AdminOrderService adminOrderService) {
+    public AdminOrderController(AdminOrderService adminOrderService, CourierBookingService courierBookingService) {
         this.adminOrderService = adminOrderService;
+        this.courierBookingService = courierBookingService;
     }
 
     @GetMapping
@@ -60,6 +64,19 @@ public class AdminOrderController {
     public ResponseEntity<AdminOrderView> ship(@PathVariable String orderNumber, @RequestBody TrackingRequest request,
                                                @AuthenticationPrincipal String adminId) {
         return ResponseEntity.ok(adminOrderService.ship(orderNumber, request, adminId));
+    }
+
+    @PostMapping("/{orderNumber}/courier-booking")
+    @Operation(summary = "Book The Courier Guy", description = "Books the collection, then ships the order with the tracking number and emails the customer. "
+            + "409 with the reason if it can't be booked (not a paid courier order, not a booking day, or the courier refused).")
+    public ResponseEntity<AdminOrderView> bookCourier(@PathVariable String orderNumber, @AuthenticationPrincipal String adminId) {
+        return ResponseEntity.ok(courierBookingService.book(orderNumber, adminId));
+    }
+
+    @GetMapping("/{orderNumber}/waybill")
+    @Operation(summary = "The printable waybill", description = "A short-lived link to the courier's PDF label for an order booked with The Courier Guy.")
+    public ResponseEntity<Map<String, String>> waybill(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(Map.of("url", courierBookingService.waybillUrl(orderNumber)));
     }
 
     @PostMapping("/{orderNumber}/refund")

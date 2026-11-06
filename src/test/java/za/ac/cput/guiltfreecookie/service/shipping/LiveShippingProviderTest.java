@@ -41,7 +41,7 @@ class LiveShippingProviderTest {
                     new ShippingQuote(ShippingMethod.COURIER, "Courier", free ? new BigDecimal("0.00") : FLAT, "2–4 days", free, true, null, false),
                     new ShippingQuote(ShippingMethod.PICKUP, "Collect", new BigDecimal("0.00"), "1 day", false, false, null, false));
         });
-        ShipLogicClient shipLogic = new ShipLogicClient("", "http://unused", "ECO", null, null, null) {
+        ShipLogicClient shipLogic = new ShipLogicClient("", "http://unused", "ECO", "", null, null, null) {
             @Override
             public boolean enabled() {
                 return enabled;

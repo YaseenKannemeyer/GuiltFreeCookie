@@ -27,6 +27,10 @@ const order = computed(() => data.value?.order);
 const pickup = computed(() => order.value?.shippingMethod === "PICKUP");
 const canShip = computed(() => !pickup.value && ["PAID", "PROCESSING", "SHIPPED"].includes(order.value?.status));
 const PAID = ["PAID", "PROCESSING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"];
+const COURIER = "The Courier Guy";
+const canBook = computed(() => data.value?.courierBooking && ["PAID", "PROCESSING"].includes(order.value?.status));
+const bookedWithCourier = computed(() => order.value?.courierName === COURIER && !!order.value?.trackingNumber);
+const showManual = ref(false);
 
 // The one move the team usually makes next, matching what the server allows.
 const nextMove = computed(() => {
@@ -35,7 +39,12 @@ const nextMove = computed(() => {
   if (s === "PROCESSING" && pickup.value)
     return { status: "READY_FOR_PICKUP", label: "Ready to collect", hint: "Emails the customer that it's ready, with the pickup details." };
   if (s === "READY_FOR_PICKUP") return { status: "DELIVERED", label: "Mark collected", hint: "" };
-  if (s === "SHIPPED") return { status: "DELIVERED", label: "Mark delivered", hint: "" };
+  if (s === "SHIPPED")
+    return {
+      status: "DELIVERED",
+      label: "Mark delivered",
+      hint: bookedWithCourier.value ? `This updates by itself when ${COURIER} delivers it (checked every 30 minutes).` : "",
+    };
   return null;
 });
 
@@ -94,6 +103,23 @@ const ship = () =>
     () => adminOrderApi.ship(order.value.orderNumber, { ...tracking, trackingUrl: tracking.trackingUrl.trim() || null }),
     order.value.status === "SHIPPED" ? "Tracking updated." : "Marked shipped. The customer has been emailed.",
   );
+const bookCourier = () =>
+  act(() => adminOrderApi.bookCourier(order.value.orderNumber), `Booked with ${COURIER}. The customer has been emailed the tracking link.`);
+
+// The window opens straight away so the browser doesn't block it as a pop-up; the waybill link fills it in.
+async function openWaybill() {
+  const tab = window.open("", "_blank");
+  error.value = "";
+  try {
+    const { url } = await adminOrderApi.waybill(order.value.orderNumber);
+    if (tab) tab.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    tab?.close();
+    error.value = errorMessage(e);
+  }
+}
+
 async function refund() {
   await act(() => adminOrderApi.refund(order.value.orderNumber, refundNote.value.trim() || null), "Refund recorded. Pay it back in the PayFast dashboard.");
   confirmingRefund.value = false;
@@ -156,7 +182,35 @@ const sentence = (text) => (text ? text.charAt(0) + text.slice(1).toLowerCase() 
                 </div>
               </div>
 
-              <form v-if="canShip" class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0" @submit.prevent="ship">
+              <div v-if="canBook" class="mt-6 rounded-xl border border-chocolate/15 bg-cream-50/60 p-4">
+                <h3 class="font-bold">Ship it with {{ COURIER }}</h3>
+                <p class="mt-1 text-sm text-chocolate/80">
+                  Books a collection from the bakery, saves the tracking number and emails the customer the tracking link.
+                  You can print the waybill straight after.
+                </p>
+                <BaseButton class="mt-3" :disabled="busy" :loading="busy" @click="bookCourier">
+                  {{ busy ? "Booking…" : "Book courier" }}
+                </BaseButton>
+                <button
+                  v-if="!showManual"
+                  type="button"
+                  class="mt-3 block text-sm font-bold underline min-h-11"
+                  @click="showManual = true"
+                >
+                  Or enter tracking yourself
+                </button>
+              </div>
+
+              <div v-if="bookedWithCourier" class="mt-6">
+                <BaseButton variant="outline" :disabled="busy" @click="openWaybill">Download waybill</BaseButton>
+                <p class="mt-2 text-sm text-chocolate/75">Print it and stick it on the box before the courier collects.</p>
+              </div>
+
+              <form
+                v-if="canShip && (!canBook || showManual)"
+                class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0"
+                @submit.prevent="ship"
+              >
                 <h3 class="sm:col-span-2 font-bold">{{ order.status === "SHIPPED" ? "Tracking details" : "Ship it" }}</h3>
                 <BaseInput v-model="tracking.courierName" label="Courier" required placeholder="The Courier Guy" />
                 <BaseInput v-model="tracking.trackingNumber" label="Tracking number" required />

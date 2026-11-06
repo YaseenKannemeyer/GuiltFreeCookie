@@ -22,5 +22,8 @@ public record CartView(
         BigDecimal vatIncluded,
         BigDecimal total,
         String currency,
-        boolean canCheckout) {
+        boolean canCheckout,
+        // The smallest subtotal (before discounts and delivery) that can check out. Null when there's no minimum.
+        BigDecimal minimumOrder,
+        boolean belowMinimum) {
 }

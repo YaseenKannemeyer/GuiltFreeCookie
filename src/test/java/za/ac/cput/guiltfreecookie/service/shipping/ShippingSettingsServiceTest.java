@@ -32,7 +32,7 @@ class ShippingSettingsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ShippingSettingsService(repository, new BigDecimal("80.00"), new BigDecimal("60.00"),
+        service = new ShippingSettingsService(repository, new BigDecimal("80.00"), new BigDecimal("60.00"), false,
                 new BigDecimal("500.00"), "1 Bakery Lane", "Bring your order number.");
         when(repository.findById(ShippingSettings.DEFAULT_ID)).thenReturn(Optional.empty());
         when(repository.save(any(ShippingSettings.class))).thenAnswer(call -> call.getArgument(0));
@@ -54,7 +54,8 @@ class ShippingSettingsServiceTest {
         assertEquals(ShippingMethod.PICKUP, belowThreshold.getLast().method());
         assertEquals(new BigDecimal("0.00"), atThreshold.getFirst().cost());
         assertTrue(atThreshold.getFirst().freeShipping());
-        assertTrue(provider.quotes(new ShippingRequest(BigDecimal.ONE, true, 6, null)).get(1).freeShipping());
+        assertTrue(provider.quotes(new ShippingRequest(BigDecimal.ONE, true, 6, null)).getFirst().freeShipping());
+        assertTrue(belowThreshold.stream().noneMatch(quote -> quote.method() == ShippingMethod.PUDO));
     }
 
     @Test

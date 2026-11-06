@@ -252,6 +252,11 @@ public class CheckoutService {
         if (priced.items().isEmpty()) {
             throw new BadRequestException("Your cart is empty");
         }
+        if (priced.belowMinimum()) {
+            throw new ConflictException("Orders start at R" + priced.minimumOrder().toPlainString()
+                    + " worth of cookies. Add R" + priced.minimumOrder().subtract(priced.subtotal()).toPlainString()
+                    + " more to check out.");
+        }
         if (!priced.canCheckout()) {
             throw new ConflictException("Some items in your cart have changed. Please review your cart.");
         }

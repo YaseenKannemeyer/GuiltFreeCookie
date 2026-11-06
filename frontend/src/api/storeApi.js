@@ -73,6 +73,9 @@ export const adminOrderApi = {
     api("put", `/admin/orders/${orderNumber}/status`, { status, note }),
   ship: (orderNumber, body) =>
     api("put", `/admin/orders/${orderNumber}/tracking`, body),
+  bookCourier: (orderNumber) =>
+    api("post", `/admin/orders/${orderNumber}/courier-booking`, undefined, { timeout: 45000 }),
+  waybill: (orderNumber) => api("get", `/admin/orders/${orderNumber}/waybill`, undefined, { timeout: 45000 }),
   refund: (orderNumber, note) =>
     api("post", `/admin/orders/${orderNumber}/refund`, { note }),
   shippingSettings: () => api("get", "/admin/shipping-settings"),

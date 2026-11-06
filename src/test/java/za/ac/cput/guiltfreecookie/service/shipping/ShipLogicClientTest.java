@@ -58,8 +58,9 @@ class ShipLogicClientTest {
     }
 
     private ShipLogicClient client(String key, String levels) {
-        return new ShipLogicClient(key, base + "/", levels,
-                new ShipLogicClient.Collection("Guilt Free Cookie", "", "Strandfontein", "Cape Town", Province.WESTERN_CAPE, "7798"),
+        return new ShipLogicClient(key, base + "/", levels, "https://track.example/?ref={ref}",
+                new ShipLogicClient.Collection("Guilt Free Cookie", "", "Strandfontein", "Cape Town", Province.WESTERN_CAPE, "7798",
+                        "Guilt Free Cookie", "0215550123", "hello@example.test"),
                 new ShipLogicClient.Box(30, 20, 12, 250, 60, 24), HttpClient.newHttpClient());
     }
 

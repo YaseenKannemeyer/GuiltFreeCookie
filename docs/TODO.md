@@ -160,6 +160,7 @@ The code is in and switched on (4 November 2026). Alerts from both services go b
   - [x] Dependencies: `…/guiltFreeCookie/actuator/health/dependencies` (mail and outbox), created 6 November 2026
 - [x] Better Stack heartbeats (2026-11-04, URLs set on production): create two, "Reservations" (expected every 5 minutes, grace 10) and "Daily flows" (every 24 hours, grace 1 hour). Put their URLs in `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL` on the production App Service.
 - [ ] Optional: a public status page (one is included in the free plan).
+- [ ] Optional: **Grafana Cloud** dashboards (free tier). The API would push Micrometer metrics over OTLP, with no agent: requests, errors, response times, JVM, database pool, plus shop numbers (orders, revenue, address searches, courier fallbacks and bookings). Needs a grafana.com sign-up and an OTLP token saved in Keychain.
 - [x] **Sentry account** (free Developer plan, EU region, org `guilt-free-cookie`): projects `guiltfreecookie-api` and `guiltfreecookie-web` created 2026-11-04. DSNs set on both Azure apps and in Vercel (Production and Preview `staging`). Vercel production redeployed with it.
   - Azure: `SENTRY_DSN` (API project DSN) on both apps; `SENTRY_ENVIRONMENT=production` / `staging`.
   - Vercel: `VITE_SENTRY_DSN` (web project DSN, added as public `config` type; a browser DSN is meant to be public) and `VITE_SENTRY_ENVIRONMENT`, for Production and Preview `staging`. Staging picks them up on its next push.
@@ -181,16 +182,22 @@ Stage 1 is built (6 November 2026, not yet deployed). Stage 2, booking and track
 - [x] **Collection address**: made-up `27 Spine Road, Strandfontein, Cape Town 7798` (`SHIPLOGIC_COLLECTION_*`). ShipLogic accepts it. Replace with the real bakery address before it's a real shop.
 - [x] **Address search at checkout.** A "Search your address" box under Delivery address suggests South African addresses as you type (150 ms after the last keystroke, no Enter needed; arrow keys and Enter pick one) and fills in number, street, unit/complex, suburb, city, province and postal code. If Google has no street number it asks for one. The courier price then updates for that area. `AddressSearchService` calls Google Places (New) from the server, so the key never reaches the browser; 60 requests a minute per client. Hidden while `GOOGLE_PLACES_API_KEY` is blank. Privacy policy section 6 now names Google.
 - [x] Tests: `ShipLogicClientTest`, `LiveShippingProviderTest`, `AddressSearchServiceTest`; checked in a browser (desktop and phone) against the ShipLogic sandbox and a stand-in for Google.
-- [ ] Admin **Book courier** button: create the shipment once, save the tracking number and URL, mark the order Shipped, offer a waybill download. Only book Monday to Wednesday.
-- [ ] `POST /api/v1/delivery/webhook` with a constant-time secret check. Move orders to Shipped or Delivered, never backwards, and always answer 200.
-- [ ] A `delivery` health indicator, added to the `dependencies` group.
-- [ ] Open question: can ShipLogic quote and book PUDO lockers?
+- [x] **Book courier** (stage 2, 6 November 2026, not yet deployed). On a paid courier order, the admin page shows **Book courier**: it quotes again with the full addresses, books the cheapest allowed service (`POST /v2/shipments`, `customer_reference` = order number), then ships the order with the tracking number and link, so the customer gets the shipped email. ShipLogic's own reason for a refusal is shown to the admin. The manual tracking form stays under "Or enter tracking yourself". Only on `SHIPLOGIC_BOOKING_DAYS` (default Monday–Wednesday, shop time).
+- [x] **Download waybill**: the courier's PDF label (`/v2/shipments/label`), opened in a new tab.
+- [x] **Delivered automatically**: every 30 minutes, shipped Courier Guy orders are checked (`/v2/tracking/shipments`); "delivered" moves the order to Delivered, which starts the delivered email flow. A poll instead of a webhook: ShipLogic's webhook topics and payloads (`/v2/accounts/webhooks`) aren't documented anywhere we can read. Ask `support@shiplogic.com` for them if instant updates are wanted.
+- [x] **`delivery` health check** in the `dependencies` group (Better Stack's dependencies monitor): down if ShipLogic doesn't answer or refuses the key. Up while the key is blank.
+- [x] Tested against the sandbox from the admin page in a browser: booked, tracking saved, waybill PDF downloaded, then the test shipments were cancelled. Tests: `ShipLogicBookingTest`, `CourierBookingTest`.
+- [ ] **Customer tracking link**: `SHIPLOGIC_TRACKING_URL`, default `https://portal.thecourierguy.co.za/track?ref={ref}`. Not confirmed: open one in a browser with a real tracking number. Staging uses `https://sandbox.shiplogic.com/track?ref={ref}`.
+- [ ] **Courier contact email** (`SHIPLOGIC_COLLECTION_EMAIL`, defaults to the site support email): ShipLogic refuses an email whose domain doesn't exist, so staging and the showcase's `hello@example.test` need a real one before booking works there.
+- [x] **PUDO lockers switched off** for new databases (`SHIPPING_PUDO_ENABLED`, default false). Existing databases: switch PUDO off in **Admin → Delivery**.
+- Optional later: a real locker picker (ShipLogic lists Courier Guy lockers via `/v2/pickup-points` and books to one with `delivery_pickup_point_id`), and instant updates via webhooks.
 
 ## 4b. Pack sizes and prices (6 November 2026, not yet deployed)
 
 Every cookie sells as **Single R5**, **Box of 6 R27** (R4.50 each, save 10%), **Box of 12 R48** (R4.00, save 20%) and **Box of 24 R84** (R3.50, save 30%). The product page shows each pack's price and a "Save x%" badge (`VariantView.savingPercent`, measured against the single).
 - [x] New local demo databases get these packs (`DemoData`). An existing local demo database: `scripts/reprice.sh local`.
 - [ ] After deploying, run `scripts/reprice.sh staging`, check the shop, then `scripts/reprice.sh production`. It asks for an admin email and password, updates the four packs on every visible cookie and adds a missing Box of 24. Safe to run twice.
+- [x] **Minimum order R300** (cookies' subtotal before discounts and delivery; `ORDER_MINIMUM_SUBTOTAL`, 0 turns it off). The cart says how much more to add and blocks Continue; checkout sends a cart under it back to the cart, and the server refuses it.
 - [ ] Decide the free-delivery threshold. It's R500, which is now about six Boxes of 24, against R80–R95 delivery.
 
 ## 5. Before it's ever a real shop

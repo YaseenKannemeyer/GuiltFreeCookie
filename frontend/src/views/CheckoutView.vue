@@ -271,7 +271,7 @@ const addressLines = computed(() => {
 
 async function enterStep() {
   clearErrors();
-  if (!cart.value?.items?.length) {
+  if (!cart.value?.items?.length || cart.value.belowMinimum) {
     router.replace({ name: "Cart" });
     return;
   }
