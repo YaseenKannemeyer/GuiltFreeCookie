@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.order;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -161,6 +162,7 @@ public class OrderService {
                 .setUpdatedAt(LocalDateTime.now())
                 .build());
         addEvent(order, OrderStatus.PAID, String.join(" ", notes), actor);
+        ShopMetrics.orderPaid(order.getShippingMethod(), order.getTotal());
         events.publishEvent(new OrderEvents.Paid(orderNumber));
     }
 

@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.notification;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -72,12 +73,15 @@ public class EmailOutbox {
                 || delivery.getNextAttemptAt().isAfter(LocalDateTime.now())) return;
         if (!delivery.getExpiresAt().isAfter(LocalDateTime.now())) {
             delivery.expire();
+            ShopMetrics.email("expired");
         } else {
             try {
                 sender.send(sender.createMimeMessage(new ByteArrayInputStream(delivery.getPayload())));
                 delivery.sent();
+                ShopMetrics.email("sent");
             } catch (MailException e) {
                 delivery.failed(5);
+                ShopMetrics.email("failed");
                 log.warn("Email delivery {} failed on attempt {} ({})", id, delivery.getAttempts(), e.getClass().getSimpleName());
             }
         }

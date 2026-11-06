@@ -37,7 +37,7 @@ async function load() {
     const data = await adminOrderApi.shippingSettings();
     Object.assign(settings, data);
     freeDelivery.value = data.freeShippingThreshold != null;
-    settings.freeShippingThreshold ??= 500;
+    settings.freeShippingThreshold ??= 750;
     loaded.value = true;
   } catch (e) {
     error.value = errorMessage(e);
@@ -56,7 +56,7 @@ async function save() {
       freeShippingThreshold: freeDelivery.value ? Number(settings.freeShippingThreshold) : null,
     });
     Object.assign(settings, data);
-    settings.freeShippingThreshold ??= 500;
+    settings.freeShippingThreshold ??= 750;
     notice.value = "Saved. New checkouts use these settings straight away.";
   } catch (e) {
     error.value = errorMessage(e);
