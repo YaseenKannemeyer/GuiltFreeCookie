@@ -16,7 +16,9 @@ import za.ac.cput.guiltfreecookie.exception.BadRequestException;
 import za.ac.cput.guiltfreecookie.repository.CookieRepository;
 import za.ac.cput.guiltfreecookie.repository.CookieVariantRepository;
 import za.ac.cput.guiltfreecookie.service.discount.DiscountService;
+import za.ac.cput.guiltfreecookie.service.shipping.DeliveryArea;
 import za.ac.cput.guiltfreecookie.service.shipping.ShippingRateProvider;
+import za.ac.cput.guiltfreecookie.service.shipping.ShippingRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,25 +43,32 @@ public class PricingService {
     private final ShippingRateProvider shippingRateProvider;
     private final boolean vatRegistered;
     private final BigDecimal vatRate;
+    private final BigDecimal minimumOrder;
 
     public PricingService(CookieRepository cookieRepository, CookieVariantRepository variantRepository,
                           DiscountService discountService, ShippingRateProvider shippingRateProvider,
                           @Value("${app.vat.registered}") boolean vatRegistered,
-                          @Value("${app.vat.rate}") BigDecimal vatRate) {
+                          @Value("${app.vat.rate}") BigDecimal vatRate,
+                          @Value("${app.order.minimum-subtotal:0}") BigDecimal minimumOrder) {
         this.cookieRepository = cookieRepository;
         this.variantRepository = variantRepository;
         this.discountService = discountService;
         this.shippingRateProvider = shippingRateProvider;
         this.vatRegistered = vatRegistered;
         this.vatRate = vatRate;
+        this.minimumOrder = minimumOrder == null || minimumOrder.signum() <= 0 ? null : minimumOrder.setScale(2, RoundingMode.HALF_UP);
     }
 
     public CartView price(Cart cart, List<CartItem> items) {
         return price(cart, items, null);
     }
 
-    // With a shippingMethod, shipping is priced and included in the total.
     public CartView price(Cart cart, List<CartItem> items, ShippingMethod shippingMethod) {
+        return price(cart, items, shippingMethod, null);
+    }
+
+    // With a shippingMethod, shipping is priced and included in the total. area makes the courier price live.
+    public CartView price(Cart cart, List<CartItem> items, ShippingMethod shippingMethod, DeliveryArea area) {
         Map<String, CookieVariant> variants = variantRepository
                 .findAllById(items.stream().map(CartItem::getVariantId).distinct().toList())
                 .stream().collect(Collectors.toMap(CookieVariant::getVariantId, Function.identity()));
@@ -117,22 +126,25 @@ public class PricingService {
         BigDecimal merchandiseTotal = subtotal.subtract(discountTotal).max(ZERO);
         BigDecimal shipping = null;
         if (shippingMethod != null) {
-            shipping = quote(merchandiseTotal, discount != null && discount.freeShipping(), shippingMethod).cost();
+            ShippingRequest request = new ShippingRequest(merchandiseTotal, discount != null && discount.freeShipping(), cookieCount, area);
+            shipping = quote(request, shippingMethod).cost();
         }
         BigDecimal total = shipping == null ? merchandiseTotal : merchandiseTotal.add(shipping);
-        boolean canCheckout = !lines.isEmpty() && lines.stream().allMatch(line -> line.issue() == null);
+        boolean belowMinimum = minimumOrder != null && subtotal.compareTo(minimumOrder) < 0;
+        boolean canCheckout = !lines.isEmpty() && !belowMinimum && lines.stream().allMatch(line -> line.issue() == null);
         return new CartView(cart.getCartId(), cart.getStatus(), cart.getCustomerEmail(), cart.isAccountOwned(), lines,
                 itemCount, cookieCount, subtotal, discount, discountTotal, shippingMethod, shipping, vatIncluded(total),
-                total, CURRENCY, canCheckout);
+                total, CURRENCY, canCheckout, minimumOrder, belowMinimum);
     }
 
-    public List<ShippingQuote> shippingOptions(CartView cart) {
+    public List<ShippingQuote> shippingOptions(CartView cart, DeliveryArea area) {
         BigDecimal merchandiseTotal = cart.subtotal().subtract(cart.discountTotal()).max(ZERO);
-        return shippingRateProvider.quotes(merchandiseTotal, cart.discount() != null && cart.discount().freeShipping());
+        return shippingRateProvider.quotes(new ShippingRequest(merchandiseTotal,
+                cart.discount() != null && cart.discount().freeShipping(), cart.cookieCount(), area));
     }
 
-    private ShippingQuote quote(BigDecimal merchandiseTotal, boolean freeShippingCode, ShippingMethod method) {
-        return shippingRateProvider.quotes(merchandiseTotal, freeShippingCode).stream()
+    private ShippingQuote quote(ShippingRequest request, ShippingMethod method) {
+        return shippingRateProvider.quotes(request).stream()
                 .filter(quote -> quote.method() == method)
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("That delivery option isn't available right now"));

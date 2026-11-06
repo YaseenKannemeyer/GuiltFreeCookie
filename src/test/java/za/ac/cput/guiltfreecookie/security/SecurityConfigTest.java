@@ -54,6 +54,7 @@ import za.ac.cput.guiltfreecookie.service.engagement.ReviewService;
 import za.ac.cput.guiltfreecookie.service.engagement.SiteInfoService;
 import za.ac.cput.guiltfreecookie.service.notification.EmailAssetService;
 import za.ac.cput.guiltfreecookie.service.order.AdminOrderService;
+import za.ac.cput.guiltfreecookie.service.order.CourierBookingService;
 import za.ac.cput.guiltfreecookie.service.order.CheckoutService;
 import za.ac.cput.guiltfreecookie.service.order.OrderService;
 import za.ac.cput.guiltfreecookie.service.payment.PayFastNotificationService;
@@ -179,6 +180,8 @@ class SecurityConfigTest {
     private PayFastNotificationService payFastNotificationService;
     @MockitoBean
     private AdminOrderService adminOrderService;
+    @MockitoBean
+    private CourierBookingService courierBookingService;
     @MockitoBean
     private ShippingSettingsService shippingSettingsService;
     @MockitoBean

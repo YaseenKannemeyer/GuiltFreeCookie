@@ -7,6 +7,7 @@ import StepRail from "../components/checkout/StepRail.vue";
 import StickyTotalBar from "../components/checkout/StickyTotalBar.vue";
 import ChoiceTile from "../components/checkout/ChoiceTile.vue";
 import CartLine from "../components/checkout/CartLine.vue";
+import AddressSearch from "../components/checkout/AddressSearch.vue";
 import newsletterApi from "../api/newsletterApi";
 import { useCart } from "../composables/useCart";
 import { useCheckoutAddresses } from "../composables/useCheckoutAddresses";
@@ -120,13 +121,20 @@ function clearErrors() {
   error.value = "";
 }
 
+// The courier is priced for the customer's area once suburb, city, province and postal code are filled in.
+const area = computed(() => {
+  const a = form.address;
+  const complete = a.suburb.trim() && a.city.trim() && a.province && /^\d{4}$/.test(a.postalCode.trim());
+  return complete ? { suburb: a.suburb.trim(), city: a.city.trim(), province: a.province, postalCode: a.postalCode.trim() } : null;
+});
+
 async function reprice() {
   if (!cart.value?.cartId || !form.shippingMethod) {
     priced.value = null;
     return;
   }
   try {
-    priced.value = await cartApi.get(cart.value.cartId, form.shippingMethod);
+    priced.value = await cartApi.get(cart.value.cartId, form.shippingMethod, form.shippingMethod === "COURIER" ? area.value : null);
   } catch (e) {
     priced.value = null;
     error.value = errorMessage(e);
@@ -135,7 +143,7 @@ async function reprice() {
 
 async function loadOptions() {
   try {
-    options.value = await cartApi.shippingOptions(cart.value.cartId);
+    options.value = await cartApi.shippingOptions(cart.value.cartId, area.value);
     if (form.shippingMethod && !chosen.value) form.shippingMethod = null;
     await reprice();
   } catch (e) {
@@ -143,6 +151,23 @@ async function loadOptions() {
   }
 }
 watch(() => form.shippingMethod, reprice);
+let areaTimer;
+watch(
+  () => JSON.stringify(area.value),
+  () => {
+    clearTimeout(areaTimer);
+    if (step.value === "delivery") areaTimer = setTimeout(loadOptions, 400);
+  },
+);
+
+function fillAddress(found) {
+  for (const key of ["streetNumber", "streetName", "complex", "suburb", "city", "postalCode"]) {
+    form.address[key] = found[key] || "";
+    delete errors[key];
+  }
+  if (found.province) form.address.province = found.province;
+  if (!form.address.streetNumber) errors.streetNumber = "Add your street or house number.";
+}
 
 const go = (next) => router.push({ name: "Checkout", params: { step: next } });
 
@@ -246,7 +271,7 @@ const addressLines = computed(() => {
 
 async function enterStep() {
   clearErrors();
-  if (!cart.value?.items?.length) {
+  if (!cart.value?.items?.length || cart.value.belowMinimum) {
     router.replace({ name: "Cart" });
     return;
   }
@@ -355,6 +380,7 @@ onMounted(async () => {
                 <span class="font-extrabold tabular">{{ Number(option.cost) === 0 ? "Free" : rand(option.cost) }}</span>
               </span>
               <span class="block text-chocolate/75">{{ option.eta }}</span>
+              <span v-if="option.estimate" class="block text-sm mt-1">Final price once we have your address</span>
               <span v-if="option.freeShipping" class="block text-sm font-bold mt-1">Free delivery applied</span>
               <span v-if="option.details" class="block text-sm mt-1 whitespace-pre-line">{{ option.details }}</span>
             </ChoiceTile>
@@ -363,6 +389,7 @@ onMounted(async () => {
 
         <div v-if="form.shippingMethod === 'COURIER'" class="mt-8 grid gap-5">
           <h2 class="font-bold">Delivery address</h2>
+          <AddressSearch @select="fillAddress" />
           <p v-if="isLoggedIn && addressesLoading" role="status">Loading saved addresses…</p>
           <p v-if="isLoggedIn && addressesUnavailable" class="text-sm">Saved addresses could not be loaded. Enter your address below or <button type="button" class="underline min-h-11" @click="loadAddresses">try again</button>.</p>
           <fieldset v-if="isLoggedIn && savedAddresses.length" class="min-w-0">
@@ -480,7 +507,7 @@ onMounted(async () => {
           </div>
           <div class="flex justify-between gap-4">
             <dt>Delivery</dt>
-            <dd class="tabular">{{ Number(summary.shipping) === 0 ? "Free" : rand(summary.shipping) }}</dd>
+            <dd class="tabular">{{ summary.shipping == null ? "…" : Number(summary.shipping) === 0 ? "Free" : rand(summary.shipping) }}</dd>
           </div>
           <div v-if="summary.vatIncluded" class="flex justify-between gap-4 text-sm text-chocolate/75">
             <dt>Includes VAT</dt>

@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /** Only seeds the demo database. Existing products and inventory are never overwritten. */
 @Component
@@ -42,6 +44,11 @@ public class DemoData {
         this.uploads = Path.of(uploads);
     }
 
+    // R5 a cookie, and the bigger the box the more you save: 10%, 20%, 30%. scripts/reprice.sh uses the same prices.
+    static final double SINGLE_PRICE = 5.0;
+    static final Map<Integer, BigDecimal> BOXES = new TreeMap<>(Map.of(
+            6, new BigDecimal("27.00"), 12, new BigDecimal("48.00"), 24, new BigDecimal("84.00")));
+
     record Sample(String name, String slug, CookieCategory category, String description,
                   String proposedIngredients, String proposedAllergens, double price) { }
 
@@ -64,13 +71,14 @@ public class DemoData {
                     .setCategory(sample.category()).setLongDescription(sample.description())
                     .setIngredients("Sample recipe: " + sample.proposedIngredients())
                     .setAllergies("Illustrative allergens: " + sample.proposedAllergens())
-                    .setPrice(sample.price()).setStockQuantity(120).setFeatured(true)
+                    .setPrice(SINGLE_PRICE).setStockQuantity(120).setFeatured(true)
                     .setImage("cookies/" + sample.slug() + ".webp").setCreatedAt(LocalDateTime.now()).build());
             variants.save(new CookieVariant.Builder().setCookieId(cookie.getCookieId()).setLabel("Single").build());
-            variants.save(new CookieVariant.Builder().setCookieId(cookie.getCookieId()).setLabel("Box of 6")
-                    .setUnitsPerPack(6).setPrice(BigDecimal.valueOf(sample.price() * 5.5)).setSortOrder(1).build());
-            variants.save(new CookieVariant.Builder().setCookieId(cookie.getCookieId()).setLabel("Box of 12")
-                    .setUnitsPerPack(12).setPrice(BigDecimal.valueOf(sample.price() * 10)).setSortOrder(2).build());
+            int sortOrder = 1;
+            for (var box : BOXES.entrySet()) {
+                variants.save(new CookieVariant.Builder().setCookieId(cookie.getCookieId()).setLabel("Box of " + box.getKey())
+                        .setUnitsPerPack(box.getKey()).setPrice(box.getValue()).setSortOrder(sortOrder++).build());
+            }
         }
         if (!discounts.existsByCode("DEMO10")) {
             discounts.save(new DiscountCode.Builder().setCode("DEMO10").setType(DiscountType.PERCENT)

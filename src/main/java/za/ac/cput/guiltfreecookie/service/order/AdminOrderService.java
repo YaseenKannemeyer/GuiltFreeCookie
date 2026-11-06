@@ -25,6 +25,7 @@ import za.ac.cput.guiltfreecookie.repository.CustomerOrderRepository;
 import za.ac.cput.guiltfreecookie.repository.OrderItemRepository;
 import za.ac.cput.guiltfreecookie.repository.OrderStatusEventRepository;
 import za.ac.cput.guiltfreecookie.repository.PaymentRepository;
+import za.ac.cput.guiltfreecookie.service.shipping.ShipLogicClient;
 import za.ac.cput.guiltfreecookie.util.Helper;
 
 import java.time.LocalDate;
@@ -63,10 +64,12 @@ public class AdminOrderService {
     private final OrderService orderService;
     private final OrderViews orderViews;
     private final ApplicationEventPublisher events;
+    private final ShipLogicClient shipLogic;
 
     public AdminOrderService(CustomerOrderRepository orderRepository, OrderItemRepository itemRepository,
                              OrderStatusEventRepository eventRepository, PaymentRepository paymentRepository,
-                             OrderService orderService, OrderViews orderViews, ApplicationEventPublisher events) {
+                             OrderService orderService, OrderViews orderViews, ApplicationEventPublisher events,
+                             ShipLogicClient shipLogic) {
         this.orderRepository = orderRepository;
         this.itemRepository = itemRepository;
         this.eventRepository = eventRepository;
@@ -74,6 +77,7 @@ public class AdminOrderService {
         this.orderService = orderService;
         this.orderViews = orderViews;
         this.events = events;
+        this.shipLogic = shipLogic;
     }
 
     // q matches order number, email or last name. Dates are inclusive. Newest first.
@@ -191,7 +195,8 @@ public class AdminOrderService {
                 orderViews.view(order),
                 order.getCustomerNote(),
                 eventRepository.findByOrderIdOrderByCreatedAtAsc(order.getOrderId()),
-                paymentRepository.findByOrderIdOrderByReceivedAtAsc(order.getOrderId()));
+                paymentRepository.findByOrderIdOrderByReceivedAtAsc(order.getOrderId()),
+                shipLogic.enabled() && order.getShippingMethod() == ShippingMethod.COURIER);
     }
 
     private static String note(String note) {

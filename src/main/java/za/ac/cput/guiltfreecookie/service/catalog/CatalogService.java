@@ -95,7 +95,7 @@ public class CatalogService {
                 cookie.getAllergies(),
                 cookie.getImage(),
                 images,
-                active.stream().map(variant -> toVariantView(cookie, variant)).toList(),
+                active.stream().map(variant -> toVariantView(cookie, variant, singlePrice(cookie, active))).toList(),
                 fromPrice(cookie, active),
                 cookie.isFeatured(),
                 status,
@@ -147,14 +147,35 @@ public class CatalogService {
     }
 
     public VariantView toVariantView(Cookie cookie, CookieVariant variant) {
+        return toVariantView(cookie, variant, singlePrice(cookie, List.of()));
+    }
+
+    VariantView toVariantView(Cookie cookie, CookieVariant variant, BigDecimal singlePrice) {
         BigDecimal price = variant.effectivePrice(cookie);
+        BigDecimal units = BigDecimal.valueOf(variant.getUnitsPerPack());
+        int saving = 0;
+        if (singlePrice != null && singlePrice.signum() > 0) {
+            BigDecimal asSingles = singlePrice.multiply(units);
+            saving = Math.max(0, BigDecimal.ONE.subtract(price.divide(asSingles, 4, RoundingMode.HALF_UP))
+                    .movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValue());
+        }
         return new VariantView(
                 variant.getVariantId(),
                 variant.getLabel(),
                 variant.getUnitsPerPack(),
                 price,
-                price.divide(BigDecimal.valueOf(variant.getUnitsPerPack()), 2, RoundingMode.HALF_UP),
-                cookie.getStockQuantity() >= variant.getUnitsPerPack());
+                price.divide(units, 2, RoundingMode.HALF_UP),
+                cookie.getStockQuantity() >= variant.getUnitsPerPack(),
+                saving);
+    }
+
+    // What one cookie costs on its own: the active single pack, or the cookie's unit price without one.
+    static BigDecimal singlePrice(Cookie cookie, List<CookieVariant> active) {
+        return active.stream()
+                .filter(variant -> variant.getUnitsPerPack() == 1)
+                .map(variant -> variant.effectivePrice(cookie))
+                .findFirst()
+                .orElse(cookie.getPrice() == null ? null : BigDecimal.valueOf(cookie.getPrice()));
     }
 
     static String label(CookieCategory category) {

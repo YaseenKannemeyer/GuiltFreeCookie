@@ -136,6 +136,16 @@ const cookies = computed(() => {
   transform: translateY(-6px) rotate(-3deg);
 }
 
+@media (max-width: 639px) {
+  .lineup--flow .lineup-grid {
+    gap: 2.4rem 1.6rem;
+    margin-top: 2.4rem;
+  }
+  .lineup--flow .lineup-slot {
+    max-width: 14rem;
+  }
+}
+
 /* Final frame of the hero stage: covers the tan 80% only, left-aligned with
    the hero copy (container-magic: 128rem wide, 4.8rem gutters at lg), and
    sized so heading + two rows fit under the navbar. */

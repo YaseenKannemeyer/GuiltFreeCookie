@@ -18,7 +18,7 @@ const { vReveal } = useScrollReveal();
            card. Sizes are in 10px rem. -->
       <div
         v-reveal
-        class="relative rounded-[28px] bg-tan px-6 pt-[14rem] pb-14 sm:px-12 sm:pt-[17rem] lg:py-20 lg:px-20"
+        class="cta-panel relative rounded-[28px] bg-tan px-6 pt-[14rem] pb-14 sm:px-12 sm:pt-[17rem] lg:py-20 lg:px-20"
       >
         <!-- Widths keep it clear of the copy column at every breakpoint -->
         <img
@@ -48,3 +48,12 @@ const { vReveal } = useScrollReveal();
     </div>
   </section>
 </template>
+
+<style scoped>
+@media (max-width: 639px) {
+  .cta-panel > img {
+    width: min(30rem, 100%);
+    right: 0;
+  }
+}
+</style>

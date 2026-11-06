@@ -11,12 +11,12 @@ const cookies = [
 <template>
   <section
     id="inside"
-    class="bg-[#e3d9c8] min-h-[50vh] py-16 lg:py-20 flex items-center scroll-mt-[var(--nav-h)]"
+    class="quality-section bg-[#e3d9c8] min-h-[50vh] py-16 lg:py-20 flex items-center scroll-mt-[var(--nav-h)]"
   >
     <div class="mx-auto w-full max-w-7xl px-6 sm:px-8 lg:px-16">
       <div class="grid lg:grid-cols-2 items-center gap-12">
         <div
-          class="order-2 lg:order-1 flex justify-center items-center max-w-lg mx-auto mt-0 lg:mt-0"
+          class="quality-cookies order-2 lg:order-1 flex justify-center items-center max-w-lg mx-auto mt-0 lg:mt-0"
         >
           <img
             v-for="(cookie, index) in cookies"
@@ -30,7 +30,7 @@ const cookies = [
           />
         </div>
 
-        <div class="mt-20 order-1 lg:order-2 lg:mt-0 lg:ml-20 text-left">
+        <div class="quality-copy mt-20 order-1 lg:order-2 lg:mt-0 lg:ml-20 text-left">
           <h2
             class="font-display text-display"
           >
@@ -39,7 +39,7 @@ const cookies = [
           </h2>
 
           <p
-            class="hidden lg:block lg:mt-6 text-chocolate text-base max-w-[62ch]"
+            class="mt-5 lg:mt-6 text-chocolate text-base max-w-[62ch]"
           >
             Explore the flavours, then check the ingredients and allergens on each
             product page. Recipes vary, so choose the cookie that works for you.
@@ -50,3 +50,26 @@ const cookies = [
     </div>
   </section>
 </template>
+
+<style scoped>
+@media (max-width: 1023px) {
+  .quality-section {
+    min-height: 0;
+    padding-block: 5.6rem;
+  }
+  .quality-copy {
+    margin-top: 0;
+  }
+  .quality-cookies {
+    width: 100%;
+    max-width: 36rem;
+  }
+  .quality-cookies img {
+    width: 40%;
+    margin-bottom: 0;
+  }
+  .quality-cookies img + img {
+    margin-left: -20%;
+  }
+}
+</style>

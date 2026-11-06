@@ -32,7 +32,7 @@ class ShippingSettingsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ShippingSettingsService(repository, new BigDecimal("80.00"), new BigDecimal("60.00"),
+        service = new ShippingSettingsService(repository, new BigDecimal("80.00"), new BigDecimal("60.00"), false,
                 new BigDecimal("500.00"), "1 Bakery Lane", "Bring your order number.");
         when(repository.findById(ShippingSettings.DEFAULT_ID)).thenReturn(Optional.empty());
         when(repository.save(any(ShippingSettings.class))).thenAnswer(call -> call.getArgument(0));
@@ -47,14 +47,15 @@ class ShippingSettingsServiceTest {
     void quotesUseTheConfiguredDefaultsAndFreeThreshold() {
         RuleBasedShippingProvider provider = new RuleBasedShippingProvider(service);
 
-        List<ShippingQuote> belowThreshold = provider.quotes(new BigDecimal("499.99"), false);
-        List<ShippingQuote> atThreshold = provider.quotes(new BigDecimal("500.00"), false);
+        List<ShippingQuote> belowThreshold = provider.quotes(new ShippingRequest(new BigDecimal("499.99"), false, 6, null));
+        List<ShippingQuote> atThreshold = provider.quotes(new ShippingRequest(new BigDecimal("500.00"), false, 6, null));
 
         assertEquals(new BigDecimal("80.00"), belowThreshold.getFirst().cost());
         assertEquals(ShippingMethod.PICKUP, belowThreshold.getLast().method());
         assertEquals(new BigDecimal("0.00"), atThreshold.getFirst().cost());
         assertTrue(atThreshold.getFirst().freeShipping());
-        assertTrue(provider.quotes(BigDecimal.ONE, true).get(1).freeShipping());
+        assertTrue(provider.quotes(new ShippingRequest(BigDecimal.ONE, true, 6, null)).getFirst().freeShipping());
+        assertTrue(belowThreshold.stream().noneMatch(quote -> quote.method() == ShippingMethod.PUDO));
     }
 
     @Test

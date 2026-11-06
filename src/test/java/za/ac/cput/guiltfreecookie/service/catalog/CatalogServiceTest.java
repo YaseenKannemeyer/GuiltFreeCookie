@@ -112,6 +112,21 @@ class CatalogServiceTest {
     }
 
     @Test
+    void biggerBoxesShowTheirSavingAgainstSingles() {
+        Cookie five = new Cookie.Builder().copy(chunk).setPrice(5.0).build();
+        CookieVariant one = new CookieVariant.Builder().setCookieId("CK1").setUnitsPerPack(1).build();
+        CookieVariant six = new CookieVariant.Builder().setCookieId("CK1").setUnitsPerPack(6).setPrice(new BigDecimal("27")).build();
+        CookieVariant dozen = new CookieVariant.Builder().setCookieId("CK1").setUnitsPerPack(12).setPrice(new BigDecimal("48")).build();
+        CookieVariant pricier = new CookieVariant.Builder().setCookieId("CK1").setUnitsPerPack(6).setPrice(new BigDecimal("40")).build();
+        BigDecimal single = CatalogService.singlePrice(five, List.of(dozen, one));
+
+        assertEquals(0, service.toVariantView(five, one, single).savingPercent());
+        assertEquals(10, service.toVariantView(five, six, single).savingPercent());
+        assertEquals(20, service.toVariantView(five, dozen, single).savingPercent());
+        assertEquals(0, service.toVariantView(five, pricier, single).savingPercent());
+    }
+
+    @Test
     void sortOptionsAreValidated() {
         assertEquals(Sort.Order.desc("featured"), CatalogService.sortFor(null).iterator().next());
         assertEquals(Sort.Order.asc("price"), CatalogService.sortFor("price_asc").iterator().next());

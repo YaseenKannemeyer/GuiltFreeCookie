@@ -27,6 +27,7 @@ public class ShippingSettingsService {
             ShippingSettingsRepository repository,
             @Value("${app.shipping.courier-rate}") BigDecimal courierRate,
             @Value("${app.shipping.pudo-rate}") BigDecimal pudoRate,
+            @Value("${app.shipping.pudo-enabled:true}") boolean pudoEnabled,
             @Value("${app.shipping.free-threshold}") BigDecimal freeThreshold,
             @Value("${app.shipping.pickup-address}") String pickupAddress,
             @Value("${app.shipping.pickup-instructions}") String pickupInstructions) {
@@ -36,7 +37,7 @@ public class ShippingSettingsService {
                 .setCourierEnabled(true)
                 .setCourierRate(courierRate)
                 .setCourierEta("2–4 business days")
-                .setPudoEnabled(true)
+                .setPudoEnabled(pudoEnabled)
                 .setPudoRate(pudoRate)
                 .setPudoEta("2–4 business days to your locker")
                 .setPickupEnabled(true)

@@ -29,6 +29,9 @@ const steps = [
 
 const items = computed(() => cart.value?.items || []);
 const hasIssues = computed(() => items.value.some((line) => line.issue));
+const shortBy = computed(() =>
+  cart.value?.belowMinimum ? Math.max(0, Number(cart.value.minimumOrder) - Number(cart.value.subtotal)) : 0,
+);
 const empty = computed(() => ready.value && items.value.length === 0);
 
 async function run(action) {
@@ -240,6 +243,11 @@ onMounted(() => {
             <dd class="text-chocolate/75 text-right">You'll choose in step 3</dd>
           </div>
         </dl>
+        <p v-if="cart.belowMinimum" role="status" class="mt-6 rounded-xl bg-primary/20 px-4 py-3">
+          Orders start at <strong>{{ rand(cart.minimumOrder) }}</strong> worth of cookies.
+          Add <strong class="tabular">{{ rand(shortBy) }}</strong> more to check out.
+          <RouterLink :to="{ name: 'Products' }" class="font-bold underline">Add more cookies</RouterLink>
+        </p>
         <p class="mt-6 text-sm text-chocolate/75">
           Baked fresh to order. Questions about ingredients?
           <RouterLink :to="{ name: 'Contact' }" class="font-bold underline">Ask us</RouterLink> before you order.
@@ -248,7 +256,7 @@ onMounted(() => {
         <StickyTotalBar
           label="So far"
           :amount="cart.total"
-          :note="hasIssues ? 'Fix the items marked above to continue.' : ''"
+          :note="hasIssues ? 'Fix the items marked above to continue.' : cart.belowMinimum ? `Add ${rand(shortBy)} more to check out.` : ''"
         >
           <BaseButton
             size="lg"

@@ -18,11 +18,13 @@ export const catalogApi = {
 };
 export const cartApi = {
   create: () => api("post", "/carts"),
-  get: (cartId, shippingMethod) =>
+  // area ({ suburb, city, province, postalCode }) prices the courier for that area.
+  get: (cartId, shippingMethod, area) =>
     api("get", `/carts/${cartId}`, undefined, {
-      params: shippingMethod ? { shippingMethod } : undefined,
+      params: shippingMethod ? { shippingMethod, ...(area || {}) } : undefined,
     }),
-  shippingOptions: (cartId) => api("get", `/carts/${cartId}/shipping-options`),
+  shippingOptions: (cartId, area) =>
+    api("get", `/carts/${cartId}/shipping-options`, undefined, { params: area || undefined }),
   addItem: (cartId, variantId, quantity) =>
     api("post", `/carts/${cartId}/items`, { variantId, quantity }),
   setQuantity: (cartId, itemId, quantity) =>
@@ -34,6 +36,13 @@ export const cartApi = {
   removeDiscount: (cartId) => api("delete", `/carts/${cartId}/discount`),
   setEmail: (cartId, email) => api("put", `/carts/${cartId}/email`, { email }),
   merge: (cartId) => api("post", "/me/cart/merge", { cartId }),
+};
+export const addressApi = {
+  // An empty q only says whether search is switched on.
+  suggest: (q, session, signal) =>
+    api("get", "/address-search", undefined, { params: { q, session }, signal, timeout: 8000 }),
+  place: (id, session) =>
+    api("get", "/address-search/place", undefined, { params: { id, session }, timeout: 8000 }),
 };
 export const checkoutApi = {
   placeOrder: (body) => api("post", "/checkout", body),
@@ -64,6 +73,9 @@ export const adminOrderApi = {
     api("put", `/admin/orders/${orderNumber}/status`, { status, note }),
   ship: (orderNumber, body) =>
     api("put", `/admin/orders/${orderNumber}/tracking`, body),
+  bookCourier: (orderNumber) =>
+    api("post", `/admin/orders/${orderNumber}/courier-booking`, undefined, { timeout: 45000 }),
+  waybill: (orderNumber) => api("get", `/admin/orders/${orderNumber}/waybill`, undefined, { timeout: 45000 }),
   refund: (orderNumber, note) =>
     api("post", `/admin/orders/${orderNumber}/refund`, { note }),
   shippingSettings: () => api("get", "/admin/shipping-settings"),

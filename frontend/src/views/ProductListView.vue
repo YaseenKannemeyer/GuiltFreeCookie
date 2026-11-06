@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { catalogApi, errorMessage } from "../api/storeApi";
 import CookieCard from "../components/cards/CookieCard.vue";
 import BaseButton from "../components/ui/BaseButton.vue";
+import { ChevronDownIcon } from "@heroicons/vue/20/solid";
 const route = useRoute(),
   router = useRouter();
 const filters = reactive({
@@ -18,6 +19,10 @@ const categories = ref([]),
   result = ref({ items: [], page: 0, totalPages: 0, totalItems: 0 }),
   busy = ref(true),
   error = ref("");
+const filtersExpanded = ref(false);
+const activeExtraFilters = computed(() =>
+  [filters.minPrice !== "", filters.maxPrice !== "", filters.inStock, filters.sort !== "featured"].filter(Boolean).length,
+);
 let timer,
   controller,
   syncing = false;
@@ -132,7 +137,17 @@ function clear() {
             {{ c.label }} ({{ c.count }})
           </button>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          type="button"
+          class="sm:hidden flex w-full min-h-11 items-center justify-between gap-3 font-bold"
+          :aria-expanded="filtersExpanded"
+          aria-controls="extra-filters"
+          @click="filtersExpanded = !filtersExpanded"
+        >
+          <span>Filter & sort<span v-if="activeExtraFilters"> ({{ activeExtraFilters }})</span></span>
+          <ChevronDownIcon class="h-5 w-5 transition-transform" :class="{ 'rotate-180': filtersExpanded }" />
+        </button>
+        <div id="extra-filters" class="grid-cols-2 lg:grid-cols-4 gap-4 sm:grid" :class="filtersExpanded ? 'grid' : 'hidden'">
           <label
             >Min price (R)<input
               v-model="filters.minPrice"

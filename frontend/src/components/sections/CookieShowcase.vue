@@ -347,32 +347,43 @@ const cards = computed(() => {
    cookie much taller than the card so it bursts out like desktop ---------- */
 @media (max-width: 639px) {
   .showcase-list {
-    gap: 7.2rem;
+    gap: 5.6rem;
   }
   .showcase-card,
   .showcase-card:hover {
     height: auto;
-    min-height: 12.8rem;
-    padding: 2rem 2.4rem;
+    min-height: 14.4rem;
+    padding: 2rem;
     border-radius: 24px;
     background: var(--wash);
   }
   .showcase-content {
     position: static;
-    max-width: calc(100% - 16.8rem);
+    max-width: 52%;
   }
 
   .showcase-badge,
-  .showcase-desc,
-  .showcase-actions {
+  .showcase-desc {
     display: none;
+  }
+
+  .showcase-actions {
+    display: flex;
+    margin-top: 1.2rem;
+  }
+  .showcase-primary,
+  .showcase-link {
+    display: none;
+  }
+  .showcase-price {
+    color: #fbf9f4;
   }
 
   .showcase-title,
   .showcase-card:hover .showcase-title {
     margin: 0;
-    font-size: var(--fs-base);
-    line-height: 1.1;
+    font-size: clamp(1.8rem, 5vw, 2.2rem);
+    line-height: 1.2;
     color: #fbf9f4;
   }
   /* Whole card is the tap target */
@@ -386,12 +397,12 @@ const cards = computed(() => {
 
   /* ~20rem tall cookie on an 12.8rem card */
   .showcase-image-wrap {
-    width: 17.6rem;
-    right: 0.4rem;
+    width: 46%;
+    right: 0;
   }
   .reverse .showcase-image-wrap {
     right: auto;
-    left: 0.4rem;
+    left: 0;
   }
   .reverse .showcase-image {
     transform: scaleX(-1);
