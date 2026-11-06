@@ -23,7 +23,7 @@ const emit = defineEmits(['update:modelValue'])
 const sizeClass = computed(() => {
   switch (props.size) {
     case 'sm':
-      return { wrap: 'h-10', btn: 'h-10 w-10', text: 'text-sm', icon: 'h-4 w-4' }
+      return { wrap: 'h-11', btn: 'h-11 w-11', text: 'text-base', icon: 'h-4 w-4' }
     case 'lg':
       return { wrap: 'h-16', btn: 'h-16 w-16', text: 'text-base', icon: 'h-6 w-6' }
     case 'md':

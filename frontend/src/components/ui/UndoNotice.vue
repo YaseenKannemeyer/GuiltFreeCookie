@@ -50,7 +50,7 @@ const onUndo = (event) => {
 
     <button
       type="button"
-      class="relative isolate flex min-h-9 min-w-24 items-center justify-center overflow-hidden rounded-full border-2 border-chocolate/25 bg-background px-3.5 text-sm font-bold text-chocolate transition-transform duration-150 ease-cookie cursor-pointer active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-chocolate focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      class="relative isolate flex min-h-11 min-w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-chocolate/25 bg-background px-3.5 text-sm font-bold text-chocolate transition-transform duration-150 ease-cookie cursor-pointer active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-chocolate focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       @click="onUndo"
     >
       <span class="flex items-center gap-1.5">

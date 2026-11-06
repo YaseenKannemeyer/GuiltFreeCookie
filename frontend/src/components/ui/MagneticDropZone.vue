@@ -231,7 +231,7 @@ const title = computed(() => (isOver.value ? "Let go to add it" : isNear.value ?
       </p>
       <p class="text-sm tabular text-chocolate/60">{{ formatBytes(firstFile.size) }}</p>
 
-      <div class="mt-5 flex items-center gap-2">
+      <div class="mt-5 flex flex-wrap justify-center items-center gap-2">
         <BaseButton variant="cream" size="sm" @click="openPicker">
           <ArrowUpTrayIcon class="h-4 w-4" aria-hidden="true" />
           Replace

@@ -99,7 +99,7 @@ const subscribe = async () => {
             Email address
           </label>
           <div class="flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1">
+            <div class="relative flex-1 min-w-0">
               <EnvelopeIcon
                 :class="['absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none', dark ? 'text-cream-100/50' : 'text-chocolate/45']"
               />

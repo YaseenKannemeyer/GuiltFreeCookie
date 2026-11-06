@@ -211,7 +211,7 @@ onMounted(() => {
               Have a discount code?
             </button>
             <form v-else class="flex gap-2 items-start" @submit.prevent="apply">
-              <label class="flex-1">
+              <label class="flex-1 min-w-0">
                 <span class="sr-only">Discount code</span>
                 <input
                   v-model="code"

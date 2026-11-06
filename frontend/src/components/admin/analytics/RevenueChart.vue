@@ -13,7 +13,7 @@ const HEIGHT = 200;
 const AXIS = 28;
 const LEFT = 52;
 const RIGHT = 12;
-const TOP = 12;
+const TOP = 32;
 const INK = "#9A6E45";
 
 const box = ref(null);
@@ -22,7 +22,7 @@ const active = ref(null);
 let observer;
 
 onMounted(() => {
-  observer = new ResizeObserver(([entry]) => (width.value = Math.max(280, entry.contentRect.width)));
+  observer = new ResizeObserver(([entry]) => (width.value = Math.max(160, entry.contentRect.width)));
   observer.observe(box.value);
 });
 onBeforeUnmount(() => observer?.disconnect());
@@ -43,7 +43,8 @@ const ticks = computed(() => [0, top.value / 2, top.value]);
 const labels = computed(() => {
   const n = props.days.length;
   if (!n) return [];
-  const picks = n <= 7 ? [...Array(n).keys()] : [0, Math.floor((n - 1) / 2), n - 1];
+  const count = Math.min(n, 7, Math.max(2, Math.floor(plotWidth.value / 64)));
+  const picks = Array.from({ length: count }, (_, i) => Math.round(i * (n - 1) / Math.max(1, count - 1)));
   return picks.map((i) => ({ i, text: shortDate(props.days[i].date) }));
 });
 const peak = computed(() => {
@@ -79,7 +80,7 @@ function key(event) {
   active.value = Math.min(n - 1, Math.max(0, (active.value ?? n - 1) + moves[event.key]));
 }
 const tip = computed(() => {
-  if (active.value == null) return null;
+  if (active.value == null || !props.days[active.value]) return null;
   const day = props.days[active.value];
   const left = Math.min(Math.max(x(active.value), 80), width.value - 80);
   return { day, left, top: y(Number(day.revenue)) };
@@ -91,10 +92,11 @@ const tip = computed(() => {
     <svg
       :width="width"
       :height="TOP + HEIGHT + AXIS"
-      class="block touch-pan-y outline-none focus-visible:ring-2 focus-visible:ring-chocolate rounded"
+      class="block max-w-full touch-pan-y outline-none focus-visible:ring-2 focus-visible:ring-chocolate rounded"
       role="img"
       tabindex="0"
       :aria-label="`Revenue by day. Use the arrow keys to read each day.`"
+      @pointerdown="point"
       @pointermove="point"
       @pointerleave="active = null"
       @focus="active = active ?? days.length - 1"

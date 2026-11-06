@@ -43,7 +43,7 @@ const close = () => emit(stage.value === "undo" ? "confirm" : "close");
       @undo="stage = 'idle'"
       @expire="emit('confirm')"
     />
-    <div v-else class="flex justify-end gap-3">
+    <div v-else class="flex flex-wrap justify-end gap-3">
       <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
       <HoldToConfirmButton :reset-after="0" @confirm="stage = 'undo'">
         <TrashIcon class="h-4 w-4" aria-hidden="true" />

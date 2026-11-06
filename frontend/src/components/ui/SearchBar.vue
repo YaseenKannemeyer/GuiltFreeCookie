@@ -66,7 +66,7 @@ defineExpose({ focus: () => input.value?.focus() })
       v-if="modelValue"
       type="button"
       :class="[
-        'absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full transition-colors',
+        'absolute right-0 top-1/2 -translate-y-1/2 h-11 w-11 flex items-center justify-center rounded-full transition-colors',
         isDark ? 'text-cream/70 hover:text-cream hover:bg-cream/10' : 'text-chocolate/60 hover:text-chocolate hover:bg-chocolate/[0.07]',
       ]"
       aria-label="Clear search"

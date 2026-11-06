@@ -67,7 +67,7 @@ onMounted(loadDeliveries);
 watch(selected, preview);
 </script>
 <template>
-  <div class="p-5 md:p-10 max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <h1 class="font-display text-display">Email studio</h1>
     <p class="mt-3">
       Preview the bakery’s emails with clearly illustrative sample data.

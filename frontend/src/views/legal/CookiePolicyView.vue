@@ -56,7 +56,7 @@ const storage = [
       <p>The only item we store is strictly necessary for our staff to use the admin dashboard:</p>
 
       <!-- Table on larger screens, stacked cards on phones -->
-      <div class="hidden md:block !max-w-none overflow-hidden rounded-2xl border border-chocolate/15">
+      <div class="hidden 2xl:block !max-w-none overflow-hidden rounded-2xl border border-chocolate/15">
         <table class="w-full text-left">
           <thead class="bg-chocolate/[0.06] text-sm">
             <tr>
@@ -76,7 +76,7 @@ const storage = [
           </tbody>
         </table>
       </div>
-      <dl v-for="item in storage" :key="item.name" class="md:hidden rounded-2xl border border-chocolate/15 p-5 space-y-3 !max-w-none">
+      <dl v-for="item in storage" :key="item.name" class="2xl:hidden rounded-2xl border border-chocolate/15 p-5 space-y-3 !max-w-none">
         <div><dt class="text-sm font-bold">Name</dt><dd class="font-bold text-chocolate break-all">{{ item.name }}</dd></div>
         <div><dt class="text-sm font-bold">Type</dt><dd>{{ item.type }} ({{ item.who.toLowerCase() }})</dd></div>
         <div><dt class="text-sm font-bold">Purpose</dt><dd>{{ item.purpose }}</dd></div>

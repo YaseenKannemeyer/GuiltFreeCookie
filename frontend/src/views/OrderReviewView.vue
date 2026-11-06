@@ -87,7 +87,7 @@ async function submit(cookieId) {
                   <label v-for="n in 5" :key="n" class="cursor-pointer">
                     <input v-model="forms[item.cookieId].rating" type="radio" :name="`rating-${item.cookieId}`" :value="n" class="peer sr-only" />
                     <span
-                      class="flex h-12 w-12 items-center justify-center rounded-full text-[2.4rem] leading-none peer-focus-visible:ring-2 peer-focus-visible:ring-chocolate"
+                      class="flex h-11 w-11 items-center justify-center rounded-full text-[2.4rem] leading-none peer-focus-visible:ring-2 peer-focus-visible:ring-chocolate"
                       :class="n <= forms[item.cookieId].rating ? 'text-[#9A6E45]' : 'text-chocolate/25'"
                       aria-hidden="true"
                       >★</span

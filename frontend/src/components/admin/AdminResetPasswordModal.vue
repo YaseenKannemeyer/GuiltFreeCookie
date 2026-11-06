@@ -67,7 +67,7 @@ const copyPassword = async () => {
         <span class="font-semibold text-chocolate">{{ admin?.firstName }} {{ admin?.lastName }}</span>,
         valid for 24 hours. Their current password stops working immediately.
       </p>
-      <div class="flex justify-end gap-3">
+      <div class="flex flex-wrap justify-end gap-3">
         <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
         <BaseButton variant="primary" size="sm" :loading="loading" @click="confirmReset">
           Reset Password
@@ -81,10 +81,10 @@ const copyPassword = async () => {
         again and expires in 24 hours.
       </p>
       <div class="flex items-center gap-2 bg-chocolate/[0.06] rounded-2xl px-4 py-3 mb-6">
-        <code class="flex-1 font-mono text-base text-chocolate tracking-wide">{{ tempPassword }}</code>
+        <code class="flex-1 min-w-0 break-all font-mono text-base text-chocolate tracking-wide">{{ tempPassword }}</code>
         <button
           type="button"
-          class="h-9 w-9 flex items-center justify-center rounded-full text-chocolate/60 hover:text-chocolate hover:bg-chocolate/[0.07] transition-colors"
+          class="h-11 w-11 shrink-0 flex items-center justify-center rounded-full text-chocolate/60 hover:text-chocolate hover:bg-chocolate/[0.07] transition-colors"
           aria-label="Copy password"
           @click="copyPassword"
         >

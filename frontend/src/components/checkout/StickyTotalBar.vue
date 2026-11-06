@@ -15,7 +15,7 @@ const { rand } = useFormat();
 
 <template>
   <div
-    class="fixed inset-x-0 bottom-0 z-40 bg-background/95 backdrop-blur border-t border-chocolate/[0.12] px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]
+    class="sticky-total fixed inset-x-0 bottom-0 z-40 bg-background/95 backdrop-blur border-t border-chocolate/[0.12] px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]
            md:static md:z-auto md:mt-10 md:bg-transparent md:backdrop-blur-none md:px-0 md:pb-0 md:pt-6"
   >
     <div class="max-w-[64rem] mx-auto">
@@ -30,3 +30,9 @@ const { rand } = useFormat();
     </div>
   </div>
 </template>
+
+<style scoped>
+@media (max-height: 500px) {
+  .sticky-total { position: static; margin-top: 3.2rem; padding-inline: 0; background: transparent; backdrop-filter: none; }
+}
+</style>

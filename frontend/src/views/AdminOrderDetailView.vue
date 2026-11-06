@@ -130,7 +130,7 @@ const sentence = (text) => (text ? text.charAt(0) + text.slice(1).toLowerCase() 
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-5xl mx-auto">
+  <div class="max-w-5xl mx-auto">
     <RouterLink :to="{ name: 'AdminOrders' }" class="inline-flex items-center gap-1.5 font-bold min-h-11">
       <ArrowLeftIcon class="h-5 w-5" aria-hidden="true" /> All orders
     </RouterLink>
@@ -145,7 +145,7 @@ const sentence = (text) => (text ? text.charAt(0) + text.slice(1).toLowerCase() 
 
     <template v-else>
       <header class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 class="font-display text-[2.8rem] sm:text-display tabular whitespace-nowrap">{{ order.orderNumber }}</h1>
+        <h1 class="font-display text-[2.8rem] sm:text-display tabular break-words">{{ order.orderNumber }}</h1>
         <span :class="['inline-flex rounded-full px-3 py-1 text-sm font-extrabold', ORDER_STATUS[order.status]?.badge]">{{
           statusLabel(order.status)
         }}</span>
@@ -158,7 +158,7 @@ const sentence = (text) => (text ? text.charAt(0) + text.slice(1).toLowerCase() 
       <p v-if="error" role="alert" class="mt-5 rounded-xl bg-red-800/[0.08] px-4 py-3 text-red-900">{{ error }}</p>
       <p v-if="notice" role="status" class="mt-5 rounded-xl bg-primary/25 px-4 py-3 font-bold">{{ notice }}</p>
 
-      <div class="mt-8 grid gap-8 lg:grid-cols-[1fr_28rem]">
+      <div class="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div class="space-y-8 min-w-0">
           <section class="rounded-2xl border border-chocolate/15 bg-cream-100/70 p-5" aria-labelledby="next-heading">
             <h2 id="next-heading" class="font-bold">Next step</h2>

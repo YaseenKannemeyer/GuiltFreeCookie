@@ -4,6 +4,14 @@ The code is ready for hosting: `frontend/vercel.json`, `.github/workflows/deploy
 
 Hosted target: **Vercel** for the storefront and **Azure for Students** for the API and MySQL. It costs $0 cash; the API uses about $13/month of student credit.
 
+## Now: slow API startup (6 November 2026)
+
+The 6 November release is live on staging and production (PR #46, `0438fc4`): address search, courier booking, new pack prices (`scripts/reprice.sh production` run, Vercel production redeployed). The staging 500s that morning were the API restarting, not a code fault.
+- [ ] **Commit the prerender retry** (`scripts/prerender.mjs`, uncommitted): on Vercel it retries every 20 seconds for up to 10 minutes (`PRERENDER_WAIT_SECONDS`, 0 locally). Without it, every merge that also deploys the API fails the Vercel build: staging on 6 November at 06:53 UTC and production at 17:18 UTC both had to be redeployed by hand.
+- [x] `WEBSITES_CONTAINER_START_TIME_LIMIT=600` on both App Services (6 November 2026; it was the default, and the probe gave up after 282 seconds that morning).
+- [ ] **Find out why startup takes 190–265 seconds on Azure.** The same jar starts in 8–12 seconds locally, even on one CPU. Suspect: App Service runs `app.jar` from `/home/site/wwwroot`, a network share, so every class load goes over the network. Test on staging by starting from a local copy (`/tmp`) or an extracted jar with an AOT cache. Both apps share one B1 core, so restarting them together makes it worse.
+- Production's PUDO setting: if PUDO lockers show at checkout, switch them off in **Admin → Delivery** (only new databases default to off).
+
 ## Next: accounts to create (owner)
 
 Monitoring is live (Better Stack and Sentry, 4 November 2026). Real email isn't set up yet. Each remaining service needs a sign-up in the owner's name; after that, Claude can do the rest of the setup with the key from each service.
@@ -57,11 +65,12 @@ Type the command exactly as shown; the key goes only at the two prompts, never i
 - [x] Registered at [sandbox.shiplogic.com/register](https://sandbox.shiplogic.com/register) (6 November 2026).
 - [x] API key `guiltfreecookie-sandbox` saved as `gfc shiplogic sandbox key` and working (6 November 2026). Base URL `https://api.shiplogic.com` (same host as live; the key picks the environment), `Authorization: Bearer <key>`. Test quote Cape Town 8001 → Johannesburg 2193, one 25×20×10 cm 1 kg parcel: only **ECO Economy, R95** (incl. VAT, flat rate, charged as 2 kg), 2 working days. No locker fields in the response. The API is documented at [shiplogic.com/api-docs](https://www.shiplogic.com/api-docs). Needed for section 4.
 - If self-registration fails, ask `support@shiplogic.com` or The Courier Guy for sandbox credentials. Sandbox accounts may report "insufficient funds" when booking even though quotes work.
-- [ ] Put the key on the **staging** App Service as `SHIPLOGIC_API_KEY` (Claude can do this from the Keychain entry). Keep production on the flat rate until the box sizes are real.
+- [x] Key on the **staging** App Service as `SHIPLOGIC_API_KEY` (6 November 2026). Keep production on the flat rate until the box sizes are real.
 
 ### 6. Google Places: address search at checkout (about 10 minutes)
 
 - [x] Project `guiltfreecookie` created and billing added (6 November 2026). It's on the **free trial** ($300 credit) until **5 February 2027**. Before then, click **Upgrade to a full account** in Billing, then set the daily quotas (see the key item below), or Google stops the key and the address search disappears (customers can still type their address). Within Google's free monthly allowance the bill stays at $0.
+- [ ] **Google held R847.81 on the card** when billing was added (6 November 2026). The account shows $0 cost and is on the free trial, so it should be a card check that gets released. If it's still on the bank statement by about 20 November, ask Google (**Billing → Help → Contact billing support**) or the bank to release it.
 - [x] **Places API (New)** enabled (6 November 2026).
 - [x] API key created and tested (a real search works). Saved as `gfc google places key`.
 - [x] Restricted (6 November 2026, checked: Geocoding is refused, Places works): application restrictions **None** (the server's 43 possible Azure outbound IPs make an IP list impractical), **API restrictions** → Places API (New) only. Quotas can't be changed on the free trial (and the card can't be charged during it). When upgrading to a full account, set **AutocompletePlacesRequest per day** and **GetPlaceRequest per day** to 1,000 at [Places API (New) quotas](https://console.cloud.google.com/google/maps-apis/quotas?project=guiltfreecookie) so even a leaked key stays within the free allowance. The key was pasted in chat once: consider **Rotate key** later.
@@ -188,15 +197,15 @@ Stage 1 is built (6 November 2026, not yet deployed). Stage 2, booking and track
 - [x] **`delivery` health check** in the `dependencies` group (Better Stack's dependencies monitor): down if ShipLogic doesn't answer or refuses the key. Up while the key is blank.
 - [x] Tested against the sandbox from the admin page in a browser: booked, tracking saved, waybill PDF downloaded, then the test shipments were cancelled. Tests: `ShipLogicBookingTest`, `CourierBookingTest`.
 - [ ] **Customer tracking link**: `SHIPLOGIC_TRACKING_URL`, default `https://portal.thecourierguy.co.za/track?ref={ref}`. Not confirmed: open one in a browser with a real tracking number. Staging uses `https://sandbox.shiplogic.com/track?ref={ref}`.
-- [ ] **Courier contact email** (`SHIPLOGIC_COLLECTION_EMAIL`, defaults to the site support email): ShipLogic refuses an email whose domain doesn't exist, so staging and the showcase's `hello@example.test` need a real one before booking works there.
+- [x] **Courier contact email** (`SHIPLOGIC_COLLECTION_EMAIL`, defaults to the site support email; ShipLogic refuses an email whose domain doesn't exist, such as the showcase's `hello@example.test`). Staging uses `yaseenkannemeyer@gmail.com` (6 November 2026). Use the shop's own address once it has one.
 - [x] **PUDO lockers switched off** for new databases (`SHIPPING_PUDO_ENABLED`, default false). Existing databases: switch PUDO off in **Admin → Delivery**.
 - Optional later: a real locker picker (ShipLogic lists Courier Guy lockers via `/v2/pickup-points` and books to one with `delivery_pickup_point_id`), and instant updates via webhooks.
 
-## 4b. Pack sizes and prices (6 November 2026, not yet deployed)
+## 4b. Pack sizes and prices (live 6 November 2026)
 
 Every cookie sells as **Single R5**, **Box of 6 R27** (R4.50 each, save 10%), **Box of 12 R48** (R4.00, save 20%) and **Box of 24 R84** (R3.50, save 30%). The product page shows each pack's price and a "Save x%" badge (`VariantView.savingPercent`, measured against the single).
 - [x] New local demo databases get these packs (`DemoData`). An existing local demo database: `scripts/reprice.sh local`.
-- [ ] After deploying, run `scripts/reprice.sh staging`, check the shop, then `scripts/reprice.sh production`. It asks for an admin email and password, updates the four packs on every visible cookie and adds a missing Box of 24. Safe to run twice.
+- [x] Repriced on staging and production (6 November 2026). It asks for an admin email and password, updates the four packs on every visible cookie and adds a missing Box of 24. Safe to run twice.
 - [x] **Minimum order R300** (cookies' subtotal before discounts and delivery; `ORDER_MINIMUM_SUBTOTAL`, 0 turns it off). The cart says how much more to add and blocks Continue; checkout sends a cart under it back to the cart, and the server refuses it.
 - [ ] Decide the free-delivery threshold. It's R500, which is now about six Boxes of 24, against R80–R95 delivery.
 

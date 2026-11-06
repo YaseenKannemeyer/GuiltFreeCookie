@@ -42,7 +42,7 @@ const emit = defineEmits(["confirm", "close"]);
       <slot>{{ message }}</slot>
     </p>
 
-    <div class="flex justify-end gap-3">
+    <div class="flex flex-wrap justify-end gap-3">
       <BaseButton variant="outline" size="sm" :disabled="loading" @click="emit('close')">
         {{ cancelText }}
       </BaseButton>
