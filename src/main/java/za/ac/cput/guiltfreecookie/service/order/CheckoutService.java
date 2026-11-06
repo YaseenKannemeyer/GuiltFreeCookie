@@ -28,6 +28,7 @@ import za.ac.cput.guiltfreecookie.service.NewsletterService;
 import za.ac.cput.guiltfreecookie.service.cart.PricingService;
 import za.ac.cput.guiltfreecookie.service.catalog.InventoryService;
 import za.ac.cput.guiltfreecookie.service.payment.PaymentGateway;
+import za.ac.cput.guiltfreecookie.service.shipping.DeliveryArea;
 import za.ac.cput.guiltfreecookie.util.Helper;
 
 import java.security.SecureRandom;
@@ -104,7 +105,9 @@ public class CheckoutService {
         if (!cart.isAccountOwned()) {
             cart = cartRepository.save(new Cart.Builder().copy(cart).setCustomerEmail(contact.email()).build());
         }
-        CartView priced = pricingService.price(cart, cartItemRepository.findByCartIdOrderByAddedAtAsc(cart.getCartId()), method);
+        // The courier price is fixed here and stored on the order, whatever the courier charges later.
+        CartView priced = pricingService.price(cart, cartItemRepository.findByCartIdOrderByAddedAtAsc(cart.getCartId()),
+                method, DeliveryArea.of(address));
         requireCheckoutable(priced, contact.email());
         // Unpaid orders hold stock, so one address can't tie up the shelf with a pile of them.
         if (orderRepository.countByCustomerEmailAndStatus(contact.email(), OrderStatus.PENDING_PAYMENT) >= MAX_UNPAID_ORDERS) {

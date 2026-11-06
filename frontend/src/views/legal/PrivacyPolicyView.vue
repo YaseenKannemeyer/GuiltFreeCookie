@@ -128,6 +128,7 @@ const summary = [
       <ul>
         <li>our payment provider, to process payments;</li>
         <li>our delivery or courier partners, to get your order to you;</li>
+        <li>Google, when you use the address search at checkout: what you type goes to Google Maps to find your address;</li>
         <li>our email provider, to send order updates and newsletters you've asked for;</li>
         <li>our website hosting and IT providers, who store the site and its data.</li>
       </ul>

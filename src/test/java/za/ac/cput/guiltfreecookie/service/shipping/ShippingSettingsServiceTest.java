@@ -47,14 +47,14 @@ class ShippingSettingsServiceTest {
     void quotesUseTheConfiguredDefaultsAndFreeThreshold() {
         RuleBasedShippingProvider provider = new RuleBasedShippingProvider(service);
 
-        List<ShippingQuote> belowThreshold = provider.quotes(new BigDecimal("499.99"), false);
-        List<ShippingQuote> atThreshold = provider.quotes(new BigDecimal("500.00"), false);
+        List<ShippingQuote> belowThreshold = provider.quotes(new ShippingRequest(new BigDecimal("499.99"), false, 6, null));
+        List<ShippingQuote> atThreshold = provider.quotes(new ShippingRequest(new BigDecimal("500.00"), false, 6, null));
 
         assertEquals(new BigDecimal("80.00"), belowThreshold.getFirst().cost());
         assertEquals(ShippingMethod.PICKUP, belowThreshold.getLast().method());
         assertEquals(new BigDecimal("0.00"), atThreshold.getFirst().cost());
         assertTrue(atThreshold.getFirst().freeShipping());
-        assertTrue(provider.quotes(BigDecimal.ONE, true).get(1).freeShipping());
+        assertTrue(provider.quotes(new ShippingRequest(BigDecimal.ONE, true, 6, null)).get(1).freeShipping());
     }
 
     @Test

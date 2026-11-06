@@ -8,7 +8,7 @@
     </RouterView>
   </AdminShell>
 
-  <div v-else class="min-h-[100dvh] flex flex-col bg-background" :class="{ 'demo-mode': DEMO_MODE || STAGING }">
+  <div v-else class="storefront min-h-[100dvh] flex flex-col bg-background" :class="{ 'demo-mode': DEMO_MODE || STAGING }">
     <!-- Sentinel the navbar watches to know when the page has scrolled -->
     <div id="top-sentinel" class="absolute top-0 left-0 h-6 w-px" aria-hidden="true" />
 

@@ -8,7 +8,7 @@
  * - Desktop: wordmark + links + search / account / cart.
  * - Mobile: hamburger that opens a slide-in drawer.
  */
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import { cookieDropPinned } from "../composables/cookieDropState";
 import { DEMO_MODE, STAGING } from "../constants/business";
@@ -24,7 +24,11 @@ const router = useRouter();
 const route = useRoute();
 
 const sidebarOpen = ref(false);
+const menuButton = ref(null);
+const drawer = ref(null);
 const scrolled = ref(false);
+let previousOverflow = "";
+let desktopQuery = null;
 
 const isHomePage = computed(() => route.name === "Home");
 const overHero = computed(
@@ -40,14 +44,52 @@ onMounted(() => {
   });
   observer.observe(sentinel);
 });
-onUnmounted(() => observer?.disconnect());
+onUnmounted(() => {
+  observer?.disconnect();
+  desktopQuery?.removeEventListener("change", onDesktopChange);
+  if (sidebarOpen.value) releasePage();
+});
 
 const closeSidebar = () => {
   sidebarOpen.value = false;
 };
 
-watch(sidebarOpen, (open) => {
-  document.body.style.overflow = open ? "hidden" : "";
+function releasePage() {
+  document.body.style.overflow = previousOverflow;
+  document.getElementById("app")?.removeAttribute("inert");
+}
+function onMenuKey(event) {
+  if (event.key === "Escape") closeSidebar();
+  if (event.key !== "Tab") return;
+  const controls = drawer.value?.querySelectorAll("a[href], button:not([disabled])");
+  if (!controls?.length) return;
+  const first = controls[0], last = controls[controls.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+const onDesktopChange = (event) => {
+  if (event.matches) closeSidebar();
+};
+onMounted(() => {
+  desktopQuery = window.matchMedia("(min-width: 1024px)");
+  desktopQuery.addEventListener("change", onDesktopChange);
+});
+watch(sidebarOpen, async (open) => {
+  if (open) {
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.getElementById("app")?.setAttribute("inert", "");
+    await nextTick();
+    if (sidebarOpen.value) drawer.value?.querySelector("button")?.focus();
+  } else {
+    releasePage();
+    menuButton.value?.focus();
+  }
 });
 watch(() => route.fullPath, closeSidebar);
 
@@ -60,6 +102,7 @@ const navLinks = [
 ];
 
 const goSearch = () => {
+  closeSidebar();
   router.push({ name: "Products", query: { focus: "search" } });
 };
 
@@ -78,11 +121,11 @@ onMounted(() => {
         : 'bg-background/90 backdrop-blur-xl shadow-[0_1px_0_rgba(46,14,11,0.08),0_10px_30px_-18px_rgba(46,14,11,0.35)]',
     ]"
   >
-    <p v-if="DEMO_MODE || STAGING" role="note" class="h-[32px] flex items-center justify-center bg-chocolate text-cream-50 text-sm px-3">
+    <p v-if="DEMO_MODE || STAGING" role="note" class="site-notice h-[32px] flex items-center justify-center bg-chocolate text-cream-50 text-sm px-3">
       <template v-if="STAGING">Staging · </template>{{ DEMO_MODE ? "Demo shop · Sample products · No real payments" : "Not the live shop" }}
     </p>
     <div
-      class="container-magic flex h-[76px] items-center justify-between gap-6"
+      class="nav-bar container-magic flex h-[76px] items-center justify-between gap-6"
     >
       <div class="flex items-center gap-12">
         <!-- Wordmark -->
@@ -112,7 +155,7 @@ onMounted(() => {
       </div>
 
       <!-- Right actions -->
-      <div class="flex items-center gap-1.5 sm:gap-2">
+      <div class="nav-actions flex shrink-0 items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           :class="[
@@ -147,6 +190,7 @@ onMounted(() => {
 
         <!-- Hamburger (mobile) -->
         <button
+          ref="menuButton"
           type="button"
           class="lg:hidden h-11 w-11 flex items-center justify-center rounded-full text-chocolate hover:bg-chocolate/5 transition-colors"
           :aria-expanded="sidebarOpen"
@@ -171,17 +215,21 @@ onMounted(() => {
       <Transition name="drawer">
         <aside
           v-if="sidebarOpen"
+          ref="drawer"
           id="mobile-menu"
-          class="fixed top-0 right-0 z-[71] h-full w-[35.2rem] max-w-[88vw] bg-chocolate text-cream-50 flex flex-col lg:hidden"
+          class="mobile-drawer fixed top-0 right-0 z-[71] h-[100dvh] w-[35.2rem] max-w-[92vw] overflow-y-auto overscroll-contain bg-chocolate text-cream-50 flex flex-col lg:hidden"
+          role="dialog"
+          aria-modal="true"
           aria-label="Menu"
+          @keydown="onMenuKey"
         >
-          <div class="flex items-center justify-between px-6 h-[var(--nav-h)]">
+          <div class="flex shrink-0 items-center justify-between gap-2 px-6 min-h-[76px]">
             <span class="wordmark pt-1">
               GuiltFree<span class="text-primary">Cookie</span>
             </span>
             <button
               type="button"
-              class="h-11 w-11 flex items-center justify-center rounded-full text-cream-50/80 hover:text-cream-50 hover:bg-cream-50/10 transition-colors"
+              class="h-11 w-11 shrink-0 flex items-center justify-center rounded-full text-cream-50/80 hover:text-cream-50 hover:bg-cream-50/10 transition-colors"
               aria-label="Close menu"
               @click="closeSidebar"
             >
@@ -194,7 +242,7 @@ onMounted(() => {
               v-for="link in navLinks"
               :key="link.label"
               :to="link.to"
-              class="text-base font-bold text-cream-50/85 hover:text-primary transition-colors py-3 border-b border-cream-50/10"
+              class="min-h-11 text-base font-bold text-cream-50/85 hover:text-primary transition-colors py-3 border-b border-cream-50/10"
               active-class="!text-primary"
             >
               {{ link.label }}
@@ -223,3 +271,33 @@ onMounted(() => {
     </Teleport>
   </header>
 </template>
+
+<style scoped>
+.mobile-drawer {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.mobile-drawer :focus-visible {
+  outline-color: #c59f71;
+}
+@media (max-width: 639px) {
+  .site-notice {
+    font-size: 1.2rem;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .nav-bar {
+    gap: 0.8rem;
+  }
+  .wordmark {
+    font-size: clamp(2.2rem, 6.1vw, 2.8rem);
+  }
+  .nav-actions {
+    gap: 0;
+  }
+  .mobile-drawer {
+    --fs-base: 1.6rem;
+    font-size: var(--fs-base);
+  }
+}
+</style>

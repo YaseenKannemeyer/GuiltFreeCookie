@@ -4,6 +4,70 @@ The code is ready for hosting: `frontend/vercel.json`, `.github/workflows/deploy
 
 Hosted target: **Vercel** for the storefront and **Azure for Students** for the API and MySQL. It costs $0 cash; the API uses about $13/month of student credit.
 
+## Next: accounts to create (owner)
+
+Monitoring is live (Better Stack and Sentry, 4 November 2026). Real email isn't set up yet. Each remaining service needs a sign-up in the owner's name; after that, Claude can do the rest of the setup with the key from each service.
+
+**Keep keys out of chat and out of the repo.** Save each one in the Mac's Keychain (the command asks for the value), then tell Claude which ones are saved:
+
+```
+security add-generic-password -s "gfc sentry token" -a gfc -w
+security add-generic-password -s "gfc brevo api key" -a gfc -w
+security add-generic-password -s "gfc brevo smtp key" -a gfc -w
+```
+
+Type the command exactly as shown; the key goes only at the two prompts, never in the command. To replace a saved key, add `-U`. If a lookup still returns an old value, delete with `security delete-generic-password -s "<name>"` until it says "could not be found", then add it again. Check a key without printing it: `T=$(security find-generic-password -s "<name>" -w); echo "${#T} ${T:0:7}"` (a Sentry token is 71 characters starting `sntryu_`).
+
+### 1. Better Stack: uptime monitors and heartbeats (about 5 minutes)
+
+- [x] Sign up (free plan) at [betterstack.com/uptime](https://betterstack.com/uptime).
+- [x] Monitors and heartbeats created by hand, so no API token is needed. Heartbeat URLs are set on the production App Service.
+- [x] Dependencies monitor added (6 November 2026).
+- [x] Storefront monitor points at `https://guilt-free-cookie.vercel.app/` (checked 6 November 2026).
+- [x] **Reservations** heartbeat is green (6 November 2026).
+- [x] **Daily flows** heartbeat paused (6 November 2026). It will never ping while `showcase` is on, because that profile turns the 09:00 job off (`app.flows.daily-cron=-`). Unpause it when `showcase` is removed (section 5).
+- Push alerts, phone/SMS alerts and the phone app need the paid plan; the free plan alerts by email to `yaseenkannemeyer@gmail.com`.
+
+### 2. Sentry: error reports (about 5 minutes)
+
+- [x] Sign up (free **Developer** plan) at [sentry.io/signup](https://sentry.io/signup/). For POPIA, choose the **EU (Frankfurt)** data region if it's offered.
+- [x] Create an **auth token** at [Settings → Account → Personal Tokens](https://sentry.io/settings/account/api/auth-tokens/) with Organization: Read, Project: Read & Write, Team: Read & Write.
+- [x] Save it as `gfc sentry token`.
+- [x] Projects created, settings in Azure and Vercel, production redeployed (details in section 2 below).
+
+### 3. Domain: free through the GitHub Student Developer Pack (about 10 minutes)
+
+- [ ] Open the [GitHub Student Developer Pack](https://education.github.com/pack) (signed in as `YaseenKannemeyer`) and claim a free domain. Two options are in the pack:
+  - **Namecheap**: a free `.me` for one year at [nc.me](https://nc.me).
+  - **.TECH**: a free `.tech` at [get.tech/github-student-developer-pack](https://get.tech/github-student-developer-pack).
+- [ ] Note the renewal price before choosing; the free year doesn't renew for free.
+- [ ] In the registrar's dashboard, set the domain's **nameservers** to Vercel's: `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
+- [ ] Tell Claude the domain name. Claude adds it to the Vercel project (`vercel domains add`) and manages its DNS records from then on. Nameserver changes can take a few hours to take effect.
+
+### 4. Brevo: sending real email (about 10 minutes, after the domain)
+
+- [ ] Sign up (free plan, 300 emails a day) at [brevo.com](https://www.brevo.com/).
+- [ ] Create an **API key** at [Settings → SMTP & API → API keys](https://app.brevo.com/settings/keys/api) and save it as `gfc brevo api key`.
+- [ ] Create an **SMTP key** at [Settings → SMTP & API → SMTP](https://app.brevo.com/settings/keys/smtp) and save it as `gfc brevo smtp key`. Note the **SMTP login** shown on that page (it looks like `xxxx@smtp-brevo.com`) and tell Claude.
+- [ ] Turn off **open and click tracking** in Brevo's transactional email settings: the app tracks these itself, and Brevo's link rewriting would wrap the unsubscribe links.
+- Claude then adds and verifies the domain in Brevo, adds the SPF, DKIM and DMARC records in Vercel DNS, creates the sender `hello@<domain>`, sets the mail settings in Azure (section 3), and runs the mail-tester check.
+
+### 5. ShipLogic sandbox credentials (apply now; they can take a few days)
+
+- [x] Registered at [sandbox.shiplogic.com/register](https://sandbox.shiplogic.com/register) (6 November 2026).
+- [x] API key `guiltfreecookie-sandbox` saved as `gfc shiplogic sandbox key` and working (6 November 2026). Base URL `https://api.shiplogic.com` (same host as live; the key picks the environment), `Authorization: Bearer <key>`. Test quote Cape Town 8001 → Johannesburg 2193, one 25×20×10 cm 1 kg parcel: only **ECO Economy, R95** (incl. VAT, flat rate, charged as 2 kg), 2 working days. No locker fields in the response. The API is documented at [shiplogic.com/api-docs](https://www.shiplogic.com/api-docs). Needed for section 4.
+- If self-registration fails, ask `support@shiplogic.com` or The Courier Guy for sandbox credentials. Sandbox accounts may report "insufficient funds" when booking even though quotes work.
+- [ ] Put the key on the **staging** App Service as `SHIPLOGIC_API_KEY` (Claude can do this from the Keychain entry). Keep production on the flat rate until the box sizes are real.
+
+### 6. Google Places: address search at checkout (about 10 minutes)
+
+- [x] Project `guiltfreecookie` created and billing added (6 November 2026). It's on the **free trial** ($300 credit) until **5 February 2027**. Before then, click **Upgrade to a full account** in Billing, then set the daily quotas (see the key item below), or Google stops the key and the address search disappears (customers can still type their address). Within Google's free monthly allowance the bill stays at $0.
+- [x] **Places API (New)** enabled (6 November 2026).
+- [x] API key created and tested (a real search works). Saved as `gfc google places key`.
+- [x] Restricted (6 November 2026, checked: Geocoding is refused, Places works): application restrictions **None** (the server's 43 possible Azure outbound IPs make an IP list impractical), **API restrictions** → Places API (New) only. Quotas can't be changed on the free trial (and the card can't be charged during it). When upgrading to a full account, set **AutocompletePlacesRequest per day** and **GetPlaceRequest per day** to 1,000 at [Places API (New) quotas](https://console.cloud.google.com/google/maps-apis/quotas?project=guiltfreecookie) so even a leaked key stays within the free allowance. The key was pasted in chat once: consider **Rotate key** later.
+- [ ] Under **Billing → Budgets & alerts**, add a budget of $5 with email alerts, so a surprise bill can't happen quietly.
+- [x] `GOOGLE_PLACES_API_KEY` and `SHIPLOGIC_API_KEY` set on the **staging** App Service (6 November 2026). They take effect once this code is deployed to staging. Production after checking staging.
+
 ## 1. Hosting
 
 Set up on 3 November 2026. Storefront on **Vercel**, API and MySQL on **Azure for Students** (South Africa North). Both environments run `prod,showcase`.
@@ -80,26 +144,26 @@ API_DOCS_ENABLED=true                     # staging only
 
 Vercel, Production: `VITE_DEMO_MODE=true`, `VITE_SITE_URL`, `VITE_API_BASE_URL`, `PRERENDER_API_URL`. Preview limited to branch `staging`: the same four plus `VITE_STAGING=true`. Both API URLs must point straight at Azure, not through a Vercel rewrite.
 
-Never combine `prod` with the local `demo` profile; startup refuses it. Staging stays on the PayFast sandbox and the captured inbox even after production goes live. When an entity changes, set `JPA_DDL_AUTO=update` on staging first, check it starts, remove it, then do the same on production. A cold start takes about 4 minutes on B1.
+Never combine `prod` with the local `demo` profile; startup refuses it. Staging stays on the PayFast sandbox and the captured inbox even after production goes live. When an entity changes, set `JPA_DDL_AUTO=update` on staging first, check it starts, remove it, then do the same on production. A cold start takes about 4 minutes on B1. A Vercel build fails if the API is still starting (the prerender step gives the catalogue 10 seconds), for example right after an Azure settings change; wait until `/actuator/health` is `UP` and redeploy with `npx vercel redeploy https://guilt-free-cookie.vercel.app --environment production`.
 
 ## 2. Monitoring
 
-The code is in (4 November 2026); everything is off until the settings below are filled in.
+The code is in and switched on (4 November 2026). Alerts from both services go by email.
 
 - [x] **Heartbeats built.** `Heartbeat` GETs a URL in the background (3 s timeout, logs failures, never throws, does nothing when the URL is blank). Pinged at the end of `ReservationReleaseJob` (every 5 minutes) and of the daily 09:00 cron in `FlowTriggers`. A job that throws doesn't ping.
 - [x] **Sentry built** (errors only, no personal data, replays or tracing).
   - Backend: `sentry-spring-boot-4-starter` 8.61.0, configured by `SENTRY_DSN`, `SENTRY_ENVIRONMENT` and `SENTRY_SEND_DEFAULT_PII` (default `false`). A blank DSN turns it off.
   - Frontend: `@sentry/vue` 11.8.0 in `src/monitoring.js`, loaded as a separate chunk only when `VITE_SENTRY_DSN` is set (builds without it ship no Sentry code). The DSN's host is added to `connect-src` in the `<meta>` policy; the `vercel.json` header allows Sentry's ingest hosts.
-- [ ] **Better Stack** (free): three uptime monitors at 3-minute intervals
-  - Storefront: `https://guilt-free-cookie.vercel.app/`
-  - API: `https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie/actuator/health`
-  - Dependencies: `…/guiltFreeCookie/actuator/health/dependencies` (mail and outbox)
-- [ ] Better Stack heartbeats: create two, "Reservations" (expected every 5 minutes, grace 10) and "Daily flows" (every 24 hours, grace 1 hour). Put their URLs in `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL` on the production App Service.
-- [ ] Optional status page, plus email and push alerts in the Better Stack app.
-- [ ] **Sentry account** (free Developer plan): create a Spring Boot project and a Vue project.
-  - Azure (production app): `SENTRY_DSN=<Spring Boot DSN>`, `SENTRY_ENVIRONMENT=production`. Staging too if wanted, with `SENTRY_ENVIRONMENT=staging`.
-  - Vercel (Production; Preview for `staging` if wanted): `VITE_SENTRY_DSN=<Vue DSN>`, `VITE_SENTRY_ENVIRONMENT=production`, then redeploy.
-  - Keep PII off (POPIA).
+- [x] **Better Stack** (free): three uptime monitors at 3-minute intervals, default timeout, 3-minute recovery period, 5-minute confirmation period (longer than a cold start), regions Europe and North America
+  - [x] Storefront: `https://guilt-free-cookie.vercel.app/` (made during onboarding; URL checked 6 November 2026)
+  - [x] API: `https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie/actuator/health`
+  - [x] Dependencies: `…/guiltFreeCookie/actuator/health/dependencies` (mail and outbox), created 6 November 2026
+- [x] Better Stack heartbeats (2026-11-04, URLs set on production): create two, "Reservations" (expected every 5 minutes, grace 10) and "Daily flows" (every 24 hours, grace 1 hour). Put their URLs in `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL` on the production App Service.
+- [ ] Optional: a public status page (one is included in the free plan).
+- [x] **Sentry account** (free Developer plan, EU region, org `guilt-free-cookie`): projects `guiltfreecookie-api` and `guiltfreecookie-web` created 2026-11-04. DSNs set on both Azure apps and in Vercel (Production and Preview `staging`). Vercel production redeployed with it.
+  - Azure: `SENTRY_DSN` (API project DSN) on both apps; `SENTRY_ENVIRONMENT=production` / `staging`.
+  - Vercel: `VITE_SENTRY_DSN` (web project DSN, added as public `config` type; a browser DSN is meant to be public) and `VITE_SENTRY_ENVIRONMENT`, for Production and Preview `staging`. Staging picks them up on its next push.
+  - Each project has Sentry's default alert rule (email on new issues). PII stays off (POPIA).
 
 ## 3. Real email (only needed when leaving the captured demo inbox)
 
@@ -108,16 +172,26 @@ The code is in (4 November 2026); everything is off until the settings below are
 - [ ] Settings: `MAIL_HOST=smtp-relay.brevo.com`, `MAIL_PORT=587`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH=true`, `MAIL_STARTTLS=true`, `MAIL_FROM`, `SITE_SUPPORT_EMAIL`, `FLOWS_ENABLED=false` to start with.
 - [ ] Check with [mail-tester.com](https://www.mail-tester.com) (aim for 9/10 or better) and confirm Gmail's **Show original** shows SPF, DKIM and DMARC all as `PASS`.
 
-## 4. Live courier rates: ShipLogic (The Courier Guy). Not built
+## 4. Live courier rates and address search: ShipLogic (The Courier Guy) and Google Places
 
-Delivery is currently flat-rate and simulated. When it's wanted:
-- [ ] Get sandbox credentials through [thecourierguy.co.za/integrations](https://thecourierguy.co.za/integrations) and read the [ShipLogic API docs](https://www.shiplogic.com/api-docs).
-- [ ] Add box sizes and weights to `ShippingSettings` (ShipLogic won't quote without them).
-- [ ] `ShipLogicClient` + `ShipLogicShippingProvider`. Widen `ShippingRateProvider.quotes` to take an address and cookie count. Fall back to the flat rate on an error or after 3 s. Cache quotes for 10 minutes. Lock the quoted price on the order.
+Stage 1 is built (6 November 2026, not yet deployed). Stage 2, booking and tracking, isn't.
+- [x] Sandbox credentials (see "Next" section 5).
+- [x] **Live courier quotes.** `ShipLogicClient` + `LiveShippingProvider` (wraps the flat-rate `RuleBasedShippingProvider`). Quotes by delivery area only (suburb, city, province, postal code; the street never goes to ShipLogic), from the service levels in `SHIPLOGIC_SERVICE_LEVELS` (default `ECO`; the "Flyer" services need a courier satchel, not a box), cheapest wins. Falls back to the flat rate on any error, an unknown area or after 3 s. Cached per area and cookie count for 10 minutes. Without an area the courier price is the flat rate marked `estimate`. The price is fixed on the order at checkout. Off while `SHIPLOGIC_API_KEY` is blank.
+- [x] **Box size and weight** (`app.shiplogic.box.*`): made-up demo figures for the Box of 24 with packing, 32×24×10 cm, 280 g empty, 45 g a cookie. Replace with measured figures before it's a real shop.
+- [x] **Collection address**: made-up `27 Spine Road, Strandfontein, Cape Town 7798` (`SHIPLOGIC_COLLECTION_*`). ShipLogic accepts it. Replace with the real bakery address before it's a real shop.
+- [x] **Address search at checkout.** A "Search your address" box under Delivery address suggests South African addresses as you type (150 ms after the last keystroke, no Enter needed; arrow keys and Enter pick one) and fills in number, street, unit/complex, suburb, city, province and postal code. If Google has no street number it asks for one. The courier price then updates for that area. `AddressSearchService` calls Google Places (New) from the server, so the key never reaches the browser; 60 requests a minute per client. Hidden while `GOOGLE_PLACES_API_KEY` is blank. Privacy policy section 6 now names Google.
+- [x] Tests: `ShipLogicClientTest`, `LiveShippingProviderTest`, `AddressSearchServiceTest`; checked in a browser (desktop and phone) against the ShipLogic sandbox and a stand-in for Google.
 - [ ] Admin **Book courier** button: create the shipment once, save the tracking number and URL, mark the order Shipped, offer a waybill download. Only book Monday to Wednesday.
 - [ ] `POST /api/v1/delivery/webhook` with a constant-time secret check. Move orders to Shipped or Delivered, never backwards, and always answer 200.
 - [ ] A `delivery` health indicator, added to the `dependencies` group.
 - [ ] Open question: can ShipLogic quote and book PUDO lockers?
+
+## 4b. Pack sizes and prices (6 November 2026, not yet deployed)
+
+Every cookie sells as **Single R5**, **Box of 6 R27** (R4.50 each, save 10%), **Box of 12 R48** (R4.00, save 20%) and **Box of 24 R84** (R3.50, save 30%). The product page shows each pack's price and a "Save x%" badge (`VariantView.savingPercent`, measured against the single).
+- [x] New local demo databases get these packs (`DemoData`). An existing local demo database: `scripts/reprice.sh local`.
+- [ ] After deploying, run `scripts/reprice.sh staging`, check the shop, then `scripts/reprice.sh production`. It asks for an admin email and password, updates the four packs on every visible cookie and adds a missing Box of 24. Safe to run twice.
+- [ ] Decide the free-delivery threshold. It's R500, which is now about six Boxes of 24, against R80–R95 delivery.
 
 ## 5. Before it's ever a real shop
 
@@ -127,7 +201,7 @@ Delivery is currently flat-rate and simulated. When it's wanted:
 - [ ] Registered business name, registration number and physical address (`SITE_ADDRESS`, required by ECTA s43), plus the rest of the `SITE_*` contact details.
 - [ ] Review the privacy, terms, refund and cookie policies.
 - [ ] PayFast **live** merchant ID, key and passphrase; set `PAYFAST_SANDBOX=false`.
-- [ ] Remove the `showcase` profile and set `VITE_DEMO_MODE=false`.
+- [ ] Remove the `showcase` profile and set `VITE_DEMO_MODE=false`. Then unpause the **Daily flows** heartbeat in Better Stack and check it turns green after the next 09:00 run.
 - [ ] Real-card test order, then a refund recorded in admin and paid back in the PayFast dashboard. Test unsubscribing from a marketing email.
 
 ## 6. Smaller loose ends

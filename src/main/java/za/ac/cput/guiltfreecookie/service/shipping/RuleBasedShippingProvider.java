@@ -22,27 +22,27 @@ public class RuleBasedShippingProvider implements ShippingRateProvider {
     }
 
     @Override
-    public List<ShippingQuote> quotes(BigDecimal merchandiseTotal, boolean freeShippingCode) {
+    public List<ShippingQuote> quotes(ShippingRequest request) {
         ShippingSettings settings = settingsService.get();
         boolean overThreshold = settings.getFreeShippingThreshold() != null
-                && merchandiseTotal.compareTo(settings.getFreeShippingThreshold()) >= 0;
-        boolean free = overThreshold || freeShippingCode;
+                && request.merchandiseTotal().compareTo(settings.getFreeShippingThreshold()) >= 0;
+        boolean free = overThreshold || request.freeShippingCode();
 
         List<ShippingQuote> quotes = new ArrayList<>();
         if (settings.isCourierEnabled()) {
             quotes.add(new ShippingQuote(ShippingMethod.COURIER, "Courier to your door",
-                    free ? ZERO : money(settings.getCourierRate()), settings.getCourierEta(), free, true, null));
+                    free ? ZERO : money(settings.getCourierRate()), settings.getCourierEta(), free, true, null, false));
         }
         if (settings.isPudoEnabled()) {
             quotes.add(new ShippingQuote(ShippingMethod.PUDO, "PUDO locker",
-                    free ? ZERO : money(settings.getPudoRate()), settings.getPudoEta(), free, false, null));
+                    free ? ZERO : money(settings.getPudoRate()), settings.getPudoEta(), free, false, null, false));
         }
         if (settings.isPickupEnabled()) {
             String details = settings.getPickupInstructions() == null
                     ? settings.getPickupAddress()
                     : settings.getPickupAddress() + "\n" + settings.getPickupInstructions();
             quotes.add(new ShippingQuote(ShippingMethod.PICKUP, "Collect from the bakery", ZERO,
-                    settings.getPickupEta(), false, false, details));
+                    settings.getPickupEta(), false, false, details, false));
         }
         return quotes;
     }

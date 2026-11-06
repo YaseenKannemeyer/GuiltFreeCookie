@@ -11,6 +11,7 @@ import za.ac.cput.guiltfreecookie.domain.ShippingMethod;
 import za.ac.cput.guiltfreecookie.dto.cart.AddItemRequest;
 import za.ac.cput.guiltfreecookie.dto.cart.CartView;
 import za.ac.cput.guiltfreecookie.dto.shipping.ShippingQuote;
+import za.ac.cput.guiltfreecookie.service.shipping.DeliveryArea;
 import za.ac.cput.guiltfreecookie.exception.BadRequestException;
 import za.ac.cput.guiltfreecookie.exception.ConflictException;
 import za.ac.cput.guiltfreecookie.exception.NotFoundException;
@@ -77,16 +78,20 @@ public class ShopCartService {
         return get(cartId, null);
     }
 
+    public CartView get(String cartId, ShippingMethod shippingMethod) {
+        return get(cartId, shippingMethod, null);
+    }
+
     // With a shipping method the view includes delivery in the total, exactly as checkout will charge it.
     @Transactional
-    public CartView get(String cartId, ShippingMethod shippingMethod) {
+    public CartView get(String cartId, ShippingMethod shippingMethod, DeliveryArea area) {
         Cart cart = cartRepository.findById(cartId).orElseThrow(ShopCartService::cartNotFound);
-        return pricingService.price(cart, itemRepository.findByCartIdOrderByAddedAtAsc(cartId), shippingMethod);
+        return pricingService.price(cart, itemRepository.findByCartIdOrderByAddedAtAsc(cartId), shippingMethod, area);
     }
 
     @Transactional
-    public List<ShippingQuote> shippingOptions(String cartId) {
-        return pricingService.shippingOptions(get(cartId, null));
+    public List<ShippingQuote> shippingOptions(String cartId, DeliveryArea area) {
+        return pricingService.shippingOptions(get(cartId, null), area);
     }
 
     @Transactional(readOnly = true)

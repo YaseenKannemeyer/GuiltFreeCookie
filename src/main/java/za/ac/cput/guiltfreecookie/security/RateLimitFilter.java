@@ -92,6 +92,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 new Rule("order-claim", HttpMethod.POST, "/api/v1/me/orders/claim", 3, 3600_000),
                 new Rule("checkout", HttpMethod.POST, "/api/v1/checkout", checkoutRequests, checkoutWindowSeconds * 1000),
                 new Rule("review-link", HttpMethod.POST, "/api/v1/reviews/by-link", reviewLinkRequests, reviewLinkWindowSeconds * 1000),
+                // Each search costs the shop money, so a client gets about one keystroke a second.
+                new Rule("address-search", HttpMethod.GET, "/api/v1/address-search", 60, 60_000),
+                new Rule("address-search", HttpMethod.GET, "/api/v1/address-search/place", 60, 60_000),
                 new Rule("api", null, null, apiRequests, apiWindowSeconds * 1000)
         ), Clock.systemUTC());
     }

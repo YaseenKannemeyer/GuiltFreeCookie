@@ -255,7 +255,7 @@ watch(() => route.params.id, fetchCookie);
             </p>
             <p v-if="pack" class="mt-1 text-sm">
               {{ rand(pack.pricePerCookie) }} per cookie ·
-              {{ pack.unitsPerPack }} in a pack
+              {{ pack.unitsPerPack === 1 ? "a single cookie" : `${pack.unitsPerPack} in the box` }}
             </p>
             <p v-if="cookie.stockStatus === 'LOW_STOCK'" class="mt-4 font-bold">
               Only {{ cookie.lowStockRemaining }} cookies left
@@ -281,8 +281,10 @@ watch(() => route.params.id, fetchCookie);
                     :value="v.variantId"
                     :disabled="!v.available"
                     class="mr-2"
-                  />{{ v.label
-                  }}<span v-if="!v.available"> · Sold out</span></label
+                  />{{ v.label }} · <span class="tabular">{{ rand(v.price) }}</span
+                  ><span v-if="v.savingPercent > 0 && v.available" class="ml-1.5 rounded-full bg-primary/25 px-2 py-0.5 text-xs font-extrabold"
+                    >Save {{ v.savingPercent }}%</span
+                  ><span v-if="!v.available"> · Sold out</span></label
                 >
               </div>
             </fieldset>
@@ -292,7 +294,7 @@ watch(() => route.params.id, fetchCookie);
               <QuantitySelector v-model="quantity" />
               <BaseButton
                 size="lg"
-                class="h-14 flex-1 min-w-0"
+                class="h-14 flex-1 basis-full sm:basis-0 min-w-0"
                 :disabled="!pack?.available || cartBusy"
                 @click="addAndConfirm"
               >

@@ -103,6 +103,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/cookies", "/api/v1/cookies/**").permitAll()
                         .requestMatchers("/api/v1/carts", "/api/v1/carts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/address-search", "/api/v1/address-search/place").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/payment", "/api/v1/orders/*/cancel", "/api/v1/orders/*/cancel-paid",
                                 "/api/v1/orders/*/reorder", "/api/v1/orders/*/demo-payment").permitAll()

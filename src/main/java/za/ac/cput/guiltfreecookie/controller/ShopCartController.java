@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import za.ac.cput.guiltfreecookie.domain.Province;
 import za.ac.cput.guiltfreecookie.domain.ShippingMethod;
 import za.ac.cput.guiltfreecookie.dto.cart.AddItemRequest;
 import za.ac.cput.guiltfreecookie.dto.cart.CartEmailRequest;
@@ -15,6 +16,7 @@ import za.ac.cput.guiltfreecookie.dto.cart.QuantityRequest;
 import za.ac.cput.guiltfreecookie.dto.shipping.ShippingQuote;
 import za.ac.cput.guiltfreecookie.security.CurrentUser;
 import za.ac.cput.guiltfreecookie.service.cart.ShopCartService;
+import za.ac.cput.guiltfreecookie.service.shipping.DeliveryArea;
 
 import java.util.List;
 
@@ -37,16 +39,26 @@ public class ShopCartController {
     }
 
     @GetMapping("/{cartId}")
-    @Operation(summary = "The priced cart", description = "Add shippingMethod to include delivery in the total.")
+    @Operation(summary = "The priced cart", description = "Add shippingMethod to include delivery in the total. "
+            + "Add suburb, city, province and postalCode to price the courier for that area.")
     public ResponseEntity<CartView> get(@PathVariable String cartId,
-                                        @RequestParam(required = false) ShippingMethod shippingMethod) {
-        return ResponseEntity.ok(cartService.get(cartId, shippingMethod));
+                                        @RequestParam(required = false) ShippingMethod shippingMethod,
+                                        @RequestParam(required = false) String suburb,
+                                        @RequestParam(required = false) String city,
+                                        @RequestParam(required = false) Province province,
+                                        @RequestParam(required = false) String postalCode) {
+        return ResponseEntity.ok(cartService.get(cartId, shippingMethod, DeliveryArea.of(suburb, city, province, postalCode)));
     }
 
     @GetMapping("/{cartId}/shipping-options")
-    @Operation(summary = "Delivery options and prices for this cart", description = "Free delivery thresholds and FREE_SHIPPING codes are already applied.")
-    public ResponseEntity<List<ShippingQuote>> shippingOptions(@PathVariable String cartId) {
-        return ResponseEntity.ok(cartService.shippingOptions(cartId));
+    @Operation(summary = "Delivery options and prices for this cart", description = "Free delivery thresholds and FREE_SHIPPING codes are already applied. "
+            + "Without a complete delivery area, a courier quote marked estimate may change once the address is known.")
+    public ResponseEntity<List<ShippingQuote>> shippingOptions(@PathVariable String cartId,
+                                                               @RequestParam(required = false) String suburb,
+                                                               @RequestParam(required = false) String city,
+                                                               @RequestParam(required = false) Province province,
+                                                               @RequestParam(required = false) String postalCode) {
+        return ResponseEntity.ok(cartService.shippingOptions(cartId, DeliveryArea.of(suburb, city, province, postalCode)));
     }
 
     @PostMapping("/{cartId}/items")

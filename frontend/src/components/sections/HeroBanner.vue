@@ -75,12 +75,12 @@ onBeforeUnmount(() => {
   <section class="relative" aria-labelledby="hero-title">
     <div
       ref="stage"
-      class="relative isolate overflow-hidden bg-tan flex"
+      class="hero-stage relative isolate overflow-hidden bg-tan flex"
       :class="cinematic ? 'h-screen' : 'min-h-[100svh] lg:min-h-[min(100svh,920px)]'"
     >
       <!-- Chocolate block: bottom band on mobile, right 20% on desktop -->
       <div
-        class="absolute inset-x-0 bottom-0 h-[34%] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[20%] bg-chocolate -z-10"
+        class="hero-chocolate absolute inset-x-0 bottom-0 h-[34%] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[20%] bg-chocolate -z-10"
         aria-hidden="true"
       >
         <div
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div
-        class="container-magic w-full grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-6 lg:gap-0 pt-[calc(var(--nav-h)+4rem)] pb-6 lg:pt-[var(--nav-h)] lg:pb-0"
+        class="hero-layout container-magic w-full grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-6 lg:gap-0 pt-[calc(var(--nav-h)+4rem)] pb-6 lg:pt-[var(--nav-h)] lg:pb-0"
       >
         <!-- Copy -->
         <div data-drop="copy" class="relative z-10 max-w-xl">
@@ -142,12 +142,12 @@ onBeforeUnmount(() => {
               every kind of sweet tooth.
             </p>
 
-            <div class="mt-9 flex flex-wrap items-center gap-3">
+            <div class="hero-actions mt-9 flex flex-wrap items-center gap-3">
               <BaseButton :to="{ name: 'Products' }" variant="primary" size="lg">
                 Shop cookies
                 <ArrowRightIcon class="h-5 w-5" />
               </BaseButton>
-              <a href="#inside" class="btn-outline px-8 py-4 text-base border-chocolate/35">
+              <a href="#inside" class="hero-secondary btn-outline px-8 py-4 text-base border-chocolate/35">
                 What's inside
               </a>
             </div>
@@ -178,6 +178,40 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+@media (max-width: 639px) {
+  .hero-stage {
+    min-height: 0;
+  }
+  .hero-layout {
+    padding-top: calc(var(--nav-h) + 3.2rem);
+    padding-bottom: 2.4rem;
+    gap: 2.4rem;
+  }
+  #hero-title {
+    font-size: clamp(4.8rem, 13.5vw, 5.6rem);
+  }
+  .hero-actions {
+    margin-top: 2.4rem;
+    gap: 0.8rem;
+  }
+  .hero-actions > a {
+    padding-inline: 1.6rem;
+    padding-block: 1.2rem;
+  }
+  .hero-secondary {
+    border-color: transparent;
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+  .hero-cookie > div {
+    width: 82%;
+    max-width: 30rem;
+  }
+  .hero-chocolate {
+    height: 25%;
+  }
+}
+
 @media (min-width: 1024px) {
   /* Cookie centred on the 80% split, sized to the hero's height */
   .hero-cookie {
