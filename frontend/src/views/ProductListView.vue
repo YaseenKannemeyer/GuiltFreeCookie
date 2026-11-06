@@ -206,7 +206,7 @@ function clear() {
       </div>
       <nav
         v-if="result.totalPages > 1"
-        class="flex justify-center items-center gap-4 mt-12"
+        class="flex flex-wrap justify-center items-center gap-3 mt-12"
         aria-label="Product pages"
       >
         <BaseButton

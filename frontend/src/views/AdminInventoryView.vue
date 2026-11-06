@@ -205,7 +205,7 @@ watch(selected, () => {
 onMounted(load);
 </script>
 <template>
-  <div class="p-5 md:p-10 max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <h1 class="font-display text-display">Stock, packs & photos</h1>
     <p class="mt-3">
       Stock is counted in individual cookies. Pack prices are in rand.
@@ -361,7 +361,7 @@ onMounted(load);
           ><label class="flex items-center gap-3 min-h-11"
             ><input v-model="pack.active" type="checkbox" />Active</label
           >
-          <div class="sm:col-span-2 flex gap-3">
+          <div class="sm:col-span-2 flex flex-wrap gap-3">
             <BaseButton type="submit" :disabled="busy">Save pack</BaseButton
             ><BaseButton v-if="editingPack" variant="outline" @click="resetPack"
               >Cancel edit</BaseButton
@@ -378,13 +378,13 @@ onMounted(load);
           <li
             v-for="(photo, i) in current.images"
             :key="photo.imageId"
-            class="grid grid-cols-[96px_1fr] sm:flex sm:flex-wrap items-center gap-4"
+            class="grid grid-cols-[80px_minmax(0,1fr)] sm:flex sm:flex-wrap items-center gap-4"
           >
             <img
               :src="cookieApi.getImageUrl(photo.image)"
               :alt="photo.altText || current.cookie.description"
               class="w-24 h-28 object-contain bg-tan rounded-xl"
-            /><span class="sm:flex-1 min-w-[120px] break-words">{{
+            /><span class="sm:flex-1 min-w-0 break-words">{{
               photo.altText || "Product photo"
             }}</span
             ><button
@@ -433,7 +433,7 @@ onMounted(load);
     >
     <dialog
       ref="historyDialog"
-      class="fixed inset-y-0 left-auto right-0 m-0 max-h-none h-dvh w-full sm:max-w-xl bg-surface text-chocolate shadow-soft-lg p-6 overflow-y-auto backdrop:bg-chocolate/50"
+      class="fixed inset-y-0 left-auto right-0 m-0 max-h-none max-w-full h-dvh w-full sm:max-w-xl bg-surface text-chocolate shadow-soft-lg p-6 overflow-y-auto backdrop:bg-chocolate/50"
       aria-labelledby="history-title"
       @close="showHistory = false"
     >

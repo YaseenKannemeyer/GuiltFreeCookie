@@ -34,7 +34,7 @@ onMounted(load);
 watch(status, load);
 </script>
 <template>
-  <div class="p-5 md:p-10 max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <h1 class="font-display text-display">Customer inbox</h1>
     <label class="block mt-6"
       >Show messages<select v-model="status" class="field mt-2 max-w-xs">

@@ -52,7 +52,7 @@ const onInput = (e) => {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="min-w-0 w-full">
     <label
       v-if="label"
       :for="fieldId"
@@ -69,6 +69,7 @@ const onInput = (e) => {
       :name="name || fieldId"
       :value="modelValue"
       :disabled="disabled"
+      :required="required"
       :class="[fieldClass, 'appearance-none pr-10 cursor-pointer', error ? 'border-red-600 ring-2 ring-red-600/15' : '']"
       :aria-label="ariaLabel || undefined"
       :aria-invalid="error ? 'true' : undefined"
@@ -93,10 +94,11 @@ const onInput = (e) => {
       :placeholder="placeholder"
       :rows="rows"
       :disabled="disabled"
+      :required="required"
       :autocomplete="autocomplete"
       :class="[
         fieldClass,
-        'resize-none',
+        'resize-y',
         error ? 'border-red-600 ring-2 ring-red-600/15' : '',
       ]"
       :aria-label="ariaLabel || undefined"

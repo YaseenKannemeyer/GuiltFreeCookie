@@ -69,7 +69,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-3xl mx-auto">
+  <div class="max-w-3xl mx-auto">
     <h1 class="font-display text-display">Delivery</h1>
     <p class="mt-3 text-chocolate/80">What shoppers can choose at checkout, and what it costs them.</p>
 
@@ -83,7 +83,7 @@ onMounted(load);
 
     <form v-else-if="loaded" class="mt-8" @submit.prevent="save">
       <section v-for="method in METHODS" :key="method.key" class="py-7 border-b border-chocolate/20">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <h2 class="text-[2rem] font-extrabold">{{ method.title }}</h2>
           <label class="flex items-center gap-2 font-bold min-h-11 cursor-pointer">
             <input v-model="settings[`${method.key}Enabled`]" type="checkbox" class="h-5 w-5" />
@@ -97,7 +97,7 @@ onMounted(load);
       </section>
 
       <section class="py-7 border-b border-chocolate/20">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <h2 class="text-[2rem] font-extrabold">Collect from the bakery</h2>
           <label class="flex items-center gap-2 font-bold min-h-11 cursor-pointer">
             <input v-model="settings.pickupEnabled" type="checkbox" class="h-5 w-5" />
@@ -112,7 +112,7 @@ onMounted(load);
       </section>
 
       <section class="py-7 border-b border-chocolate/20">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <h2 class="text-[2rem] font-extrabold">Free delivery</h2>
           <label class="flex items-center gap-2 font-bold min-h-11 cursor-pointer">
             <input v-model="freeDelivery" type="checkbox" class="h-5 w-5" />

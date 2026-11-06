@@ -102,7 +102,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-3xl mx-auto">
+  <div class="max-w-3xl mx-auto">
     <h1 class="font-display text-display">Email flows</h1>
     <p class="mt-3 text-chocolate/80">
       Emails that send themselves when something happens. Nobody gets two on the same day, nothing goes out between 20:00 and 08:00,

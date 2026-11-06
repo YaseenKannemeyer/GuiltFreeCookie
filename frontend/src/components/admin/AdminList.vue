@@ -1,6 +1,6 @@
 <script setup>
 /**
- * AdminList — admin accounts. A table from md up, stacked rows below.
+ * AdminList — admin accounts. A table from xl up, stacked rows below.
  */
 import {
   PencilSquareIcon,
@@ -29,21 +29,21 @@ const initials = (a) => `${a.firstName?.[0] ?? ""}${a.lastName?.[0] ?? ""}`.toUp
 
 <template>
   <div class="card overflow-hidden">
-    <table class="w-full text-left">
-      <thead class="hidden md:table-header-group bg-cream-400/40 text-sm text-chocolate/70">
+    <table class="block xl:table xl:table-fixed w-full text-left">
+      <thead class="hidden xl:table-header-group bg-cream-400/40 text-sm text-chocolate/70">
         <tr>
-          <th scope="col" class="py-3 pl-5 pr-3 font-semibold">Name</th>
-          <th scope="col" class="py-3 px-3 font-semibold">Status</th>
+          <th scope="col" class="py-3 pl-5 pr-3 font-semibold w-[50%]">Name</th>
+          <th scope="col" class="py-3 px-3 font-semibold w-[16%]">Status</th>
           <th scope="col" class="py-3 pl-3 pr-5 font-semibold text-right"><span class="sr-only">Actions</span></th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-chocolate/10">
+      <tbody class="block xl:table-row-group divide-y divide-chocolate/10">
         <tr
           v-for="admin in admins"
           :key="admin.adminId"
-          class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 p-4 md:table-row md:p-0 hover:bg-cream-400/25 transition-colors"
+          class="grid grid-cols-[minmax(0,1fr)] items-center gap-x-3 gap-y-2 p-4 xl:table-row xl:p-0 hover:bg-cream-400/25 transition-colors"
         >
-          <td class="md:py-3.5 md:pl-5 md:pr-3">
+          <td class="min-w-0 xl:py-3.5 xl:pl-5 xl:pr-3">
             <div class="flex items-center gap-3.5 min-w-0">
               <span
                 class="h-10 w-10 shrink-0 rounded-full text-sm font-bold flex items-center justify-center"
@@ -52,7 +52,7 @@ const initials = (a) => `${a.firstName?.[0] ?? ""}${a.lastName?.[0] ?? ""}`.toUp
                 {{ initials(admin) }}
               </span>
               <div class="min-w-0">
-                <p class="font-semibold text-chocolate truncate flex items-center gap-2">
+                <p class="font-semibold text-chocolate flex flex-wrap items-center gap-2">
                   {{ admin.firstName }} {{ admin.lastName }}
                   <span
                     v-if="admin.adminId === currentAdminId"
@@ -64,7 +64,7 @@ const initials = (a) => `${a.firstName?.[0] ?? ""}${a.lastName?.[0] ?? ""}`.toUp
             </div>
           </td>
 
-          <td class="row-start-2 md:px-3">
+          <td class="row-start-2 xl:px-3">
             <span
               class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold"
               :class="admin.active ? 'bg-emerald-800/15 text-emerald-900' : 'bg-chocolate/[0.08] text-chocolate/75'"
@@ -74,8 +74,8 @@ const initials = (a) => `${a.firstName?.[0] ?? ""}${a.lastName?.[0] ?? ""}`.toUp
             </span>
           </td>
 
-          <td class="row-span-2 row-start-1 col-start-2 md:pl-3 md:pr-5">
-            <div class="flex justify-end gap-0.5">
+          <td class="row-start-3 xl:pl-3 xl:pr-5">
+            <div class="flex flex-wrap xl:justify-end gap-0.5">
               <IconAction label="Edit" :icon="PencilSquareIcon" @click="emit('edit', admin)" />
               <IconAction label="Reset password" :icon="KeyIcon" @click="emit('resetPassword', admin)" />
               <IconAction

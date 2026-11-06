@@ -268,7 +268,7 @@ async function makeDefault(id) {
         autocomplete="address-level3"
         required
       />
-      <div class="grid grid-cols-[minmax(0,1fr)_12rem] gap-4 [&>*]:min-w-0">
+      <div class="grid sm:grid-cols-[minmax(0,1fr)_12rem] gap-4 [&>*]:min-w-0">
         <BaseInput
           v-model="form.address.city"
           label="City or town"

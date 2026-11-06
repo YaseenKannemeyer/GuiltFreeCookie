@@ -102,16 +102,16 @@ const flows = computed(() => (data.value?.emailFlows || []).filter((flow) => flo
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-5xl mx-auto">
+  <div class="max-w-5xl mx-auto">
     <h1 class="font-display text-display">Overview</h1>
 
     <div class="mt-6 flex flex-wrap items-end gap-3" role="group" aria-label="Period">
-      <div class="flex rounded-full bg-chocolate/[0.07] p-1">
+      <div class="flex flex-wrap rounded-full bg-chocolate/[0.07] p-1">
         <button
           v-for="days in PRESETS"
           :key="days"
           type="button"
-          class="min-h-11 rounded-full px-4 font-bold"
+          class="min-h-11 rounded-full px-3 sm:px-4 font-bold"
           :class="preset === days ? 'bg-chocolate text-cream-50' : 'hover:bg-chocolate/10'"
           :aria-pressed="preset === days"
           @click="choose(days)"
@@ -139,7 +139,7 @@ const flows = computed(() => (data.value?.emailFlows || []).filter((flow) => flo
     </div>
 
     <div v-else-if="data" :class="['transition-opacity', loading && 'opacity-60']" :aria-busy="loading">
-      <section class="mt-8 grid gap-6 rounded-2xl bg-cream-100 p-5 md:p-7 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]" aria-label="Headline numbers">
+      <section class="mt-8 grid gap-6 rounded-2xl bg-cream-100 p-5 md:p-7 sm:grid-cols-2 2xl:grid-cols-[1.4fr_1fr_1fr_1fr]" aria-label="Headline numbers">
         <StatTile hero label="Revenue" :value="rand(data.current.revenue)" :current="n(data.current.revenue)" :previous="n(data.previous.revenue)" :period="period" />
         <StatTile label="Paid orders" :value="String(data.current.orders)" :current="data.current.orders" :previous="data.previous.orders" :period="period" />
         <StatTile label="Average order" :value="rand(data.current.averageOrderValue)" :current="n(data.current.averageOrderValue)" :previous="n(data.previous.averageOrderValue)" :period="period" />

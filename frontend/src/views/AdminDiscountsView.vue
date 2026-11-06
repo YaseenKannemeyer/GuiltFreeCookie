@@ -193,7 +193,7 @@ async function switchOff(code) {
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <h1 class="font-display text-display">Discount codes</h1>
       <BaseButton v-if="editing !== 'new'" @click="open(null)">New code</BaseButton>

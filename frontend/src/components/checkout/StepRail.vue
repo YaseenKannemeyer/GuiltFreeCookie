@@ -28,7 +28,7 @@ onMounted(() => {
           :to="step.state === 'done' ? step.to : undefined"
           :aria-current="step.state === 'current' ? 'step' : undefined"
           :class="[
-            'group relative isolate overflow-hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-extrabold whitespace-nowrap bg-chocolate/[0.07] transition-colors duration-200',
+            'group relative isolate overflow-hidden inline-flex items-center gap-1.5 min-h-11 min-w-11 px-3 rounded-full text-sm font-extrabold whitespace-nowrap bg-chocolate/[0.07] transition-colors duration-200',
             step.state === 'done' && 'text-cream-50',
             step.state === 'current' && 'text-chocolate',
             step.state === 'todo' && 'text-chocolate/70',

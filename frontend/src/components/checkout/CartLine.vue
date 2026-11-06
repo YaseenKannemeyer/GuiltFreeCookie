@@ -26,17 +26,17 @@ const packText = computed(() =>
 </script>
 
 <template>
-  <li class="py-5 flex gap-4">
+  <li class="py-5 flex gap-3 sm:gap-4">
     <RouterLink
       :to="line.slug ? { name: 'ProductDetail', params: { id: line.slug } } : { name: 'Products' }"
-      class="shrink-0 h-20 w-20 rounded-2xl bg-tan/60 grid place-items-center overflow-hidden"
+      class="shrink-0 h-14 w-14 sm:h-20 sm:w-20 rounded-2xl bg-tan/60 grid place-items-center overflow-hidden"
       tabindex="-1"
       aria-hidden="true"
     >
       <img :src="image" alt="" class="h-[85%] w-[85%] object-contain drop-shadow-cookie-sm" loading="lazy" @error="onError" />
     </RouterLink>
     <div class="min-w-0 flex-1">
-      <div class="flex items-start justify-between gap-3">
+      <div class="flex flex-wrap items-start justify-between gap-2">
         <div class="min-w-0">
           <RouterLink
             v-if="line.slug"
@@ -75,7 +75,7 @@ const packText = computed(() =>
         <span v-else>This just sold out. Remove it to continue.</span>
       </p>
 
-      <div v-if="editable" class="mt-3 flex items-center justify-between gap-3">
+      <div v-if="editable" class="mt-3 flex flex-wrap items-center justify-between gap-3">
         <QuantitySelector
           v-if="line.issue !== 'UNAVAILABLE'"
           :label="`Quantity of ${line.name}`"

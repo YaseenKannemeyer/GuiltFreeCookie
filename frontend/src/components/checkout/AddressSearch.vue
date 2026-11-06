@@ -153,7 +153,7 @@ function onBlur() {
     </div>
     <div
       v-show="open"
-      class="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-cream-500 bg-cream-100 shadow-soft"
+      class="absolute z-30 mt-2 max-h-[min(32rem,40dvh)] w-full overflow-y-auto overscroll-contain rounded-2xl border border-cream-500 bg-cream-100 shadow-soft"
     >
       <ul :id="`${uid}-list`" role="listbox" aria-label="Matching addresses">
         <li

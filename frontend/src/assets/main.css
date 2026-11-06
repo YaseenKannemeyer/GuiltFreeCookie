@@ -44,8 +44,19 @@
     line-height: 1.6;
     margin: 0;
     padding: 0;
+    overflow-wrap: anywhere;
     font-optical-sizing: auto;
     font-feature-settings: "kern", "liga", "calt";
+  }
+
+  input, select, textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Grid tracks may shrink below the intrinsic width of their contents. */
+  :where(.grid) > * {
+    min-width: 0;
   }
 
   /* Every heading is Nunito at base size by default. Attention-grabbing
@@ -107,11 +118,14 @@
 @layer components {
   /* Button — primary / secondary / outline / ghost */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-base font-bold whitespace-nowrap
+    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-base font-bold whitespace-normal max-w-full min-w-0 text-center
            transition-all duration-300 ease-cookie cursor-pointer select-none
            focus:outline-none focus-visible:ring-2 focus-visible:ring-chocolate focus-visible:ring-offset-2 focus-visible:ring-offset-background
            active:scale-[0.98]
            disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn > svg {
+    flex-shrink: 0;
   }
   .btn-primary {
     @apply btn bg-chocolate text-cream-50 hover:bg-chocolate-300 hover:shadow-soft-lg hover:-translate-y-0.5;
@@ -178,14 +192,14 @@
 
   /* Input field */
   .field {
-    @apply w-full bg-chocolate/[0.04] border border-cream-500 rounded-xl px-4 py-3 text-base
+    @apply min-w-0 w-full bg-chocolate/[0.04] border border-cream-500 rounded-xl px-4 py-3 text-base
            text-chocolate placeholder:text-chocolate/[0.66]
            focus:outline-none focus:ring-2 focus:ring-chocolate/25 focus:border-chocolate/60
            disabled:bg-chocolate/[0.08] disabled:text-chocolate/55
            transition-colors duration-200;
   }
   .field-dark {
-    @apply w-full bg-chocolate-400/60 border border-cream/15 rounded-xl px-4 py-3
+    @apply min-w-0 w-full bg-chocolate-400/60 border border-cream/15 rounded-xl px-4 py-3
            text-cream placeholder:text-cream/50
            focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
            transition-colors duration-200;
@@ -303,7 +317,7 @@
 /* Phone proportions: retain the desktop type system and brand lettering,
    with a smaller reading scale and less space between storefront sections. */
 @media (max-width: 639px) {
-  .storefront {
+  .storefront, .admin {
     --fs-base: 1.6rem;
     --fs-display: clamp(3.2rem, 9.5vw, 4rem);
     font-size: var(--fs-base);
@@ -311,7 +325,7 @@
   .storefront .section {
     padding-block: 5.6rem;
   }
-  .storefront .btn {
+  .storefront .btn, .admin .btn {
     min-height: 4.8rem;
   }
 }

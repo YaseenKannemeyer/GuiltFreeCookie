@@ -120,7 +120,7 @@ async function submit() {
         </article>
         <div
           v-if="result?.page.totalPages > 1"
-          class="flex items-center gap-4 mt-6"
+          class="flex flex-wrap items-center gap-3 mt-6"
         >
           <BaseButton
             variant="outline"

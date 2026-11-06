@@ -14,8 +14,8 @@ const max = computed(() => Math.max(0, ...props.rows.map((row) => row.value)));
   <p v-if="!rows.length || max === 0" class="text-chocolate/75">{{ empty }}</p>
   <ul v-else class="space-y-4">
     <li v-for="row in rows" :key="row.key" class="min-w-0">
-      <div class="flex items-baseline justify-between gap-3">
-        <span class="font-bold truncate">{{ row.label }}</span>
+      <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <span class="font-bold">{{ row.label }}</span>
         <span class="tabular shrink-0">{{ row.display }}</span>
       </div>
       <div class="mt-1.5 h-3 rounded-r bg-chocolate/[0.06]" aria-hidden="true">

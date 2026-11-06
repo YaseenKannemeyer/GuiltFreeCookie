@@ -100,7 +100,7 @@ const confirmSubmit = () => {
       </p>
     </div>
 
-    <div class="flex justify-end gap-3 mt-8">
+    <div class="flex flex-wrap justify-end gap-3 mt-8">
       <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
       <BaseButton variant="primary" size="sm" :disabled="!canSubmit" @click="openConfirm">
         Save

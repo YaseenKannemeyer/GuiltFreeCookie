@@ -34,8 +34,17 @@ const server = await import(
   pathToFileURL(path.join(ssrDist, "entry-server.js")).href
 );
 
-const catalog = await fetchCatalog(env.PRERENDER_API_URL);
-if ((process.env.REQUIRE_CATALOG || env.REQUIRE_CATALOG) === "true" && !catalog?.length) {
+const requireCatalog = (process.env.REQUIRE_CATALOG || env.REQUIRE_CATALOG) === "true";
+const waitSeconds = Number(process.env.PRERENDER_WAIT_SECONDS || env.PRERENDER_WAIT_SECONDS || (process.env.VERCEL ? 600 : 0));
+let catalog = await fetchCatalog(env.PRERENDER_API_URL);
+// A push to staging deploys the API and the storefront at the same time, so wait out an API restart.
+for (const started = Date.now(); requireCatalog && env.PRERENDER_API_URL && !catalog?.length
+    && Date.now() - started < waitSeconds * 1000;) {
+  console.warn(yellow("Retrying the catalogue in 20 seconds."));
+  await new Promise((resolve) => setTimeout(resolve, 20_000));
+  catalog = await fetchCatalog(env.PRERENDER_API_URL);
+}
+if (requireCatalog && !catalog?.length) {
   throw new Error("A complete catalogue is required for this build. Start the demo API or configure PRERENDER_API_URL.");
 }
 const pages = [...server.indexablePaths(catalog || []), "/404"];

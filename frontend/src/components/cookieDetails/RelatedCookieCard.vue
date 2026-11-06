@@ -1,9 +1,9 @@
 <template>
   <article
-    class="group relative flex items-center gap-5 overflow-hidden rounded-2xl bg-surface p-4 pr-5 shadow-soft transition-shadow duration-300 hover:shadow-soft-lg"
+    class="group relative flex items-center gap-3 sm:gap-5 overflow-hidden rounded-2xl bg-surface p-4 pr-5 shadow-soft transition-shadow duration-300 hover:shadow-soft-lg"
   >
     <div
-      class="h-28 w-28 sm:h-32 sm:w-32 shrink-0 rounded-full flex items-center justify-center"
+      class="h-20 w-20 sm:h-28 sm:w-28 shrink-0 rounded-full flex items-center justify-center"
       :style="{ backgroundColor: tint }"
     >
       <img
@@ -19,16 +19,16 @@
       <p class="text-sm font-semibold text-primary-700">{{ label }}</p>
       <h3 class="mt-0.5 text-base leading-snug line-clamp-2">
         <!-- Stretched link: the whole card is clickable -->
-        <RouterLink :to="to" class="after:absolute after:inset-0 focus-visible:outline-none">
+        <RouterLink :to="to" class="after:absolute after:inset-0 focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-chocolate">
           {{ name }}
         </RouterLink>
       </h3>
       <p class="mt-1 text-sm text-chocolate/75 line-clamp-1">{{ blurb }}</p>
 
-      <div class="mt-3 flex items-center justify-between gap-3">
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
         <span class="text-base font-semibold tabular">{{ rand(related.price) }}</span>
         <span
-          class="relative z-10 inline-flex items-center gap-1 rounded-full bg-chocolate px-4 py-2 text-sm font-semibold text-cream-50 transition-colors group-hover:bg-chocolate-300"
+          class="pointer-events-none inline-flex items-center gap-1 rounded-full bg-chocolate px-4 py-2 text-sm font-semibold text-cream-50 transition-colors group-hover:bg-chocolate-300"
           aria-hidden="true"
         >
           View cookie

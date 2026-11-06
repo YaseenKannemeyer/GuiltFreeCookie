@@ -120,7 +120,7 @@ const socials = computed(() =>
             <a
               v-if="info?.phone"
               :href="`tel:${info.phone.replace(/[^+0-9]/g, '')}`"
-              class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors"
+              class="min-w-0 inline-flex items-center min-h-11 [overflow-wrap:anywhere] hover:text-cream-50 transition-colors"
               >{{ info.phone }}</a
             >
           </li>
@@ -129,7 +129,7 @@ const socials = computed(() =>
             <a
               v-if="info?.supportEmail"
               :href="`mailto:${info.supportEmail}`"
-              class="inline-flex items-center min-h-11 hover:text-cream-50 transition-colors"
+              class="min-w-0 inline-flex items-center min-h-11 [overflow-wrap:anywhere] hover:text-cream-50 transition-colors"
               >{{ info.supportEmail }}</a
             >
           </li>

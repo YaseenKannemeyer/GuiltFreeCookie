@@ -24,7 +24,7 @@ const delta = computed(() => {
 <template>
   <div class="min-w-0">
     <p class="text-sm font-bold text-chocolate/75">{{ label }}</p>
-    <p :class="['font-extrabold leading-none mt-2 break-words', hero ? 'text-[4.8rem]' : 'text-[3rem]']">{{ value }}</p>
+    <p :class="['font-extrabold leading-none mt-2 break-words', hero ? 'text-[clamp(3rem,4vw,4.8rem)]' : 'text-[3rem]']">{{ value }}</p>
     <p v-if="delta" class="mt-2 flex items-center gap-1 text-sm text-chocolate/75">
       <ArrowUpRightIcon v-if="delta.dir > 0" class="h-4 w-4 shrink-0" aria-hidden="true" />
       <ArrowDownRightIcon v-else-if="delta.dir < 0" class="h-4 w-4 shrink-0" aria-hidden="true" />

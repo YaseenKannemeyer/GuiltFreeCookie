@@ -139,7 +139,7 @@ const fillStyle = computed(() => ({
 <template>
   <button
     type="button"
-    class="relative isolate inline-flex min-h-11 min-w-44 touch-none select-none items-center justify-center overflow-hidden rounded-full border-2 border-red-700 px-5 py-2.5 text-sm font-bold transition-[transform,background-color,color] duration-150 ease-cookie cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+    class="relative isolate inline-flex min-h-11 min-w-0 max-w-full touch-pan-y select-none items-center justify-center overflow-hidden rounded-full border-2 border-red-700 px-5 py-2.5 text-sm font-bold transition-[transform,background-color,color] duration-150 ease-cookie cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
     :class="[
       status === 'confirmed' ? 'bg-red-700 text-white' : 'bg-red-700/[0.08] text-red-700',
       inputMode === 'pointer' && 'active:scale-[0.98]',

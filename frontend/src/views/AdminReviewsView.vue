@@ -34,7 +34,7 @@ onMounted(load);
 watch(status, load);
 </script>
 <template>
-  <div class="p-5 md:p-10 max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <h1 class="font-display text-display">Review moderation</h1>
     <p class="mt-3">
       Only approved reviews appear in the store and rating totals.
@@ -70,7 +70,7 @@ watch(status, load);
         >View cookie</RouterLink
       >
       <p class="my-4 whitespace-pre-line break-words">{{ r.body }}</p>
-      <div class="flex gap-3">
+      <div class="flex flex-wrap gap-3">
         <BaseButton
           v-if="r.status !== 'APPROVED'"
           :disabled="busy"

@@ -142,10 +142,10 @@ const startOver = () => {
                 :href="card.href"
                 :target="card.label === 'Address' ? '_blank' : undefined"
                 :rel="card.label === 'Address' ? 'noopener' : undefined"
-                class="group flex items-center gap-4 rounded-2xl border border-cream-50/10 bg-cream-50/[0.04] p-4 transition-colors hover:bg-cream-50/[0.09]"
+                class="group flex items-center gap-2 sm:gap-4 rounded-2xl border border-cream-50/10 bg-cream-50/[0.04] p-4 transition-colors hover:bg-cream-50/[0.09]"
               >
                 <span
-                  class="h-12 w-12 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center"
+                  class="h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center"
                 >
                   <component :is="card.icon" class="h-5 w-5" />
                 </span>

@@ -172,10 +172,10 @@ onMounted(loadAdmins);
     <template v-else>
       <div v-if="loading && !admins.length" class="card divide-y divide-chocolate/10" aria-busy="true" aria-label="Loading admins">
         <div v-for="n in 3" :key="n" class="flex items-center gap-4 p-4">
-          <div class="shimmer h-10 w-10 rounded-full" />
-          <div class="flex-1 space-y-2">
-            <div class="shimmer h-4 w-40 rounded-full" />
-            <div class="shimmer h-3 w-56 rounded-full" />
+          <div class="shimmer h-10 w-10 shrink-0 rounded-full" />
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="shimmer h-4 w-40 max-w-full rounded-full" />
+            <div class="shimmer h-3 w-56 max-w-full rounded-full" />
           </div>
         </div>
       </div>

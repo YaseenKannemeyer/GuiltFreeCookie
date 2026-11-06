@@ -114,13 +114,13 @@ const confirmSubmit = () => {
           <div class="relative h-28 w-28 shrink-0 rounded-2xl bg-chocolate/[0.06] flex items-center justify-center overflow-hidden">
             <img :src="imagePreview" alt="Cookie preview" class="h-[88%] w-[88%] object-contain" />
           </div>
-          <div class="space-y-2">
+          <div class="min-w-0 space-y-2">
             <p class="text-sm text-chocolate/75">
               {{ imageFile ? imageFile.name : "Current photo" }}
             </p>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 text-sm font-semibold text-chocolate hover:text-red-700 transition-colors"
+              class="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-chocolate hover:text-red-700 transition-colors"
               @click="removeImage"
             >
               <XMarkIcon class="h-4 w-4" />
@@ -185,7 +185,7 @@ const confirmSubmit = () => {
         required
       />
 
-      <div class="flex justify-end gap-3 pt-3">
+      <div class="flex flex-wrap justify-end gap-3 pt-3">
         <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
         <BaseButton type="submit" variant="primary" size="sm" :disabled="!canSubmit">
           {{ isEditing ? "Save changes" : "Add cookie" }}

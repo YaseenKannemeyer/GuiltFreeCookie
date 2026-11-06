@@ -3,8 +3,8 @@
  * AdminShell — layout for every /admindashboard route.
  * Chocolate sidebar on desktop; compact top bar + tab row on mobile.
  */
-import { computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { computed, nextTick, ref, watch } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   Squares2X2Icon,
   UsersIcon,
@@ -23,6 +23,14 @@ import {
 import { useAdminAuth } from "../composables/useAdminAuth";
 
 const router = useRouter();
+const route = useRoute();
+const mobileNav = ref(null);
+watch(() => route.path, async () => {
+  await nextTick();
+  const nav = mobileNav.value;
+  const link = nav?.querySelector(".router-link-exact-active");
+  if (link) nav.scrollLeft = link.offsetLeft - nav.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2;
+}, { immediate: true });
 const { admin, logout } = useAdminAuth();
 
 const navLinks = [
@@ -97,11 +105,11 @@ const signOut = () => {
 
 <template>
   <div
-    class="admin min-h-[100dvh] bg-background lg:grid lg:grid-cols-[27.2rem_1fr]"
+    class="admin min-h-[100dvh] bg-background xl:grid xl:grid-cols-[27.2rem_minmax(0,1fr)]"
   >
     <!-- Desktop sidebar -->
     <aside
-      class="hidden lg:flex sticky top-0 h-[100dvh] flex-col bg-chocolate text-cream-100 px-4 py-6"
+      class="hidden xl:flex sticky top-0 h-[100dvh] overflow-y-auto overscroll-contain flex-col bg-chocolate text-cream-100 px-4 py-6"
     >
       <RouterLink :to="{ name: 'AdminOverview' }" class="px-3 block">
         <span class="wordmark text-cream-50">
@@ -112,7 +120,7 @@ const signOut = () => {
         >
       </RouterLink>
 
-      <nav class="mt-10 flex flex-col gap-1" aria-label="Admin">
+      <nav class="mt-10 flex shrink-0 flex-col gap-1" aria-label="Admin">
         <RouterLink
           v-for="link in navLinks"
           :key="link.label"
@@ -128,7 +136,7 @@ const signOut = () => {
         </RouterLink>
       </nav>
 
-      <div class="mt-auto space-y-1">
+      <div class="mt-auto pt-6 shrink-0 space-y-1">
         <RouterLink
           :to="{ name: 'Home' }"
           class="flex items-center gap-3 rounded-xl px-3 h-11 text-sm text-cream-100/75 hover:text-cream-50 hover:bg-cream-50/[0.06] transition-colors"
@@ -174,15 +182,15 @@ const signOut = () => {
     </aside>
 
     <!-- Mobile top bar -->
-    <header class="lg:hidden sticky top-0 z-40 bg-chocolate text-cream-100">
+    <header class="xl:hidden sticky top-0 z-40 bg-chocolate text-cream-100">
       <div class="flex items-center justify-between gap-2 px-4 h-16">
         <RouterLink
           :to="{ name: 'AdminOverview' }"
-          class="wordmark text-cream-50 pt-1"
+          class="admin-mobile-wordmark wordmark text-cream-50 pt-1 min-w-0"
         >
           GuiltFree<span class="text-primary">Cookie</span>
         </RouterLink>
-        <div class="flex items-center gap-1">
+        <div class="flex shrink-0 items-center gap-1">
           <RouterLink
             :to="{ name: 'AdminProfile' }"
             class="h-11 w-11 flex items-center justify-center rounded-full"
@@ -205,14 +213,15 @@ const signOut = () => {
         </div>
       </div>
       <nav
-        class="flex gap-1 px-3 pb-2 overflow-x-auto no-scrollbar"
+        ref="mobileNav"
+        class="relative flex gap-1 px-3 pb-2 overflow-x-auto"
         aria-label="Admin"
       >
         <RouterLink
           v-for="link in navLinks"
           :key="link.label"
           :to="link.to"
-          class="flex items-center gap-2 rounded-lg px-3 h-11 text-sm font-medium text-cream-100/75 whitespace-nowrap"
+          class="flex shrink-0 items-center gap-2 rounded-lg px-3 h-11 text-sm font-medium text-cream-100/75 whitespace-nowrap"
           active-class="!bg-cream-50/10 !text-cream-50"
         >
           <component :is="link.icon" class="h-4 w-4 text-primary" />
@@ -229,10 +238,18 @@ const signOut = () => {
     </header>
 
     <!-- Page -->
-    <main class="min-w-0 px-4 sm:px-6 lg:px-10 py-8 lg:py-10">
+    <main class="min-w-0 px-4 sm:px-6 xl:px-10 py-8 xl:py-10">
       <div class="mx-auto max-w-6xl">
         <slot />
       </div>
     </main>
   </div>
 </template>
+
+<style scoped>
+.admin :deep(aside :focus-visible),
+.admin header :focus-visible { outline-color: var(--color-primary); }
+@media (max-width: 639px) {
+  .admin-mobile-wordmark { font-size: clamp(2rem, 5.6vw, 3rem); }
+}
+</style>

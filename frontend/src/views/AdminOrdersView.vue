@@ -69,7 +69,7 @@ onMounted(search);
 </script>
 
 <template>
-  <div class="p-5 md:p-10 max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <h1 class="font-display text-display">Orders</h1>
       <RouterLink :to="{ name: 'AdminShipping' }" class="font-bold underline underline-offset-4 min-h-11 inline-flex items-center"
@@ -77,13 +77,13 @@ onMounted(search);
       >
     </div>
 
-    <form class="mt-7 grid grid-cols-2 gap-3 md:grid-cols-[1fr_20rem_16rem_16rem]" role="search" @submit.prevent="search">
-      <label class="relative col-span-2 md:col-span-1">
+    <form class="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(0,1fr)_18rem_16rem_16rem]" role="search" @submit.prevent="search">
+      <label class="relative col-span-2 xl:col-span-1">
         <span class="sr-only">Search orders</span>
         <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-chocolate/60" aria-hidden="true" />
         <input v-model="filters.q" type="search" class="field pl-11" placeholder="Order, email or surname" />
       </label>
-      <label class="col-span-2 md:col-span-1">
+      <label class="col-span-2 xl:col-span-1">
         <span class="sr-only">Status</span>
         <select v-model="filters.status" class="field">
           <option value="">All statuses</option>
@@ -121,7 +121,8 @@ onMounted(search);
     </section>
 
     <template v-else-if="result">
-      <table class="mt-8 w-full text-left hidden md:table" :aria-busy="loading">
+      <div class="hidden xl:block mt-8 overflow-x-auto" tabindex="0" role="region" aria-label="Orders table">
+      <table class="w-full min-w-[80rem] text-left" :aria-busy="loading">
         <thead class="text-sm text-chocolate/70 border-b border-chocolate/20">
           <tr>
             <th scope="col" class="py-3 pr-4 font-extrabold">Order</th>
@@ -161,8 +162,9 @@ onMounted(search);
           </tr>
         </tbody>
       </table>
+      </div>
 
-      <ul class="mt-6 md:hidden divide-y divide-chocolate/[0.12] border-y border-chocolate/[0.12]" :aria-busy="loading">
+      <ul class="mt-6 xl:hidden divide-y divide-chocolate/[0.12] border-y border-chocolate/[0.12]" :aria-busy="loading">
         <li v-for="order in result.items" :key="order.orderNumber">
           <RouterLink
             :to="{ name: 'AdminOrderDetail', params: { orderNumber: order.orderNumber } }"
@@ -183,7 +185,7 @@ onMounted(search);
         </li>
       </ul>
 
-      <nav v-if="result.totalPages > 1" class="mt-6 flex items-center justify-between gap-4" aria-label="Pages">
+      <nav v-if="result.totalPages > 1" class="mt-6 flex flex-wrap items-center justify-between gap-3" aria-label="Pages">
         <BaseButton variant="outline" :disabled="filters.page === 0 || loading" @click="goPage(filters.page - 1)">Newer</BaseButton>
         <span class="text-sm tabular">Page {{ result.page + 1 }} of {{ result.totalPages }}</span>
         <BaseButton variant="outline" :disabled="filters.page + 1 >= result.totalPages || loading" @click="goPage(filters.page + 1)"
