@@ -26,6 +26,16 @@ class ShopMetricsTest {
     }
 
     @Test
+    void registersEverySeriesAtZero() {
+        ShopMetrics.registerAll();
+
+        assertEquals(0, registry.get("gfc.orders.placed").tag("shipping", "PUDO").counter().count());
+        assertEquals(0, registry.get("gfc.revenue").tag("shipping", "PICKUP").summary().count());
+        assertEquals(0, registry.get("gfc.courier.bookings").tag("result", "refused").counter().count());
+        assertEquals(3, registry.get("gfc.emails").counters().size());
+    }
+
+    @Test
     void countsOrdersRevenueAndServices() {
         ShopMetrics.orderPlaced("COURIER");
         ShopMetrics.orderPaid("COURIER", new BigDecimal("426.00"));
@@ -37,7 +47,7 @@ class ShopMetricsTest {
 
         assertEquals(1, registry.get("gfc.orders.placed").tag("shipping", "COURIER").counter().count());
         assertEquals(2, registry.get("gfc.orders.paid").tag("shipping", "COURIER").counter().count());
-        assertEquals(510.0, registry.get("gfc.revenue").summary().totalAmount());
+        assertEquals(510.0, registry.get("gfc.revenue").tag("shipping", "COURIER").summary().totalAmount());
         assertEquals(1, registry.get("gfc.address.searches").tag("result", "ok").counter().count());
         assertEquals(1, registry.get("gfc.courier.quotes").tag("result", "fallback").counter().count());
         assertEquals(1, registry.get("gfc.courier.bookings").tag("result", "booked").counter().count());

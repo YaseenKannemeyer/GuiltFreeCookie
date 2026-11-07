@@ -1,6 +1,7 @@
 package za.ac.cput.guiltfreecookie.util;
 
 import io.micrometer.core.instrument.Metrics;
+import za.ac.cput.guiltfreecookie.domain.ShippingMethod;
 
 import java.math.BigDecimal;
 
@@ -9,6 +10,27 @@ import java.math.BigDecimal;
 public final class ShopMetrics {
 
     private ShopMetrics() {
+    }
+
+    // Creates every series at zero, so Grafana shows 0 instead of "No data" and counts the first event.
+    public static void registerAll() {
+        for (ShippingMethod method : ShippingMethod.values()) {
+            Metrics.counter("gfc.orders.placed", "shipping", method.name());
+            Metrics.counter("gfc.orders.paid", "shipping", method.name());
+            Metrics.summary("gfc.revenue", "shipping", method.name());
+        }
+        for (String result : new String[]{"ok", "failed", "off"}) {
+            Metrics.counter("gfc.address.searches", "result", result);
+        }
+        for (String result : new String[]{"live", "fallback"}) {
+            Metrics.counter("gfc.courier.quotes", "result", result);
+        }
+        for (String result : new String[]{"booked", "refused"}) {
+            Metrics.counter("gfc.courier.bookings", "result", result);
+        }
+        for (String result : new String[]{"sent", "failed", "expired"}) {
+            Metrics.counter("gfc.emails", "result", result);
+        }
     }
 
     public static void orderPlaced(Object shippingMethod) {

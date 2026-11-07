@@ -24,17 +24,15 @@ let locked = false
 function containTab(event) {
   if (event.key !== 'Tab') return
   const controls = [...dialog.value.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')]
-    .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length)
-  const first = controls[0]
-  const last = controls.at(-1)
-  if (!first) { event.preventDefault(); return }
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault()
-    last.focus()
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault()
-    first.focus()
-  }
+    .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')
+  // WebKit may skip buttons according to the system keyboard preference.
+  // Traverse explicitly so neither Tab direction can leave this modal.
+  event.preventDefault()
+  if (!controls.length) return
+  const current = controls.indexOf(document.activeElement)
+  const next = current < 0 ? (event.shiftKey ? controls.length - 1 : 0)
+    : (current + (event.shiftKey ? -1 : 1) + controls.length) % controls.length
+  controls[next].focus()
 }
 
 function releasePage() {

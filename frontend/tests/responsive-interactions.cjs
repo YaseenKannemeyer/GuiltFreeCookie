@@ -1,16 +1,21 @@
 const assert = require('node:assert/strict');
 
-module.exports = async function interactions(page, { origin, width, inspect, failures, output }) {
+module.exports = async function interactions(page, { origin, width, inspect, failures, output, engine = 'chromium' }) {
   const visit = async route => { await page.goto(origin + route); await page.locator('h1').first().waitFor(); };
   await visit('/admindashboard/users');
   const opener = page.getByRole('button', { name: 'Add admin', exact: true });
-  await opener.click();
+  await opener.focus();
+  await page.keyboard.press('Enter');
   const form = page.getByRole('dialog', { name: 'Add admin', exact: true });
   await form.waitFor();
   await inspect(page, `${width} add admin dialog`, failures);
   for (let i = 0; i < 10; i++) {
     await page.keyboard.press('Tab');
     assert.ok(await form.evaluate(el => el.contains(document.activeElement)), 'Modal must contain keyboard focus');
+  }
+  for (let i = 0; i < 10; i++) {
+    await page.keyboard.press('Shift+Tab');
+    assert.ok(await form.evaluate(el => el.contains(document.activeElement)), 'Reverse Tab must stay inside modal');
   }
   await form.getByLabel('First name').fill('Alexandra');
   await form.getByLabel('Last name').fill('Baker');
@@ -43,7 +48,7 @@ module.exports = async function interactions(page, { origin, width, inspect, fai
   await page.waitForTimeout(150);
   await page.keyboard.up('Space');
   assert.equal(await hold.getAttribute('aria-busy'), 'false', 'Early release cancels deletion');
-  if (width < 1100) {
+  if (width < 1100 && engine === 'chromium') {
     await hold.scrollIntoViewIfNeeded();
     const b = await hold.boundingBox();
     const client = await page.context().newCDPSession(page);
@@ -82,9 +87,10 @@ module.exports = async function interactions(page, { origin, width, inspect, fai
   await search.fill('12 Main');
   const choice = page.getByRole('option', { name: '12 Main Road Rondebosch, Cape Town' });
   await choice.waitFor();
-  if (width < 1100) await choice.tap(); else await choice.click();
+  if (width < 1100 && engine !== 'firefox') await choice.tap(); else await choice.click();
   await page.waitForFunction(() => [...document.querySelectorAll('input')].some(el => el.value === 'Main Road'));
   await inspect(page, `${width} selected address`, failures);
+  if (output) await page.screenshot({ path: `${output}/${width}-checkout-address.png`, fullPage: true });
 
   await visit('/admindashboard/overview');
   const chart = page.getByRole('img', { name: 'Revenue by day. Use the arrow keys to read each day.' });
@@ -93,7 +99,7 @@ module.exports = async function interactions(page, { origin, width, inspect, fai
   await page.getByRole('status').filter({ hasText: 'R1000.00' }).waitFor();
   await page.keyboard.press('Home');
   await page.getByRole('status').filter({ hasText: 'R500.00' }).waitFor();
-  if (width < 1100) await chart.tap();
+  if (width < 1100 && engine !== 'firefox') await chart.tap();
   await page.getByText('Show as a table', { exact: true }).click();
   await inspect(page, `${width} chart details`, failures);
 
@@ -104,6 +110,5 @@ module.exports = async function interactions(page, { origin, width, inspect, fai
     await inspect(page, '1440 at 200% root text size', failures);
     await page.evaluate(() => document.documentElement.style.fontSize = '');
   }
-  if (output) await page.screenshot({ path: `${output}/${width}-checkout-address.png`, fullPage: true });
   console.log(`PASS: dialogs, focus, notifications, hold cancellation/undo, long form, address selection at ${width}px`);
 };

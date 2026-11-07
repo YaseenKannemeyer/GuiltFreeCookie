@@ -1,13 +1,17 @@
 // Start Vite, then: PLAYWRIGHT_MODULE=/path/to/playwright npm run test:responsive
+// BROWSER=chromium (default), firefox, or webkit; TEST_ORIGIN overrides localhost:5173.
+// Firefox uses mouse/keyboard at each viewport; touch swipes require Chromium CDP.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const playwright = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const engine = process.env.BROWSER || 'chromium';
+assert.ok(['chromium', 'firefox', 'webkit'].includes(engine), 'BROWSER must be chromium, firefox, or webkit');
 const { mockApi, seed, seedData, cookie } = require('./responsive-fixtures.cjs');
 const states = require('./responsive-states.cjs');
 const interactions = require('./responsive-interactions.cjs');
 const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:5173';
-const output = process.env.RESPONSIVE_OUTPUT || path.join(__dirname, '../../target/responsive');
+const output = process.env.RESPONSIVE_OUTPUT || path.join(__dirname, '../../target/responsive', engine);
 const routes = [
   '/', '/products', `/product/${cookie.slug}`, '/about', '/contact', '/cart',
   '/checkout/you', '/checkout/delivery', '/checkout/pay', '/order/GFC-20261106-1042?token=fixture',
@@ -57,13 +61,13 @@ async function inspect(page, label, failures) {
 }
 (async () => {
   fs.mkdirSync(output, { recursive: true });
-  const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
+  const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' && process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
   const failures = [];
   try {
     if (!process.env.INTERACTIONS_ONLY) await states(browser, { origin, inspect, failures });
     for (const [width, height] of sizes) {
       if (process.env.STATES_ONLY || (process.env.INTERACTIONS_ONLY && ![320, 844, 1440].includes(width))) continue;
-      const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 1100, reducedMotion: 'reduce' });
+      const context = await browser.newContext({ viewport: { width, height }, hasTouch: engine !== 'firefox' && width < 1100, reducedMotion: 'reduce' });
       await context.addInitScript(seed, seedData);
       await context.route('**/guiltFreeCookie/**', route => mockApi(route).catch(async e => { failures.push(e.message); await route.fulfill({ status: 500, json: { message: e.message } }); }));
       const page = await context.newPage();
@@ -87,12 +91,12 @@ async function inspect(page, label, failures) {
           await page.screenshot({ path: path.join(output, `${width}-${route.replaceAll('/', '_') || 'home'}.png`), fullPage: true });
         }
       }
-      if ([320, 844, 1440].includes(width)) await interactions(page, { origin, width, inspect, failures, output });
+      if ([320, 844, 1440].includes(width)) await interactions(page, { origin, width, inspect, failures, output, engine });
       console.log(`${process.env.INTERACTIONS_ONLY ? 'Interactions only' : `Inspected ${routes.length} routes`} at ${width}×${height}`);
       await context.close();
     }
   } finally { await browser.close(); }
-  fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ routes: routes.length, sizes, failures: [...new Set(failures)] }, null, 2));
+  fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ engine, mode: process.env.INTERACTIONS_ONLY ? 'interactions' : process.env.STATES_ONLY ? 'states' : 'full', routes: routes.length, sizes, failures: [...new Set(failures)] }, null, 2));
   assert.deepEqual([...new Set(failures)], []);
-  console.log(`PASS: ${process.env.INTERACTIONS_ONLY ? 'targeted interactions' : process.env.STATES_ONLY ? 'targeted state checks' : `${routes.length} populated routes × ${sizes.length} viewports, interactions and states`}. API responses are fixtures; Chromium emulation.`);
+  console.log(`PASS: ${process.env.INTERACTIONS_ONLY ? 'targeted interactions' : process.env.STATES_ONLY ? 'targeted state checks' : `${routes.length} populated routes × ${sizes.length} viewports, interactions and states`}. API responses are fixtures; ${engine} emulation.`);
 })().catch(e => { console.error(e); process.exitCode = 1; });
