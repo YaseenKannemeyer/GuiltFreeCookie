@@ -37,7 +37,7 @@ async function load() {
     const data = await adminOrderApi.shippingSettings();
     Object.assign(settings, data);
     freeDelivery.value = data.freeShippingThreshold != null;
-    settings.freeShippingThreshold ??= 500;
+    settings.freeShippingThreshold ??= 750;
     loaded.value = true;
   } catch (e) {
     error.value = errorMessage(e);
@@ -56,7 +56,7 @@ async function save() {
       freeShippingThreshold: freeDelivery.value ? Number(settings.freeShippingThreshold) : null,
     });
     Object.assign(settings, data);
-    settings.freeShippingThreshold ??= 500;
+    settings.freeShippingThreshold ??= 750;
     notice.value = "Saved. New checkouts use these settings straight away.";
   } catch (e) {
     error.value = errorMessage(e);
@@ -90,7 +90,7 @@ onMounted(load);
             Offered
           </label>
         </div>
-        <div v-if="settings[`${method.key}Enabled`]" class="mt-4 grid gap-4 sm:grid-cols-[10rem_1fr]">
+        <div v-if="settings[`${method.key}Enabled`]" class="mt-4 grid items-start gap-4 sm:grid-cols-[14rem_minmax(0,1fr)]">
           <BaseInput v-model="settings[`${method.key}Rate`]" label="Price (R)" type="number" required />
           <BaseInput v-model="settings[`${method.key}Eta`]" :label="method.etaLabel" />
         </div>
@@ -131,7 +131,7 @@ onMounted(load);
 
       <p class="mt-7 rounded-2xl bg-cream-100/70 border border-cream-500 p-4" aria-live="polite">{{ preview }}</p>
       <p v-if="notice" role="status" class="mt-4 font-bold">{{ notice }}</p>
-      <BaseButton type="submit" size="lg" class="mt-6" :disabled="busy">Save delivery settings</BaseButton>
+      <BaseButton type="submit" size="lg" class="mt-6 w-full sm:w-auto" :loading="busy">Save delivery settings</BaseButton>
     </form>
   </div>
 </template>

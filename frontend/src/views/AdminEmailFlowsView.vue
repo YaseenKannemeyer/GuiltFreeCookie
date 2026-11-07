@@ -122,13 +122,13 @@ onMounted(load);
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
             <h2 class="text-[2rem] font-extrabold">{{ flow.title }}</h2>
-            <p class="mt-1 text-chocolate/80">{{ flow.about }}</p>
           </div>
           <label class="flex items-center gap-2 font-bold min-h-11 cursor-pointer shrink-0">
-            <input v-model="settings[flow.toggle]" type="checkbox" class="h-5 w-5" />
+            <input v-model="settings[flow.toggle]" type="checkbox" class="h-5 w-5" :aria-label="`${flow.title} emails`" />
             On
           </label>
         </div>
+        <p class="mt-2 text-chocolate/80">{{ flow.about }}</p>
         <p class="mt-3 text-sm text-chocolate/75 tabular">
           Last 30 days: {{ stats[flow.key]?.sent || 0 }} sent · {{ stats[flow.key]?.opened || 0 }} opened ·
           {{ stats[flow.key]?.clicked || 0 }} clicked
@@ -150,7 +150,7 @@ onMounted(load);
         Opens are a rough guide: some mail apps load images without the email being read. Clicks are reliable.
       </p>
       <p v-if="notice" role="status" class="mt-4 font-bold">{{ notice }}</p>
-      <BaseButton type="submit" size="lg" class="mt-6" :disabled="busy">Save email flows</BaseButton>
+      <BaseButton type="submit" size="lg" class="mt-6 w-full sm:w-auto" :loading="busy">Save email flows</BaseButton>
     </form>
   </div>
 </template>

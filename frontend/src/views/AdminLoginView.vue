@@ -65,7 +65,7 @@ const submit = async () => {
           GuiltFree<span class="text-primary-600">Cookie</span>
         </RouterLink>
 
-        <h1 class="mt-8 lg:mt-0 font-sans text-base font-semibold tracking-[-0.025em] leading-tight">
+        <h1 class="mt-8 lg:mt-0 font-display text-display">
           Admin log in
         </h1>
         <p class="mt-1.5 text-chocolate/70">Use the email and password your team gave you.</p>

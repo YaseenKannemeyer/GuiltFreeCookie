@@ -50,15 +50,18 @@ function custom(field, value) {
   if (value) router.replace({ query: { from: from.value, to: to.value, [field]: value } });
 }
 
+let loadVersion = 0;
 async function load() {
+  const version = ++loadVersion;
   loading.value = true;
   error.value = "";
   try {
-    data.value = await analyticsApi.summary(from.value, to.value);
+    const result = await analyticsApi.summary(from.value, to.value);
+    if (version === loadVersion) data.value = result;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (version === loadVersion) error.value = errorMessage(e);
   } finally {
-    loading.value = false;
+    if (version === loadVersion) loading.value = false;
   }
 }
 onMounted(load);
@@ -105,8 +108,8 @@ const flows = computed(() => (data.value?.emailFlows || []).filter((flow) => flo
   <div class="max-w-5xl mx-auto">
     <h1 class="font-display text-display">Overview</h1>
 
-    <div class="mt-6 flex flex-wrap items-end gap-3" role="group" aria-label="Period">
-      <div class="flex flex-wrap rounded-full bg-chocolate/[0.07] p-1">
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-end gap-4" role="group" aria-label="Period">
+      <div class="sm:col-span-2 lg:col-span-1 flex flex-wrap w-fit rounded-full bg-chocolate/[0.07] p-1">
         <button
           v-for="days in PRESETS"
           :key="days"
@@ -120,12 +123,12 @@ const flows = computed(() => (data.value?.emailFlows || []).filter((flow) => flo
         </button>
       </div>
       <label class="grid min-w-0">
-        <span class="text-sm font-bold">From</span>
-        <input type="date" class="field min-w-0" :value="from" :max="to" @change="custom('from', $event.target.value)" />
+        <span class="text-sm font-semibold mb-1.5">From</span>
+        <input type="date" class="field h-14" :value="from" :max="to" @change="custom('from', $event.target.value)" />
       </label>
       <label class="grid min-w-0">
-        <span class="text-sm font-bold">To</span>
-        <input type="date" class="field min-w-0" :value="to" :min="from" @change="custom('to', $event.target.value)" />
+        <span class="text-sm font-semibold mb-1.5">To</span>
+        <input type="date" class="field h-14" :value="to" :min="from" @change="custom('to', $event.target.value)" />
       </label>
     </div>
 

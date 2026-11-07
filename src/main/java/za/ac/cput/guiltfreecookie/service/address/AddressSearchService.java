@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.address;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -99,12 +100,14 @@ public class AddressSearchService {
                 }
                 suggestions.add(new AddressSuggestion(place.path("placeId").asText(), main, secondary));
             }
+            ShopMetrics.addressSearch("ok");
             return new AddressSearchResult(true, false, suggestions);
         } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
             log.warn("Address suggestions failed: {}", e.toString());
+            ShopMetrics.addressSearch("failed");
             return new AddressSearchResult(true, true, List.of());
         }
     }

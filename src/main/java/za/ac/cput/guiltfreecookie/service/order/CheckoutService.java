@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.order;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -159,6 +160,7 @@ public class CheckoutService {
                     .build());
         }
         orderService.addEvent(order, OrderStatus.PENDING_PAYMENT, "Order placed", "customer");
+        ShopMetrics.orderPlaced(method);
         cartRepository.save(new Cart.Builder().copy(cart).setStatus(CartStatus.CHECKED_OUT).setUpdatedAt(now).build());
         if (Boolean.TRUE.equals(request.newsletterOptIn())) {
             newsletterService.subscribe(contact.email(), "checkout");

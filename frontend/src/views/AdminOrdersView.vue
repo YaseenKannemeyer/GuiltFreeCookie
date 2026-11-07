@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { MagnifyingGlassIcon } from "@heroicons/vue/20/solid";
 import BaseButton from "../components/ui/BaseButton.vue";
@@ -28,17 +28,21 @@ const placed = (value) =>
   new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 
 let debounce;
+let searchVersion = 0;
 async function search() {
+  clearTimeout(debounce);
+  const version = ++searchVersion;
   loading.value = true;
   error.value = "";
   const query = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v !== 0));
   router.replace({ query });
   try {
-    result.value = await adminOrderApi.search({ ...query, size: 20 });
+    const response = await adminOrderApi.search({ ...query, size: 20 });
+    if (version === searchVersion) result.value = response;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (version === searchVersion) error.value = errorMessage(e);
   } finally {
-    loading.value = false;
+    if (version === searchVersion) loading.value = false;
   }
 }
 watch(
@@ -66,6 +70,7 @@ const clear = () => Object.assign(filters, { q: "", status: "", from: "", to: ""
 const open = (order) => router.push({ name: "AdminOrderDetail", params: { orderNumber: order.orderNumber } });
 
 onMounted(search);
+onBeforeUnmount(() => { clearTimeout(debounce); searchVersion++; });
 </script>
 
 <template>
@@ -77,28 +82,34 @@ onMounted(search);
       >
     </div>
 
-    <form class="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-[minmax(0,1fr)_18rem_16rem_16rem]" role="search" @submit.prevent="search">
-      <label class="relative col-span-2 xl:col-span-1">
-        <span class="sr-only">Search orders</span>
-        <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-chocolate/60" aria-hidden="true" />
-        <input v-model="filters.q" type="search" class="field pl-11" placeholder="Order, email or surname" />
+    <form class="mt-7 grid grid-cols-1 items-end gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_20rem_18rem_18rem]" role="search" @submit.prevent="search">
+      <label class="block min-w-0">
+        <span class="mb-1.5 block text-sm font-semibold">Search orders</span>
+        <span class="relative block">
+          <MagnifyingGlassIcon class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-chocolate/60" aria-hidden="true" />
+          <input v-model="filters.q" type="search" class="field h-14 pl-11" placeholder="Order, email or surname" />
+        </span>
       </label>
-      <label class="col-span-2 xl:col-span-1">
-        <span class="sr-only">Status</span>
-        <select v-model="filters.status" class="field">
+      <label class="block min-w-0">
+        <span class="mb-1.5 block text-sm font-semibold">Status</span>
+        <select v-model="filters.status" class="field h-14">
           <option value="">All statuses</option>
           <option v-for="(meta, value) in ORDER_STATUS" :key="value" :value="value">{{ meta.label }}</option>
         </select>
       </label>
-      <label class="grid min-w-0 col-span-2 sm:col-span-1">
-        <span class="text-sm font-bold">From</span>
-        <input v-model="filters.from" type="date" class="field min-w-0 w-full" />
+      <label class="block min-w-0">
+        <span class="mb-1.5 block text-sm font-semibold">From</span>
+        <input v-model="filters.from" type="date" class="field h-14" />
       </label>
-      <label class="grid min-w-0 col-span-2 sm:col-span-1">
-        <span class="text-sm font-bold">To</span>
-        <input v-model="filters.to" type="date" class="field min-w-0 w-full" />
+      <label class="block min-w-0">
+        <span class="mb-1.5 block text-sm font-semibold">To</span>
+        <input v-model="filters.to" type="date" class="field h-14" />
       </label>
     </form>
+    <div v-if="filtered || (loading && result)" class="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <button v-if="filtered" type="button" class="font-bold text-sm underline underline-offset-4 min-h-11" @click="clear">Clear filters</button>
+      <span v-if="loading && result" role="status" class="text-sm text-chocolate/70">Updating orders…</span>
+    </div>
 
     <p v-if="error" role="alert" class="mt-6 text-red-900">
       {{ error }} <button type="button" class="font-bold underline" @click="search">Try again</button>

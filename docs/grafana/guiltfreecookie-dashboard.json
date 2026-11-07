@@ -1,0 +1,1577 @@
+{
+  "title": "Guilt Free Cookie",
+  "uid": "guiltfreecookie",
+  "tags": [
+    "guiltfreecookie"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Shop",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Orders placed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(increase(gfc_orders_placed_total{environment=\"$environment\"}[$__range]))",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "description": "Checkouts started in the selected time range"
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Orders paid",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 1,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(increase(gfc_orders_paid_total{environment=\"$environment\"}[$__range]))",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Revenue",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(increase(gfc_revenue_sum{environment=\"$environment\"}[$__range]))",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyZAR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "description": "Total of paid orders, including delivery"
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Average paid order",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 1,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(increase(gfc_revenue_sum{environment=\"$environment\"}[$__range])) / sum(increase(gfc_revenue_count{environment=\"$environment\"}[$__range]))",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyZAR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Orders over time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum by (shipping) (increase(gfc_orders_paid_total{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "paid ({{shipping}})"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(increase(gfc_orders_placed_total{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "placed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Emails",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum by (result) (increase(gfc_emails_total{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Sent, failed (retried) and expired emails through Brevo"
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Courier and address search",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Courier quotes",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum by (result) (increase(gfc_courier_quotes_total{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "live = ShipLogic price, fallback = flat rate because ShipLogic didn't answer"
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Courier bookings",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum by (result) (increase(gfc_courier_bookings_total{environment=\"$environment\"}[$__range]))",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Address searches",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum by (result) (increase(gfc_address_searches_total{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "API health",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Requests per minute",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(rate(http_server_requests_milliseconds_count{environment=\"$environment\"}[$__rate_interval])) * 60",
+          "legendFormat": "requests/min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Errors (5xx) per minute",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 24,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(rate(http_server_requests_milliseconds_count{environment=\"$environment\", status=~\"5..\"}[$__rate_interval])) * 60 or vector(0)",
+          "legendFormat": "5xx/min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Average response time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 24,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(rate(http_server_requests_milliseconds_sum{environment=\"$environment\"}[$__rate_interval])) / sum(rate(http_server_requests_milliseconds_count{environment=\"$environment\"}[$__rate_interval]))",
+          "legendFormat": "average"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Slowest endpoints (average)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "topk(5, sum by (uri) (rate(http_server_requests_milliseconds_sum{environment=\"$environment\"}[$__rate_interval])) / sum by (uri) (rate(http_server_requests_milliseconds_count{environment=\"$environment\"}[$__rate_interval])))",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "JVM heap used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(jvm_memory_used_bytes{environment=\"$environment\", area=\"heap\"})",
+          "legendFormat": "used"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(jvm_memory_max_bytes{environment=\"$environment\", area=\"heap\"})",
+          "legendFormat": "max"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Database connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 32,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(hikaricp_connections_active{environment=\"$environment\"})",
+          "legendFormat": "active"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "expr": "sum(hikaricp_connections_idle{environment=\"$environment\"})",
+          "legendFormat": "idle"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "row",
+      "title": "Azure (from Azure Monitor)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Azure: App Service plan CPU and memory",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/serverfarms",
+                "resourceName": "asp-guiltfreecookie",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/serverfarms",
+            "metricName": "CpuPercentage",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "CPU %"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/serverfarms",
+                "resourceName": "asp-guiltfreecookie",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/serverfarms",
+            "metricName": "MemoryPercentage",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "memory %"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "The one B1 plan both APIs share. Near 100% means slow restarts"
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Azure: requests per app",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "Requests",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "production"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api-staging",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "Requests",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "staging"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Azure: server errors (5xx) per app",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "Http5xx",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "production"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api-staging",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "Http5xx",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "staging"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Azure: response time per app",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "HttpResponseTime",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "production"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api-staging",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "HttpResponseTime",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "staging"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "Azure: memory per app",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "MemoryWorkingSet",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "production"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api-staging",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "MemoryWorkingSet",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "staging"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "Azure: MySQL CPU, memory and storage",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.dbformysql/flexibleservers",
+                "resourceName": "gfc-mysql",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.dbformysql/flexibleservers",
+            "metricName": "cpu_percent",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "CPU %"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.dbformysql/flexibleservers",
+                "resourceName": "gfc-mysql",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.dbformysql/flexibleservers",
+            "metricName": "memory_percent",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "memory %"
+          }
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.dbformysql/flexibleservers",
+                "resourceName": "gfc-mysql",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.dbformysql/flexibleservers",
+            "metricName": "storage_percent",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "storage %"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Azure: MySQL connections",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.dbformysql/flexibleservers",
+                "resourceName": "gfc-mysql",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.dbformysql/flexibleservers",
+            "metricName": "active_connections",
+            "aggregation": "Maximum",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "active"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.dbformysql/flexibleservers",
+                "resourceName": "gfc-mysql",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.dbformysql/flexibleservers",
+            "metricName": "aborted_connections",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "aborted"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "type": "timeseries",
+      "title": "Azure: app restarts and health",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${AZ}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 57,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "HealthCheckStatus",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "production"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${AZ}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "9f232e3b-9ecb-4ad6-893c-ab6f170463da",
+                "resourceGroup": "rg-guiltfreecookie",
+                "metricNamespace": "microsoft.web/sites",
+                "resourceName": "guiltfreecookie-api-staging",
+                "region": "southafricanorth"
+              }
+            ],
+            "metricNamespace": "microsoft.web/sites",
+            "metricName": "HealthCheckStatus",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": [],
+            "alias": "staging"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Share of Azure's health checks that passed (100 = healthy); dips are restarts"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "AZ",
+        "label": "Azure Monitor",
+        "type": "datasource",
+        "query": "grafana-azure-monitor-datasource",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS}"
+        },
+        "query": {
+          "query": "label_values(jvm_memory_used_bytes{application=\"guiltfreecookie-api\"}, environment)",
+          "refId": "env"
+        },
+        "definition": "label_values(jvm_memory_used_bytes{application=\"guiltfreecookie-api\"}, environment)",
+        "refresh": 2,
+        "current": {
+          "text": "production",
+          "value": "production"
+        },
+        "hide": 0
+      }
+    ]
+  }
+}

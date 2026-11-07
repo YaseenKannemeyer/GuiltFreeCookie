@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.shipping;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,7 @@ public class LiveShippingProvider implements ShippingRateProvider {
         }
         Optional<BigDecimal> rate = shipLogic.cheapestRate(request.area(), request.cookieCount(), request.merchandiseTotal())
                 .map(value -> value.setScale(2, RoundingMode.HALF_UP));
+        ShopMetrics.courierQuote(rate.isPresent() ? "live" : "fallback");
         rate.ifPresent(value -> {
             if (cache.size() > SWEEP_THRESHOLD) {
                 cache.values().removeIf(entry -> !now.isBefore(entry.expires()));

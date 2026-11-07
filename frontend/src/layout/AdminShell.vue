@@ -112,7 +112,7 @@ const signOut = () => {
       class="hidden xl:flex sticky top-0 h-[100dvh] overflow-y-auto overscroll-contain flex-col bg-chocolate text-cream-100 px-4 py-6"
     >
       <RouterLink :to="{ name: 'AdminOverview' }" class="px-3 block">
-        <span class="wordmark text-cream-50">
+        <span class="admin-desktop-wordmark wordmark text-cream-50">
           GuiltFree<span class="text-primary">Cookie</span>
         </span>
         <span class="mt-1.5 block text-sm font-semibold text-cream-100/60"
@@ -249,6 +249,7 @@ const signOut = () => {
 <style scoped>
 .admin :deep(aside :focus-visible),
 .admin header :focus-visible { outline-color: var(--color-primary); }
+.admin-desktop-wordmark { font-size: 2.4rem; }
 @media (max-width: 639px) {
   .admin-mobile-wordmark { font-size: clamp(2rem, 5.6vw, 3rem); }
 }

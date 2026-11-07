@@ -107,7 +107,7 @@ const confirmChangePassword = async () => {
     <div class="space-y-6">
       <section class="card grid 2xl:grid-cols-[25.6rem_minmax(0,1fr)] gap-6 md:gap-10 p-6 md:p-8" aria-labelledby="profile-details">
         <div>
-          <h2 id="profile-details" class="text-base font-semibold tracking-[-0.01em]">Details</h2>
+          <h2 id="profile-details" class="text-[2rem] font-extrabold">Details</h2>
           <p class="mt-1 text-sm text-chocolate/70">This is the email you log in with.</p>
         </div>
         <form class="space-y-4" @submit.prevent="profileForm.firstName && profileForm.lastName && profileForm.email && (showProfileConfirm = true)">
@@ -132,7 +132,7 @@ const confirmChangePassword = async () => {
 
       <section class="card grid 2xl:grid-cols-[25.6rem_minmax(0,1fr)] gap-6 md:gap-10 p-6 md:p-8" aria-labelledby="profile-password">
         <div>
-          <h2 id="profile-password" class="text-base font-semibold tracking-[-0.01em]">Password</h2>
+          <h2 id="profile-password" class="text-[2rem] font-extrabold">Password</h2>
           <p class="mt-1 text-sm text-chocolate/70">You'll need the new password the next time you log in. Any other device you're logged in on is signed out.</p>
         </div>
         <form class="space-y-4" @submit.prevent="canChangePassword() && openPasswordConfirm()">

@@ -1,5 +1,6 @@
 package za.ac.cput.guiltfreecookie.service.order;
 
+import za.ac.cput.guiltfreecookie.util.ShopMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,8 +105,10 @@ public class CourierBookingService {
                             order.getCustomerEmail(), street, area, order.getCustomerNote()),
                     cookieCount(order), order.getSubtotal().subtract(order.getDiscountTotal()));
         } catch (ShipLogicException e) {
+            ShopMetrics.courierBooking("refused");
             throw new ConflictException(e.getMessage());
         }
+        ShopMetrics.courierBooking("booked");
         log.info("Booked {} for {} at R{}", booking.trackingReference(), orderNumber, booking.rate());
         return adminOrderService.ship(orderNumber, new TrackingRequest(COURIER, booking.trackingReference(),
                 shipLogic.trackingUrl(booking.trackingReference())), adminId);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tops every visible (not archived) cookie up to a stock level, through the admin API.
-# Usage: scripts/restock.sh staging|production [level, default 50]
+# Usage: scripts/restock.sh staging|production [level, default 1000]
 set -euo pipefail
 
 case "${1:-}" in
@@ -8,7 +8,7 @@ case "${1:-}" in
   production) api=https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie ;;
   *) echo "Usage: $0 staging|production [level]" >&2; exit 1 ;;
 esac
-level="${2:-50}"
+level="${2:-1000}"
 
 read -rp "Admin email: " email
 read -rsp "Admin password: " password

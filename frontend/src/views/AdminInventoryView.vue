@@ -1,12 +1,13 @@
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick } from "vue";
+import { computed, ref, reactive, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
+import { ArrowRightIcon } from "@heroicons/vue/24/outline";
+import { gsap } from "gsap";
 import { api, errorMessage } from "../api/storeApi";
 import cookieApi from "../api/cookieApi";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseInput from "../components/ui/BaseInput.vue";
 import MagneticDropZone from "../components/ui/MagneticDropZone.vue";
-import LowStockWidget from "../components/admin/LowStockWidget.vue";
 
 const reasonLabels = {
   RESTOCK: "Restock",
@@ -53,6 +54,30 @@ const detailFields = [
   ["fatGrams", "Fat (g)"],
 ];
 const historyDialog = ref(null);
+const activeSection = ref("stock");
+const sections = [
+  { id: "stock", label: "Restock" },
+  { id: "details", label: "Product details" },
+  { id: "packs", label: "Pack sizes" },
+  { id: "photos", label: "Photos" },
+];
+const nextQuantity = computed(() => {
+  if (stock.value === "" || !Number.isInteger(Number(stock.value))) return null;
+  return stock.mode === "setTo"
+    ? Number(stock.value)
+    : Number(current.value?.cookie.stockQuantity || 0) + Number(stock.value);
+});
+const stockIsLow = computed(() => current.value &&
+  current.value.cookie.stockQuantity <= (current.value.cookie.lowStockThreshold ?? 0));
+const quantityPreview = ref(null);
+let previewTween;
+watch(nextQuantity, async () => {
+  await nextTick();
+  previewTween?.kill();
+  if (!quantityPreview.value || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  previewTween = gsap.fromTo(quantityPreview.value, { y: 4 }, { y: 0, duration: 0.25, ease: "power3.out", clearProps: "transform" });
+});
+onBeforeUnmount(() => previewTween?.kill());
 watch(showHistory, async (open) => {
   await nextTick();
   if (open) historyDialog.value?.showModal();
@@ -71,9 +96,9 @@ async function load() {
     error.value = errorMessage(e);
   }
 }
-async function detail() {
+async function detail(refresh = false) {
   const n = ++version;
-  current.value = null;
+  if (!refresh) current.value = null;
   showHistory.value = false;
   history.value = null;
   resetPack();
@@ -98,7 +123,7 @@ async function action(fn, message) {
   try {
     await fn();
     notice.value = message;
-    await detail();
+    await detail(true);
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -116,12 +141,15 @@ function adjust() {
     return;
   }
   action(
-    () =>
-      api("put", `${base()}/stock`, {
+    async () => {
+      await api("put", `${base()}/stock`, {
         [stock.mode]: value,
         reason: stock.mode === "setTo" ? "STOCKTAKE" : stock.reason,
         note: stock.note,
-      }),
+      });
+      stock.value = "";
+      stock.note = "";
+    },
     "Stock updated.",
   );
 }
@@ -200,20 +228,28 @@ async function openHistory() {
 watch(selected, () => {
   error.value = "";
   notice.value = "";
+  stock.value = "";
+  stock.note = "";
   detail();
 });
 onMounted(load);
 </script>
 <template>
   <div class="max-w-6xl mx-auto">
-    <h1 class="font-display text-display">Stock, packs & photos</h1>
-    <p class="mt-3">
-      Stock is counted in individual cookies. Pack prices are in rand.
+    <h1 class="font-display text-display">Stock & packs</h1>
+    <p class="mt-3 text-chocolate/75 max-w-prose">
+      Record a fresh bake, check your counts, or update a cookie’s details.
     </p>
-    <label class="block mt-7"
-      >Choose a cookie<select
+    <div class="mt-7 border-y border-chocolate/15 py-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+    <div class="flex items-center gap-4 min-w-0">
+      <img v-if="current?.cookie.image"
+        :src="cookieApi.getImageUrl(current.cookie.image)" alt=""
+        class="hidden sm:block w-20 h-20 shrink-0 rounded-xl object-contain bg-tan" />
+      <div class="flex-1 min-w-0">
+      <label for="inventory-cookie" class="block text-sm font-semibold mb-1.5">Choose a cookie</label>
+      <select id="inventory-cookie"
         v-model="selected"
-        class="field mt-2"
+        class="field h-14"
         :disabled="busy"
       >
         <option
@@ -223,52 +259,84 @@ onMounted(load);
         >
           {{ v.cookie.description }}{{ v.cookie.archived ? " (archived)" : "" }}
         </option>
-      </select></label
-    >
+      </select>
+      </div>
+    </div>
+    <div v-if="current" class="flex flex-wrap items-center gap-x-5 gap-y-2 md:justify-end">
+      <p class="font-bold tabular">{{ current.cookie.stockQuantity }} <span class="font-normal text-chocolate/75">in stock</span></p>
+      <span v-if="stockIsLow" class="text-sm font-bold text-red-800">{{ current.cookie.stockQuantity === 0 ? 'Out of stock' : 'Low stock' }}</span>
+      <span v-else class="text-sm font-semibold text-chocolate/75">In stock</span>
+    </div>
+    </div>
     <p v-if="error" role="alert" class="mt-5 text-red-800">
       {{ error }} <button class="underline" @click="load">Reload</button>
     </p>
-    <p v-if="notice" role="status" class="mt-5">{{ notice }}</p>
+    <p v-if="notice" role="status" class="mt-5 rounded-xl bg-primary/25 px-4 py-3 font-semibold motion-safe:animate-fade-in">{{ notice }}</p>
     <p v-if="busy" role="status" class="mt-5">Saving changes…</p>
-    <template v-if="current"
-      ><section class="py-9 border-b border-chocolate/20">
-        <div class="flex justify-between flex-wrap gap-4">
-          <h2 class="font-display text-3xl">
-            {{ current.cookie.stockQuantity }} cookies in stock
-          </h2>
-          <BaseButton variant="outline" @click="openHistory"
+    <template v-if="current">
+      <nav class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-chocolate/[0.05] p-1" aria-label="Cookie management">
+        <button v-for="section in sections" :key="section.id" type="button"
+          :aria-pressed="activeSection === section.id" :aria-controls="`inventory-${section.id}`"
+          :class="activeSection === section.id ? 'bg-chocolate text-cream-50' : 'text-chocolate/75 hover:bg-chocolate/[0.07]'"
+          class="min-h-12 rounded-lg px-3 py-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chocolate"
+          @click="activeSection = section.id">{{ section.label }}</button>
+      </nav>
+      <section id="inventory-stock" v-show="activeSection === 'stock'" class="py-8" aria-labelledby="restock-title">
+        <div class="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h2 id="restock-title" class="text-[2.4rem] leading-tight font-extrabold">Update stock</h2>
+            <p class="mt-2 text-sm text-chocolate/75">Count individual cookies, including those sold in packs.</p>
+          </div>
+          <BaseButton variant="outline" size="sm" @click="openHistory"
             >Stock history</BaseButton
           >
         </div>
-        <form class="grid sm:grid-cols-2 gap-4 mt-6" @submit.prevent="adjust">
-          <label
-            >Action<select v-model="stock.mode" class="field mt-1">
-              <option value="adjustBy">Adjust stock (+ / −)</option>
-              <option value="setTo">Stocktake: set exact count</option>
-            </select></label
-          ><label
-            >Number of cookies<input
+        <form class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,0.7fr)] lg:gap-8" @submit.prevent="adjust">
+          <fieldset :disabled="busy" class="min-w-0 grid content-start sm:grid-cols-2 gap-5">
+          <legend class="sr-only">Stock adjustment</legend>
+          <div class="min-w-0">
+            <label for="stock-mode" class="block text-sm font-semibold mb-1.5">Action</label>
+            <select id="stock-mode" v-model="stock.mode" class="field h-14">
+              <option value="adjustBy">Add / remove cookies</option>
+              <option value="setTo">Set exact stock count</option>
+            </select>
+          </div>
+          <div v-if="stock.mode === 'adjustBy'" class="min-w-0">
+            <label for="stock-reason" class="block text-sm font-semibold mb-1.5">Reason</label>
+            <select id="stock-reason" v-model="stock.reason" class="field h-14">
+              <option value="RESTOCK">Fresh bake</option>
+              <option value="ADJUSTMENT">Correction</option>
+              <option value="DAMAGED">Damaged or discarded</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2 min-w-0">
+            <label for="stock-quantity" class="block text-sm font-semibold mb-1.5">{{ stock.mode === 'setTo' ? 'Counted cookies' : 'Cookies to add or remove' }}</label>
+            <input id="stock-quantity"
               v-model="stock.value"
               type="number"
               step="1"
               :min="stock.mode === 'setTo' ? 0 : undefined"
-              class="field mt-1"
-              required /></label
-          ><label v-if="stock.mode === 'adjustBy'"
-            >Reason<select v-model="stock.reason" class="field mt-1">
-              <option value="RESTOCK">Restock (fresh bake)</option>
-              <option value="ADJUSTMENT">Correction</option>
-              <option value="DAMAGED">Damaged or discarded</option>
-            </select></label
-          ><BaseInput v-model="stock.note" label="Note (optional)" /><BaseButton
-            type="submit"
-            :disabled="busy"
-            >Update stock</BaseButton
-          >
+              class="field h-16 text-[2.4rem] font-bold tabular"
+              placeholder="0" aria-describedby="stock-help" required />
+            <p id="stock-help" class="mt-2 text-sm text-chocolate/75">{{ stock.mode === 'setTo' ? 'This replaces the current stock count.' : 'Use a positive number to add cookies, or a negative number to remove them.' }}</p>
+          </div>
+          <div class="sm:col-span-2"><BaseInput v-model="stock.note" label="Note (optional)" placeholder="e.g. Saturday morning bake" :disabled="busy" /></div>
+          </fieldset>
+          <div class="min-w-0 border-t border-chocolate/15 pt-5 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0">
+            <h3 class="font-bold">After this update</h3>
+            <div class="mt-5 flex items-center gap-4" aria-live="polite" aria-atomic="true">
+              <div class="min-w-0 flex-1"><span class="block text-sm text-chocolate/70">Current</span><span class="block mt-1 text-[3.2rem] leading-tight font-bold tabular break-all">{{ current.cookie.stockQuantity }}</span></div>
+              <ArrowRightIcon class="h-5 w-5 shrink-0 text-chocolate/50" aria-hidden="true" />
+              <div class="min-w-0 flex-1"><span class="block text-sm text-chocolate/70">New total</span><span ref="quantityPreview" class="block mt-1 text-[3.2rem] leading-tight font-bold tabular break-all">{{ nextQuantity ?? '—' }}</span></div>
+            </div>
+            <p class="mt-4 text-sm text-chocolate/75">Low-stock alert at {{ current.cookie.lowStockThreshold ?? 0 }} cookies.</p>
+            <BaseButton type="submit" class="mt-6 w-full" :loading="busy" :disabled="stock.value === ''">Save stock update</BaseButton>
+            <p class="mt-3 text-sm text-chocolate/70">Every update is recorded in stock history.</p>
+          </div>
         </form>
       </section>
-      <section class="py-9 border-b border-chocolate/20">
-        <h2 class="font-display text-3xl">Product details</h2>
+      <section id="inventory-details" v-show="activeSection === 'details'" class="py-8">
+        <h2 class="text-[2.4rem] leading-tight font-extrabold">Product details</h2>
         <form
           class="mt-5 grid sm:grid-cols-2 gap-4"
           @submit.prevent="saveDetails"
@@ -291,8 +359,8 @@ onMounted(load);
           </div>
         </form>
       </section>
-      <section class="py-9 border-b border-chocolate/20">
-        <h2 class="font-display text-3xl">Pack sizes</h2>
+      <section id="inventory-packs" v-show="activeSection === 'packs'" class="py-8">
+        <h2 class="text-[2.4rem] leading-tight font-extrabold">Pack sizes</h2>
         <ul class="mt-4 divide-y divide-chocolate/15">
           <li
             v-for="v in current.variants"
@@ -369,8 +437,8 @@ onMounted(load);
           </div>
         </form>
       </section>
-      <section class="py-9">
-        <h2 class="font-display text-3xl">Gallery</h2>
+      <section id="inventory-photos" v-show="activeSection === 'photos'" class="py-8">
+        <h2 class="text-[2.4rem] leading-tight font-extrabold">Gallery</h2>
         <p class="mt-3">
           The primary image stays first. Reorder the additional photos below.
         </p>
@@ -438,7 +506,7 @@ onMounted(load);
       @close="showHistory = false"
     >
       <div class="flex items-center justify-between gap-4">
-        <h2 id="history-title" class="font-display text-3xl">Stock history</h2>
+        <h2 id="history-title" class="text-[2.4rem] leading-tight font-extrabold">Stock history</h2>
         <BaseButton variant="outline" @click="showHistory = false"
           >Close</BaseButton
         >
