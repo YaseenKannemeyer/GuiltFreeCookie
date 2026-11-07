@@ -4,19 +4,22 @@ import { api, errorMessage } from "../api/storeApi";
 import BaseButton from "../components/ui/BaseButton.vue";
 const items = ref([]),
   status = ref("PENDING"),
-  busy = ref(false),
+  busy = ref(true),
   error = ref("");
+let loadVersion = 0;
 async function load() {
+  const version = ++loadVersion;
   busy.value = true;
+  error.value = "";
   try {
-    items.value = await api("get", "/admin/reviews", undefined, {
+    const result = await api("get", "/admin/reviews", undefined, {
       params: status.value ? { status: status.value } : {},
     });
-    error.value = "";
+    if (version === loadVersion) items.value = result;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (version === loadVersion) error.value = errorMessage(e);
   } finally {
-    busy.value = false;
+    if (version === loadVersion) busy.value = false;
   }
 }
 async function moderate(id, action) {
@@ -39,8 +42,9 @@ watch(status, load);
     <p class="mt-3">
       Only approved reviews appear in the store and rating totals.
     </p>
-    <label class="block mt-6"
-      >Status<select v-model="status" class="field mt-2 max-w-xs">
+    <label class="block mt-6 max-w-xs">
+      <span class="block text-sm font-semibold mb-1.5">Status</span>
+      <select v-model="status" class="field h-14">
         <option value="PENDING">Pending</option>
         <option value="APPROVED">Approved</option>
         <option value="REJECTED">Rejected</option>
@@ -48,10 +52,10 @@ watch(status, load);
       </select></label
     >
     <p v-if="error" role="alert" class="mt-5 text-red-800">
-      {{ error }} <button class="underline" @click="load">Retry</button>
+      {{ error }} <button class="underline min-h-11" @click="load">Retry</button>
     </p>
     <p v-if="busy" role="status" class="mt-5">Updating reviews…</p>
-    <p v-else-if="!items.length" class="py-12">
+    <p v-else-if="!error && !items.length" class="py-12">
       No {{ status.toLowerCase() }} reviews.
     </p>
     <article
@@ -59,14 +63,14 @@ watch(status, load);
       :key="r.id"
       class="py-7 border-b border-chocolate/15"
     >
-      <h2 class="font-bold text-xl">{{ r.rating }} / 5 · {{ r.title }}</h2>
+      <h2 class="font-extrabold text-[2rem] break-words">{{ r.rating }} / 5 · {{ r.title }}</h2>
       <p class="mt-2">
         {{ r.authorName }} · {{ r.status
         }}<span v-if="r.verifiedBuyer"> · Verified buyer</span>
       </p>
       <RouterLink
         :to="`/product/${r.cookieId}`"
-        class="underline inline-block py-2"
+        class="underline inline-flex items-center min-h-11 py-2"
         >View cookie</RouterLink
       >
       <p class="my-4 whitespace-pre-line break-words">{{ r.body }}</p>

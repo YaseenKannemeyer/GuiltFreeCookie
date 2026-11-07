@@ -21,6 +21,7 @@ const tab = ref("users");
 
 const admins = ref([]);
 const loading = ref(false);
+const saving = ref(false);
 const loadError = ref(false);
 const showForm = ref(false);
 const selectedAdmin = ref(null);
@@ -54,6 +55,7 @@ const loadAdmins = async () => {
 };
 
 const saveAdmin = async (admin) => {
+  if (saving.value) return;
   const isEditing = !!admin.adminId;
   // Caught here when the list already shows it; the server checks too.
   const emailTaken = admins.value.some((a) => a.email?.toLowerCase() === admin.email && a.adminId !== admin.adminId);
@@ -61,6 +63,7 @@ const saveAdmin = async (admin) => {
     showToast("An admin with that email already exists.", "error");
     return;
   }
+  saving.value = true;
   try {
     if (isEditing) {
       await adminApi.update(admin);
@@ -80,6 +83,8 @@ const saveAdmin = async (admin) => {
           : "Failed to add admin.",
       "error",
     );
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -165,8 +170,9 @@ onMounted(loadAdmins);
 
     <div v-if="tab === 'customers'" class="card py-16 px-6 text-center">
       <UsersIcon class="mx-auto h-10 w-10 text-chocolate/35" />
-      <h2 class="mt-3 font-sans text-base font-semibold">Customer accounts are on the way</h2>
-      <p class="mt-1 text-chocolate/70">Once customers can sign up, you'll see and manage them here.</p>
+      <h2 class="mt-3 font-sans text-base font-semibold">Customer management isn't available here yet</h2>
+      <p class="mt-1 text-chocolate/70">You can find customer contact and delivery details in their orders.</p>
+      <BaseButton :to="{ name: 'AdminOrders' }" variant="outline" size="sm" class="mt-5">View orders</BaseButton>
     </div>
 
     <template v-else>
@@ -182,7 +188,7 @@ onMounted(loadAdmins);
 
       <div v-else-if="loadError" class="card py-16 px-6 text-center" role="alert">
         <h2 class="text-base font-semibold">Couldn't load admins</h2>
-        <p class="mt-1 text-chocolate/70">Check the API is running, then try again.</p>
+        <p class="mt-1 text-chocolate/70">We couldn't reach the store. Check your connection and try again.</p>
         <BaseButton variant="outline" size="sm" class="mt-5" @click="loadAdmins">
           <ArrowPathIcon class="h-4 w-4" />
           Try again
@@ -207,6 +213,7 @@ onMounted(loadAdmins);
 
     <AdminForm
       :open="showForm"
+      :saving="saving"
       :admin="selectedAdmin"
       @save="saveAdmin"
       @close="closeForm"

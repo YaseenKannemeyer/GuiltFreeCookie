@@ -7,15 +7,19 @@ Storefront on **Vercel** (`guiltfreecookie.me`), API and MySQL on **Azure for St
 In order. **(you)** = the owner, **(Claude)** = Claude.
 
 **Where it stopped**
-1. **Staging came back and sends metrics** (checked 22:51 UTC): `UP` at 22:48 after a 296-second start, and the metrics reach Grafana. Its first two sends after startup failed with `HTTP connect timed out` (Spring's default 1-second connect timeout, too short from South Africa to Grafana's EU gateway on a busy CPU); fixed by `management.otlp.metrics.export.connect-timeout=10s` in `application.properties` (uncommitted; goes out with the next deploy). Earlier that evening staging's start failed twice: Azure moved it to a new machine, and at 22:38 it couldn't reach MySQL while the shared CPU was pinned at 97–99% (`Unable to determine Dialect without JDBC metadata`; MySQL was fine). Production stayed `UP`. Staging's container logging, on since 6 November 22:15 UTC for this troubleshooting, was turned off again on 7 November; staging stayed `UP`.
-2. **(you) Grafana Azure data source.** `grafana-azure-monitor-datasource` keeps refusing to save ("trying to update old version of datasource", a Grafana-side conflict; their status page showed an incident). Add a **new** Azure Monitor data source named `Azure (guiltfreecookie)` with the values in section 2 ("Grafana Cloud dashboards"), **Save & test** once, then delete the stuck one. If the new one fails the same way, wait and retry later.
-3. **Dashboard imported** (7 November; data source `Azure (guiltfreecookie)`; its "No Log Analytics workspaces" warning is expected). The Shop and Courier rows showed "No data" because each counter only appeared at its first event (and that first event never counted). Fixed: `ShopMetrics.registerAll()` creates every series at zero on startup (`ShopMetricsStartup`, uncommitted). **(you)** commit and push to `staging`; after it answers, both rows show 0 and count from there.
+1–3. **Done 7 November: staging metrics in Grafana.** Staging sends metrics (OTLP connect timeout 10 s; container logging off again). Azure Monitor data source `Azure (guiltfreecookie)` saved (the "old version of datasource" error came from pressing **Load Subscriptions**, which saves in the background; reload, then **Save & test**; "No Log Analytics workspaces" is expected). Dashboard imported; the Shop and Courier rows show data since `21ef027` (every shop counter starts at zero).
 4. **Production metrics**, after staging works, one app at a time: **(you)** merge `staging` → `main` and run **Verify and deploy API → production**; wait until it answers; then put the metrics settings on production:
    ```
    A=$(security find-generic-password -s "gfc grafana otlp auth" -w) && az webapp config appsettings set -g rg-guiltfreecookie -n guiltfreecookie-api -o none --settings OTLP_METRICS_ENABLED=true OTLP_METRICS_URL=https://otlp-gateway-prod-eu-west-6.grafana.net/otlp/v1/metrics OTLP_METRICS_AUTHORIZATION="$A"; unset A
    ```
-5. **Decide: monitor every site in Grafana?** Planned (not started): Grafana **Synthetic Monitoring** checks (storefronts, both APIs and their dependencies, SSL expiry, an MX DNS check for ImprovMX), Sentry, GitHub and Vercel data sources (each needs a read-only token), Brevo statistics through the Infinity data source, a **PayFast notifications** metric (small code change, deployed with the next release), and one dashboard row per service. Azure is already in the dashboard.
-6. **(you) Better Stack status page** `status.guiltfreecookie.me`: create it (Status pages → Create, resources Storefront, API, Dependencies), then add the CNAME it shows with `npx vercel dns add guiltfreecookie.me status CNAME <target>`.
+5. **Monitor every site in Grafana** (owner: yes, where free and easy; 7 November). Plan:
+   - **Synthetic Monitoring** (free tier; check its monthly allowance on the Synthetics page), one probe, every 5 minutes, about 60,000 runs a month for 7 checks: HTTP checks on `guiltfreecookie.me`, the staging storefront, both APIs' `/guiltFreeCookie/actuator/health` and production's `/health/dependencies` (HTTP checks also report SSL expiry), and a DNS MX check on `guiltfreecookie.me` for ImprovMX. **(you)** turn on Synthetic Monitoring (**Testing & synthetics → Synthetics → Get started**); **(Claude)** gives the check list to enter.
+   - **Sentry** data source (free plugin; needs a new read-only Sentry token: Organization, Project and Issue & Event **Read**).
+   - **GitHub** data source (free plugin; a fine-grained read-only token for this repo: Actions, Contents, Pull requests **Read**) for deploy runs and failures.
+   - **PayFast notifications** metric (`gfc.payfast.notifications` by result; **(Claude)** small code change, goes out with the next release).
+   - One dashboard row per service (**(Claude)**).
+   - Skipped as not easy: Vercel (no Grafana data source; the storefront checks cover it) and Brevo statistics (the `mail` dependency check already shows if sending breaks).
+6. **Status page live**: [status.guiltfreecookie.me](https://status.guiltfreecookie.me) (7 November; Better Stack, CNAME `status` → `statuspage.betteruptime.com` in Vercel DNS, HTTPS answers 200). **(you)** In **Structure**, give the three resources public names (e.g. Shop, Ordering system, Payments, email and courier) and save.
 
 **Before the presentation**
 7. **(you) Restock production**: `scripts/restock.sh production` with a high number (Raspberry Coconut and Toasted Almond & Vanilla were out of stock, five more low).
@@ -23,7 +27,7 @@ In order. **(you)** = the owner, **(Claude)** = Claude.
 
 **Housekeeping**
 9. **(you) Commit** what's left: this file, `docs/grafana/` and the OTLP connect timeout in `application.properties` (the Grafana code itself went out in `4540898`). The modified `frontend/` files belong to the frontend work, not this session.
-10. **(you) Secrets pasted in chat on 6–7 November**: the Brevo API key, the Grafana OTLP token and the Azure reader secret. All are scoped and go away at shut-down (section 7); replace them earlier if this chat is shared. Also delete ImprovMX's unused `new-alias`.
+10. **(you) Secrets pasted in chat on 6–7 November**: the Brevo API key, the Grafana OTLP token and the Azure reader secret. All are scoped and go away at shut-down (section 7); replace them earlier if this chat is shared.
 11. **(you) Google card hold**: check the bank statement around **20 November 2026**; if the R847.81 hold is still there, ask Google (**Billing → Help → Contact billing support**) or the bank.
 
 **Done on 6–7 November**: `guiltfreecookie.me` live (Vercel, `www` redirect, canonical links and sitemap); production sends real email from `hello@guiltfreecookie.me` through Brevo (SPF, DKIM and DMARC pass, mail-tester 8.6/10) and receives it through ImprovMX; courier booking on production (sandbox); Better Stack storefront monitor on the new domain; R750 free delivery; Grafana Cloud with the API's metrics code deployed to staging and an Azure read-only identity.
@@ -95,7 +99,7 @@ Type the command exactly as shown; the key goes only at the two prompts, never i
 
 Brevo only sends, so without this, replies to `hello@` were lost.
 - [x] Free [ImprovMX](https://improvmx.com) account (signed up as `yaseenkannemeyer@gmail.com`), domain `guiltfreecookie.me` added.
-- [x] Alias **`hello`** → `yaseenkannemeyer@gmail.com` (the alias box takes only the part before the `@`). Delete the unused `new-alias`. A catch-all `*` alias can be added back so any other address also arrives.
+- [x] Alias **`hello`** → `yaseenkannemeyer@gmail.com` (the alias box takes only the part before the `@`). A catch-all `*` alias can be added back so any other address also arrives.
 - [x] DNS in Vercel: MX `mx1.improvmx.com` (priority 10) and `mx2.improvmx.com` (20). **SPF** replaced with one record covering both: `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` (a domain may only have one SPF record).
 - [x] Test sent to `hello@guiltfreecookie.me` through Brevo.
 - [x] Forwarding works: ImprovMX received and forwarded the test (6 November 2026). A test from your own Gmail to `hello@` lands in Spam or shows "via improvmx.net" (Gmail's loop protection); test from a different address instead. Real customer mail isn't affected.
@@ -211,6 +215,19 @@ Never combine `prod` with the local `demo` profile; startup refuses it. Staging 
 
 The code is in and switched on (4 November 2026). Alerts from both services go by email.
 
+**What each monitor does** (all alerts email `yaseenkannemeyer@gmail.com`)
+
+| Monitor | Where | What it checks | Goes red when | Production only? |
+|---|---|---|---|---|
+| **Storefront** | Better Stack, every 3 min | Loads `https://guiltfreecookie.me/` | The shop page doesn't load (Vercel down, DNS or SSL broken) | Yes |
+| **API** | Better Stack, every 3 min | `/guiltFreeCookie/actuator/health`: the API is running and can reach MySQL | The API is down or restarting for more than 5 minutes, or the database is unreachable | Yes |
+| **Dependencies** | Better Stack, every 3 min | `/actuator/health/dependencies`: Brevo accepts mail (`mail`), emails aren't stuck in the queue (`outbox`), ShipLogic answers (`delivery`) | Email or courier booking is broken even though the API is up | Yes |
+| **Reservations** heartbeat | Better Stack, the API pings it | The 5-minute job that frees stock held by unpaid checkouts has run | No ping for 15 minutes: the job stopped or the API is down, so stock stays locked | Yes |
+| **Daily flows** heartbeat | Better Stack, the API pings it | The 09:00 marketing email job (abandoned carts, reviews, win-back) has run | No ping for 25 hours. **Always red while `showcase` is on**, because that profile turns the job off. Switched back on by the owner on 7 November; pause it to stop the daily alert, or leave it on knowing it will alert | Yes |
+| **Sentry** `guiltfreecookie-api` / `-web` | Sentry | Errors thrown by the API and by the shop in visitors' browsers, with where they happened | A new kind of error appears | Both (tagged `production` / `staging`) |
+| **Grafana dashboard** | Grafana Cloud | Orders, revenue, emails, courier quotes and bookings, address searches, request rates and errors, memory, database pool, and Azure's CPU, memory, restarts and MySQL load | Nothing alerts yet; it's for looking at | Staging now, production after "Open now" 4 |
+| **Grafana synthetic checks** (planned, "Open now" 5) | Grafana Cloud | Both storefronts and both APIs load, SSL isn't about to expire, the MX record for ImprovMX is there | Any of those fails | Both |
+
 - [x] **Heartbeats built.** `Heartbeat` GETs a URL in the background (3 s timeout, logs failures, never throws, does nothing when the URL is blank). Pinged at the end of `ReservationReleaseJob` (every 5 minutes) and of the daily 09:00 cron in `FlowTriggers`. A job that throws doesn't ping.
 - [x] **Sentry built** (errors only, no personal data, replays or tracing).
   - Backend: `sentry-spring-boot-4-starter` 8.61.0, configured by `SENTRY_DSN`, `SENTRY_ENVIRONMENT` and `SENTRY_SEND_DEFAULT_PII` (default `false`). A blank DSN turns it off.
@@ -220,7 +237,7 @@ The code is in and switched on (4 November 2026). Alerts from both services go b
   - [x] API: `https://guiltfreecookie-api.azurewebsites.net/guiltFreeCookie/actuator/health`
   - [x] Dependencies: `…/guiltFreeCookie/actuator/health/dependencies` (mail and outbox), created 6 November 2026
 - [x] Better Stack heartbeats (2026-11-04, URLs set on production): create two, "Reservations" (expected every 5 minutes, grace 10) and "Daily flows" (every 24 hours, grace 1 hour). Put their URLs in `HEARTBEAT_RESERVATIONS_URL` and `HEARTBEAT_DAILY_FLOWS_URL` on the production App Service.
-- [ ] **Public status page** (Better Stack, free; started 6 November 2026 for the presentation): `status.guiltfreecookie.me`, built from the three monitors. The owner creates it in Better Stack and adds the CNAME it shows with `npx vercel dns add guiltfreecookie.me status CNAME <target>`.
+- [x] **Public status page** (Better Stack, free, 7 November 2026): [status.guiltfreecookie.me](https://status.guiltfreecookie.me), built from the three monitors (no heartbeats). DNS: CNAME `status` → `statuspage.betteruptime.com` in Vercel.
 - [ ] **Grafana Cloud dashboards** (free tier; code built 6 November 2026, not yet deployed).
   - [x] Code: `micrometer-registry-otlp` plus `spring-boot-opentelemetry` (Spring Boot 4 only switches the OTLP exporter on when that module is present). Every minute the API pushes request counts and times, errors, JVM memory, the database pool, and shop numbers from `ShopMetrics`: `gfc.orders.placed`, `gfc.orders.paid`, `gfc.revenue`, `gfc.address.searches`, `gfc.courier.quotes` (live or fallback), `gfc.courier.bookings`, `gfc.emails` (sent, failed, expired). Tags `application=guiltfreecookie-api` and `environment` (from `SENTRY_ENVIRONMENT`). Off unless `OTLP_METRICS_ENABLED=true`. Checked locally against a stand-in receiver (batches arrive with the `Authorization` header); `ShopMetricsTest`; all 490 tests pass.
   - [x] Grafana Cloud account (free tier; a 14-day trial of extra features ends 20 November 2026 and drops back to free; no card added). Org and stack `broadtarantula971` ([broadtarantula971.grafana.net](https://broadtarantula971.grafana.net)), region EU West. Token `1910869-guiltfreecookie-api` from **Cloud Portal → stack Details → OpenTelemetry → Configure**, saved as `gfc grafana otlp auth` (the whole `Basic …` value, 246 characters; it was pasted in chat). Endpoint `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`.

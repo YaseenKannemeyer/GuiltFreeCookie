@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { XMarkIcon } from "@heroicons/vue/20/solid";
 import cookieApi from "../../api/cookieApi";
 import { COOKIE_CATEGORIES, formatCategoryLabel } from "../../constants/cookieCategories";
@@ -11,6 +11,7 @@ import MagneticDropZone from "../ui/MagneticDropZone.vue";
 import { cleanText, cleanList, cleanPrice } from "../../utils/normalize";
 
 const props = defineProps({
+  saving: { type: Boolean, default: false },
   open: {
     type: Boolean,
     default: false,
@@ -45,11 +46,18 @@ const imagePreview = ref(null);
 const imageRemoved = ref(false);
 const isEditing = computed(() => !!form.value.cookieId);
 const showConfirm = ref(false);
+let previewUrl;
+function releasePreview() {
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = undefined;
+}
+onBeforeUnmount(releasePreview);
 
 // 2. Reset form state every time the modal opens
 watch(
   () => props.open,
   (isOpen) => {
+    releasePreview();
     if (!isOpen) return;
     form.value = props.cookie ? { ...props.cookie } : { ...defaultForm };
     imageFile.value = null;
@@ -62,12 +70,15 @@ watch(
 
 const onImageChange = ([file]) => {
   if (!file) return;
+  releasePreview();
   imageFile.value = file;
   imageRemoved.value = false;
-  imagePreview.value = URL.createObjectURL(file);
+  previewUrl = URL.createObjectURL(file);
+  imagePreview.value = previewUrl;
 };
 
 const removeImage = () => {
+  releasePreview();
   imageFile.value = null;
   imagePreview.value = null;
   imageRemoved.value = true;
@@ -115,7 +126,7 @@ const confirmSubmit = () => {
             <img :src="imagePreview" alt="Cookie preview" class="h-[88%] w-[88%] object-contain" />
           </div>
           <div class="min-w-0 space-y-2">
-            <p class="text-sm text-chocolate/75">
+            <p class="text-sm text-chocolate/75 break-all">
               {{ imageFile ? imageFile.name : "Current photo" }}
             </p>
             <button
@@ -187,7 +198,7 @@ const confirmSubmit = () => {
 
       <div class="flex flex-wrap justify-end gap-3 pt-3">
         <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
-        <BaseButton type="submit" variant="primary" size="sm" :disabled="!canSubmit">
+        <BaseButton type="submit" variant="primary" size="sm" :disabled="!canSubmit" :loading="saving">
           {{ isEditing ? "Save changes" : "Add cookie" }}
         </BaseButton>
       </div>

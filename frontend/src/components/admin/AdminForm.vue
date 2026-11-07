@@ -8,6 +8,7 @@ import { cleanEmail, cleanText } from "../../utils/normalize";
 import { MIN_PASSWORD_LENGTH } from "../../constants/auth";
 
 const props = defineProps({
+  saving: { type: Boolean, default: false },
   open: {
     type: Boolean,
     default: false,
@@ -102,7 +103,7 @@ const confirmSubmit = () => {
 
     <div class="flex flex-wrap justify-end gap-3 mt-8">
       <BaseButton variant="outline" size="sm" @click="emit('close')">Cancel</BaseButton>
-      <BaseButton variant="primary" size="sm" :disabled="!canSubmit" @click="openConfirm">
+      <BaseButton variant="primary" size="sm" :disabled="!canSubmit" :loading="saving" @click="openConfirm">
         Save
       </BaseButton>
     </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { MagnifyingGlassIcon } from "@heroicons/vue/20/solid";
 import BaseButton from "../components/ui/BaseButton.vue";
@@ -28,17 +28,21 @@ const placed = (value) =>
   new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 
 let debounce;
+let searchVersion = 0;
 async function search() {
+  clearTimeout(debounce);
+  const version = ++searchVersion;
   loading.value = true;
   error.value = "";
   const query = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v !== 0));
   router.replace({ query });
   try {
-    result.value = await adminOrderApi.search({ ...query, size: 20 });
+    const response = await adminOrderApi.search({ ...query, size: 20 });
+    if (version === searchVersion) result.value = response;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (version === searchVersion) error.value = errorMessage(e);
   } finally {
-    loading.value = false;
+    if (version === searchVersion) loading.value = false;
   }
 }
 watch(
@@ -66,6 +70,7 @@ const clear = () => Object.assign(filters, { q: "", status: "", from: "", to: ""
 const open = (order) => router.push({ name: "AdminOrderDetail", params: { orderNumber: order.orderNumber } });
 
 onMounted(search);
+onBeforeUnmount(() => { clearTimeout(debounce); searchVersion++; });
 </script>
 
 <template>
@@ -101,6 +106,10 @@ onMounted(search);
         <input v-model="filters.to" type="date" class="field h-14" />
       </label>
     </form>
+    <div v-if="filtered || (loading && result)" class="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <button v-if="filtered" type="button" class="font-bold text-sm underline underline-offset-4 min-h-11" @click="clear">Clear filters</button>
+      <span v-if="loading && result" role="status" class="text-sm text-chocolate/70">Updating orders…</span>
+    </div>
 
     <p v-if="error" role="alert" class="mt-6 text-red-900">
       {{ error }} <button type="button" class="font-bold underline" @click="search">Try again</button>

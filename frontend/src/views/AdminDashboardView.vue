@@ -22,6 +22,7 @@ const { showToast } = useToast();
 
 const cookies = ref([]);
 const loading = ref(false);
+const saving = ref(false);
 const loadError = ref(false);
 const status = ref("all"); // all | live | archived
 const showForm = ref(false);
@@ -124,6 +125,8 @@ const loadCookies = async () => {
 };
 
 const saveCookie = async ({ cookie, imageFile }) => {
+  if (saving.value) return;
+  saving.value = true;
   const isEditing = !!cookie.cookieId;
   try {
     await cookieApi.save(cookie, imageFile);
@@ -140,6 +143,8 @@ const saveCookie = async ({ cookie, imageFile }) => {
         (isEditing ? "Failed to update cookie." : "Failed to add cookie."),
       "error",
     );
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -198,7 +203,6 @@ onMounted(loadCookies);
 
 <template>
   <div>
-    <LowStockWidget />
     <AdminPageHeader
       title="Cookies"
       description="Everything on the menu, including archived cookies."
@@ -208,6 +212,7 @@ onMounted(loadCookies);
         Add cookie
       </BaseButton>
     </AdminPageHeader>
+    <LowStockWidget />
 
     <!-- Status segments double as a summary -->
     <div
@@ -275,7 +280,7 @@ onMounted(loadCookies);
     <div v-else-if="loadError" class="card py-16 px-6 text-center" role="alert">
       <h2 class="text-base font-semibold">Couldn't load cookies</h2>
       <p class="mt-1 text-chocolate/70">
-        Check the API is running, then try again.
+        We couldn't reach the store. Check your connection and try again.
       </p>
       <BaseButton variant="outline" size="sm" class="mt-5" @click="loadCookies">
         <ArrowPathIcon class="h-4 w-4" />
@@ -329,6 +334,7 @@ onMounted(loadCookies);
 
     <CookieForm
       :open="showForm"
+      :saving="saving"
       :cookie="selectedCookie"
       @save="saveCookie"
       @close="closeForm"
