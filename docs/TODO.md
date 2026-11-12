@@ -1,6 +1,6 @@
 # What's left
 
-Storefront on **Vercel** (`guiltfreecookie.me`), API and MySQL on **Azure for Students**. It costs $0 cash; the API uses about $13/month of student credit. Both environments still run as a showcase (`prod,showcase`: PayFast and ShipLogic sandboxes, captured inbox).
+Storefront on **Vercel** (`guiltfreecookie.me`), API and MySQL on **Azure for Students**. It costs $0 cash; the App Service uses about $17.74/month of student credit and MySQL is on the student free tier. Client costs: [COSTS.md](COSTS.md); release steps: [WORKFLOW.md](WORKFLOW.md); manual checks: [SMOKE-TEST.md](SMOKE-TEST.md). Both environments still run as a showcase (`prod,showcase`: PayFast and ShipLogic sandboxes, captured inbox).
 
 ## Open now: pick up here (stopped 7 November 2026, 00:50 SAST)
 
@@ -8,10 +8,7 @@ In order. **(you)** = the owner, **(Claude)** = Claude.
 
 **Where it stopped**
 1–3. **Done 7 November: staging metrics in Grafana.** Staging sends metrics (OTLP connect timeout 10 s; container logging off again). Azure Monitor data source `Azure (guiltfreecookie)` saved (the "old version of datasource" error came from pressing **Load Subscriptions**, which saves in the background; reload, then **Save & test**; "No Log Analytics workspaces" is expected). Dashboard imported; the Shop and Courier rows show data since `21ef027` (every shop counter starts at zero).
-4. **Production metrics**, after staging works, one app at a time: **(you)** merge `staging` → `main` and run **Verify and deploy API → production**; wait until it answers; then put the metrics settings on production:
-   ```
-   A=$(security find-generic-password -s "gfc grafana otlp auth" -w) && az webapp config appsettings set -g rg-guiltfreecookie -n guiltfreecookie-api -o none --settings OTLP_METRICS_ENABLED=true OTLP_METRICS_URL=https://otlp-gateway-prod-eu-west-6.grafana.net/otlp/v1/metrics OTLP_METRICS_AUTHORIZATION="$A"; unset A
-   ```
+4. **Production metrics on (7 November)**: `OTLP_*` settings on production (07:00 UTC restart), then `main` deployed to production (run 42349828788, up at 07:15 UTC). **(you)** In Grafana switch **Environment** to `production` and save the dashboard.
 5. **Monitor every site in Grafana** (owner: yes, where free and easy; 7 November). Plan:
    - **Synthetic Monitoring** (free tier; check its monthly allowance on the Synthetics page), one probe, every 5 minutes, about 60,000 runs a month for 7 checks: HTTP checks on `guiltfreecookie.me`, the staging storefront, both APIs' `/guiltFreeCookie/actuator/health` and production's `/health/dependencies` (HTTP checks also report SSL expiry), and a DNS MX check on `guiltfreecookie.me` for ImprovMX. **(you)** turn on Synthetic Monitoring (**Testing & synthetics → Synthetics → Get started**); **(Claude)** gives the check list to enter.
    - **Sentry** data source (free plugin; needs a new read-only Sentry token: Organization, Project and Issue & Event **Read**).
@@ -22,8 +19,11 @@ In order. **(you)** = the owner, **(Claude)** = Claude.
 6. **Status page live**: [status.guiltfreecookie.me](https://status.guiltfreecookie.me) (7 November; Better Stack, CNAME `status` → `statuspage.betteruptime.com` in Vercel DNS, HTTPS answers 200). **(you)** In **Structure**, give the three resources public names (e.g. Shop, Ordering system, Payments, email and courier) and save.
 
 **Before the presentation**
-7. **(you) Restock production**: `scripts/restock.sh production` with a high number (Raspberry Coconut and Toasted Almond & Vanilla were out of stock, five more low).
+7. **(you) Restock production**: `scripts/restock.sh production` (tops every cookie up to 10,000 by default since 7 November; asks for the admin email and password). Run it while production is up, not during a deploy.
 8. **(you) Staging → Admin → Delivery: PUDO off** (production already off; free delivery from R750 checked on staging).
+
+**Database**
+- **(you, when convenient) Upgrade MySQL 8.0 → 8.4** (`gfc-mysql`, Azure portal → **Upgrade**; take a backup first, and do it outside the presentation week). 8.0 is on Azure's paid extended support ($0.10/vCore-hour, ≈ $73/month); free today only because of the student free tier, but it's the biggest cost if a client takes this over ([COSTS.md](COSTS.md)). Restarts the database, so both APIs lose it for a few minutes.
 
 **Housekeeping**
 9. **(you) Commit** what's left: this file, `docs/grafana/` and the OTLP connect timeout in `application.properties` (the Grafana code itself went out in `4540898`). The modified `frontend/` files belong to the frontend work, not this session.
@@ -31,6 +31,91 @@ In order. **(you)** = the owner, **(Claude)** = Claude.
 11. **(you) Google card hold**: check the bank statement around **20 November 2026**; if the R847.81 hold is still there, ask Google (**Billing → Help → Contact billing support**) or the bank.
 
 **Done on 6–7 November**: `guiltfreecookie.me` live (Vercel, `www` redirect, canonical links and sitemap); production sends real email from `hello@guiltfreecookie.me` through Brevo (SPF, DKIM and DMARC pass, mail-tester 8.6/10) and receives it through ImprovMX; courier booking on production (sandbox); Better Stack storefront monitor on the new domain; R750 free delivery; Grafana Cloud with the API's metrics code deployed to staging and an Azure read-only identity.
+
+## Hardening backlog (added 7 November 2026)
+
+Most important first. `[x]` = already in the code (checked 7 November), `[~]` = partly done, `[ ]` = open. **(you)** = owner, **(Claude)** = Claude.
+
+### P1. Account takeover and leaked data
+
+- [ ] **Login tokens are readable by any script on the page.** Admin and customer JWTs sit in `localStorage`/`sessionStorage` ([useAdminAuth.js](../frontend/src/composables/useAdminAuth.js), [useCustomerAuth.js](../frontend/src/composables/useCustomerAuth.js)). Move them to an `HttpOnly; Secure; SameSite` cookie set by the API, add CSRF protection, and drop the token from the JS. Vercel and Azure are on different domains, so the cookie needs the API on a subdomain (e.g. `api.guiltfreecookie.me`) or a Vercel rewrite to the API. **(Claude)**
+- [x] **Admin rights are checked on the server.** `SecurityConfig` requires `ROLE_ADMIN` from the JWT for every admin endpoint; the router's `requiresAdmin` check only hides pages. Keep it that way: nothing in the browser decides who is an admin.
+- [ ] **Second step at login (2FA)**: TOTP (authenticator app) for admins first, with recovery codes; optional for customers. **(Claude)**
+- [~] **Stop password guessing.** Done: per-IP limit of 10 tries per 5 minutes on admin login and customer auth (`RateLimitFilter`). Open: the counters live in memory (reset on restart, per instance) and nothing limits tries per *account*. Add a per-account lockout with backoff, and an email to the owner of the account when it locks. **(Claude)**
+- [ ] **Leaked-password check**: on register, reset and change password, reject passwords found in Have I Been Pwned (k-anonymity range API, only a 5-character hash prefix leaves the server). Also set a minimum length of 12. **(Claude)**
+
+### P1. Legal blockers before taking real orders
+
+- [ ] **Terms and privacy checkbox** at sign-up and checkout (today checkout only says "By paying you agree"), unticked by default, required. **(Claude)**
+- [ ] **Record acceptance**: store who accepted which terms version and when (customer, order, timestamp, version). **(Claude)**
+- [x] Privacy policy, terms, refund policy and cookie policy pages exist ([views/legal](../frontend/src/views/legal)). Real business details and a legal review are still open in section 5.
+- [x] Separate, unticked **marketing consent** at sign-up and checkout.
+- [x] **Unsubscribe** in marketing email: one-click `List-Unsubscribe` (RFC 8058) and the email preferences page.
+- [ ] **Data access and deletion requests**: today the privacy policy says "email us". Add "Download my data" and "Delete my account" in **Account** (delete anonymises orders, which have to be kept for tax). **(Claude)**
+- [ ] **Data retention limits**: only the email outbox is cleaned today. Decide and enforce limits: abandoned carts, contact messages, product-view events, password reset tokens, unsubscribed subscribers, inactive accounts. State them in the privacy policy. **(you decide, Claude builds)**
+- [ ] **Subprocessors list** in the privacy policy (only Google is named): Azure, Vercel, Brevo, ImprovMX, PayFast, ShipLogic/The Courier Guy, Google Places, Sentry, Better Stack, Grafana Cloud, with what each gets and where. **(Claude drafts, you check)**
+- [ ] **Data processing agreements**: accept each provider's DPA (most are click-through in their dashboards). **(you)**
+- [ ] **Business contact details** (`SITE_ADDRESS`, phone, registration number). Same as section 5. **(you)**
+- [ ] **Refund policy**: the page exists; check it matches what the shop will actually do (CPA, ECTA cooling-off doesn't apply to perishable food). **(you)**
+
+### P2. Email on production
+
+- [x] Production sends real email (Brevo); order confirmation, shipped, ready to collect, customer cancellation and the courier booking email work.
+- [ ] **An email at every order step.** Missing today: **Processing** ("we've started baking"), **Delivered**, **Refunded**, **Payment failed**, and **cancelled by the shop** (only customer cancellations send one). `OrderEvents.Delivered` exists but only starts the post-purchase flow. Add events and templates in `OrderEmailListener`. **(Claude)**
+- [ ] **Admin password reset sends an email.** `POST /admin/resetPassword/{id}` returns a temporary password to the screen instead. Email the admin a reset link (the customer forgot-password email already works); add "Forgot password" on the admin login. **(Claude)**
+- [ ] **Discount code email**: nothing emails a code today. Add "send this code to…" in **Admin → Discounts**, and include the code in the welcome / win-back flow emails where they offer one. **(Claude)**
+- [ ] **Retention flows on production**: welcome, browse and cart abandonment, post-purchase, replenishment, win-back and sunset exist but `showcase` turns them off. Set `FLOWS_ENABLED=true` on production, unpause the Better Stack heartbeat, then trigger each flow once and check it arrives (section 5 has the same switch). **(Claude, with you)**
+- [ ] Watch Brevo's free plan (300 emails a day) once flows are on.
+
+### P2. Security docs (in `docs/`)
+
+- [ ] `AUTH.md`: sign-up, login, sessions, password reset and who can reach which endpoint. **(Claude)**
+- [ ] `SECURITY.md`: rules no agent may break: no secrets in code, validate every input, rate limit every public endpoint, no PII in logs. **(Claude)**
+- [ ] `RLS-POLICIES.md`: which rows each role can read and change. MySQL has no row-level security, so this documents the checks the services make (a customer only sees their own orders and addresses), with a test per rule. **(Claude)**
+- [ ] `ENV.md`: every key and secret, what it does and where it lives (Azure app settings, Vercel, Keychain). Names only, never values. **(Claude)**
+- [ ] `THREAT-MODEL.md`: what is protected, from whom, and how, aimed at the two worst outcomes: leaked data and a taken-over admin account. **(Claude)**
+
+### P3. Other legal and fairness checks
+
+- [x] No fake countdown timers (the only timers are search delays and undo notices).
+- [x] No SOC 2 or similar claims found.
+- [x] No subscriptions, so nothing auto-renews and there's nothing to cancel. Revisit if a subscription box is ever added.
+- [~] Children: the privacy policy covers under-18s. Add "you must be 18 or have a parent's consent" to the terms. **(Claude)**
+- [x] Cookie banner and blocking trackers until consent: not needed today. The cookie policy says no tracking pixels; only essential storage and Sentry (PII off). Add a consent banner **before** adding any analytics or ad pixel.
+- [ ] **Audit third-party scripts**: confirm the storefront loads only Sentry and Google Places, and that Sentry sends no PII or session replay. **(Claude)**
+- [ ] **Hidden fees**: check delivery cost and any minimum-order rule are shown before the payment page (they are in the cart and checkout today; confirm on mobile). **(you)**
+- [ ] **Remove unsupported claims**: "Diabetic friendly", "guilt free", health wording (section 5 has the legal check). **(you)**
+- [ ] **Fake reviews**: reviews need a verified purchase, but test reviews on production must be deleted (section 5, "Clean the production database"). **(you)**
+- [ ] **Label AI-generated content**: 11 cookie photos are generated. Replace them with real photos before selling, or label them. **(you)**
+- [ ] **Colour contrast**: run an axe / Lighthouse accessibility pass on every page and fix anything below WCAG AA. **(Claude)**
+- [ ] **Alt text**: 25 `<img>` tags have no `alt` on the same line; check each (decorative images get `alt=""`). **(Claude)**
+- [ ] **Keyboard navigation**: add a "Skip to content" link, check focus order and visible focus in checkout, modals and the admin. **(Claude)**
+- [ ] **Licences**: fonts, icons, the hero video and the npm and Maven dependencies (run a licence report; keep notices where MIT/Apache require them). **(Claude)**
+- [ ] **Customer or brand logos**: none found; keep it that way unless you have written permission. **(you)**
+- [ ] **No training on customer data**: say in the privacy policy that customer data isn't used to train AI, and keep AI tools away from the production database. **(Claude drafts)**
+- [ ] **Uptime**: don't promise a percentage in the terms; the status page is enough. **(Claude checks the terms)**
+- [ ] **Copyright takedowns**: DMCA registration is US-only; South Africa uses ECTA s77 take-down notices. Only matters if customers can upload content (they can't today). **(you, later)**
+- [ ] **Dark patterns**: walk the sign-up, checkout and unsubscribe flows for pre-ticked boxes, confirm-shaming or hard-to-find cancel. **(Claude)**
+
+### P3. Speed
+
+- [ ] **N+1 queries**: there are no JPA relations, so N+1 comes from repository calls inside loops (order lists, cart lines, admin views, flows). Find each one (turn on Hibernate statistics on staging) and replace it with one `IN (...)` query. **(Claude)**
+- [~] **Database indexes**: 10 tables have them (orders, order items, carts, payments, email tables, inventory). Check the slow queries for the rest (cookies by category and slug, reviews by cookie, newsletter by email). Production runs `ddl-auto=validate`, so new indexes need SQL run by hand on both databases. **(Claude)**
+- [ ] **Caching**: Redis is a paid add-on on Azure. Start with an in-memory cache (Caffeine) for the catalogue, site info and shipping settings, cleared when admin edits them. Move to Redis only if there's ever more than one API instance. **(Claude)**
+- [~] **Lazy-load images**: 11 of 30 `<img>` tags have `loading="lazy"`. Add it to everything below the fold; keep the hero eager. **(Claude)**
+- [~] **Update the UI before the server answers** (optimistic UI): undo notices exist in a few places. Add it to cart quantity changes, add-to-cart and admin toggles, with a roll-back on error. **(Claude)**
+
+### P4. Search (rank on Google)
+
+Already in the code: prerendered pages, `sitemap.xml`, `robots.txt`, `llms.txt`, canonical links, and Bakery, Product, FAQ and breadcrumb structured data.
+
+- [ ] **Google Search Console**: verify `guiltfreecookie.me` (DNS TXT in Vercel), submit the sitemap, then share the queries and pages report. Claude can't log in to it. **(you)**
+- [ ] **Google Business Profile**: needs the real business address or a service area. It's the main way to rank locally. **(you)**
+- [ ] **Keyword Planner, Google Trends, AnswerThePublic, Ubersuggest**: export the results for "sugar free cookies", "keto cookies", "diabetic cookies" and "cookie delivery Cape Town" (CSV), and Claude turns them into page and FAQ changes. **(you export, Claude acts)**
+- [ ] **Screaming Frog** (free up to 500 URLs): crawl the site and share the export; Claude fixes broken links, missing titles and duplicates. **(you)**
+- [ ] **PageSpeed Insights**: run the home, shop and a product page on mobile; Claude fixes what it flags. **(Claude can run it)**
+- [ ] **Rich Results Test**: check the product and FAQ pages show as eligible (price, availability, rating). **(Claude can run it)**
+- [ ] **Yoast** is a WordPress plugin, so it doesn't apply. The same checks (titles, meta descriptions, one H1, internal links) come from the Screaming Frog crawl.
 
 ## Done: 6 November release
 
